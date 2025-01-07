@@ -115,7 +115,7 @@ import React, { useState } from 'react';
               </label>
             </div>
             <button type="submit">注册</button>
-            <button type="button" onClick={onSwitchToLogin} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>
+            <button type="button" onClick={onSwitchToLogin} style={{ marginTop: '10px', backgroundColor: '#28a745' }}>
               返回登录
             </button>
           </form>
