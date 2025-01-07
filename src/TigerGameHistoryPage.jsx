@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
     import { Link, useNavigate } from 'react-router-dom';
+    import { createClient } from '@supabase/supabase-js';
 
-    function TigerGameHistory() {
+    const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    function TigerGameHistory({ loggedInUser, onLogout }) {
       const [logs, setLogs] = useState([]);
       const [startDate, setStartDate] = useState('');
       const [endDate, setEndDate] = useState('');
@@ -16,31 +21,49 @@ import React, { useState, useEffect } from 'react';
       const [modifyTime, setModifyTime] = useState(null);
       const [confirmDeleteId, setConfirmDeleteId] = useState(null);
       const navigate = useNavigate();
-      const user = {id: 'test-user-id'};
+      const [errorMessage, setErrorMessage] = useState('');
 
       useEffect(() => {
-        const fetchLogs = async () => {
-          const storedLogs = sessionStorage.getItem('cashLogs');
-          if (storedLogs) {
-            setLogs(JSON.parse(storedLogs));
-          }
-        };
-        fetchLogs();
-      }, []);
+        if (loggedInUser) {
+          fetchLogs();
+        }
+      }, [loggedInUser]);
 
       useEffect(() => {
         setSortedLogs([...logs].reverse());
       }, [logs]);
 
+      const fetchLogs = async () => {
+        try {
+          let query = supabase
+            .from('tiger_game_logs')
+            .select('*')
+            .eq('user_id', loggedInUser.id)
+            .order('created_at', { ascending: false });
+
+          const { data, error } = await query;
+
+          if (error) {
+            console.error('获取打老虎记录时发生错误:', error);
+            setErrorMessage('获取打老虎记录失败。');
+          } else {
+            setLogs(data);
+          }
+        } catch (error) {
+          console.error('发生意外错误:', error);
+          setErrorMessage('发生意外错误。');
+        }
+      };
+
       const calculateTotalProfit = () => {
         const filteredLogs = logs.filter((log) => {
-          const logTime = new Date(log.addTime).getTime();
+          const logTime = new Date(log.created_at).getTime();
           const startTime = startDate ? new Date(startDate).getTime() : 0;
           const endTime = endDate ? new Date(endDate).getTime() : Infinity;
           return logTime >= startTime && logTime <= endTime;
         });
         return filteredLogs.reduce(
-          (total, log) => total + (log.cashOutAmount - log.inputAmount),
+          (total, log) => total + (log.cash_out_amount - log.input_amount),
           0,
         );
       };
@@ -50,10 +73,10 @@ import React, { useState, useEffect } from 'react';
         setSortedLogs((prevLogs) => {
           const sorted = [...prevLogs].sort((a, b) =>
             sortByProfit
-              ? (a.cashOutAmount - a.inputAmount) -
-                (b.cashOutAmount - b.inputAmount)
-              : (b.cashOutAmount - a.inputAmount) -
-                (a.cashOutAmount - a.inputAmount),
+              ? (a.cash_out_amount - a.input_amount) -
+                (b.cash_out_amount - b.input_amount)
+              : (b.cash_out_amount - a.input_amount) -
+                (a.cash_out_amount - a.input_amount),
           );
           return sorted;
         });
@@ -61,42 +84,73 @@ import React, { useState, useEffect } from 'react';
 
       const handleEditLog = (log) => {
         setEditingLogId(log.id);
-        setInputAmount(log.inputAmount);
-        setCashOutAmount(log.cashOutAmount);
-        setMainPhoto(log.mainPhoto);
-        setWinningPhotos(() => log.winningPhotos);
-        setAddTime(log.addTime);
-        setModifyTime(log.modifyTime);
+        setInputAmount(log.input_amount);
+        setCashOutAmount(log.cash_out_amount);
+        setMainPhoto(log.main_photo);
+        setWinningPhotos(() => log.winning_photos);
+        setAddTime(log.created_at);
+        setModifyTime(log.updated_at);
       };
 
       const handleUpdateLog = async (e) => {
         e.preventDefault();
+        setErrorMessage('');
         const updatedLog = {
-          inputAmount: parseFloat(inputAmount),
-          cashOutAmount: parseFloat(cashOutAmount),
-          mainPhoto: mainPhoto,
-          winningPhotos: winningPhotos,
-          modifyTime: new Date().toLocaleString(),
+          input_amount: parseFloat(inputAmount),
+          cash_out_amount: parseFloat(cashOutAmount),
+          main_photo: mainPhoto,
+          winning_photos: winningPhotos,
+          updated_at: new Date().toISOString(),
         };
-        const updatedLogs = logs.map((log) =>
-          log.id === editingLogId ? { ...log, ...updatedLog } : log,
-        );
-        setLogs(updatedLogs);
-        setEditingLogId(null);
-        setInputAmount('');
-        setCashOutAmount('');
-        setMainPhoto(null);
-        setWinningPhotos([]);
-        setAddTime(null);
-        setModifyTime(null);
-        navigate('/tiger-game/history');
+        try {
+          const { data, error } = await supabase
+            .from('tiger_game_logs')
+            .update(updatedLog)
+            .eq('id', editingLogId);
+
+          if (error) {
+            console.error('更新打老虎记录时发生错误:', error);
+            setErrorMessage('更新打老虎记录失败，请重试。');
+          } else {
+            console.log('打老虎记录更新成功:', data);
+            setLogs((prevLogs) =>
+              prevLogs.map((log) => (log.id === editingLogId ? { ...log, ...updatedLog } : log)),
+            );
+            setEditingLogId(null);
+            setInputAmount('');
+            setCashOutAmount('');
+            setMainPhoto(null);
+            setWinningPhotos([]);
+            setAddTime(null);
+            setModifyTime(null);
+            navigate('/tiger-game/history');
+          }
+        } catch (error) {
+          console.error('发生意外错误:', error);
+          setErrorMessage('发生意外错误。');
+        }
       };
 
       const handleDeleteLog = async (id) => {
         if (confirmDeleteId === id) {
-          const updatedLogs = logs.filter((log) => log.id !== id);
-          setLogs(updatedLogs);
-          setConfirmDeleteId(null);
+          try {
+            const { data, error } = await supabase
+              .from('tiger_game_logs')
+              .delete()
+              .eq('id', id);
+
+            if (error) {
+              console.error('删除打老虎记录时发生错误:', error);
+              setErrorMessage('删除打老虎记录失败，请重试。');
+            } else {
+              console.log('打老虎记录删除成功:', data);
+              setLogs((prevLogs) => prevLogs.filter((log) => log.id !== id));
+              setConfirmDeleteId(null);
+            }
+          } catch (error) {
+            console.error('发生意外错误:', error);
+            setErrorMessage('发生意外错误。');
+          }
         } else {
           setConfirmDeleteId(id);
         }
@@ -115,12 +169,19 @@ import React, { useState, useEffect } from 'react';
         }
       };
 
+      const handleBackToModules = () => {
+        navigate('/modules');
+      };
+
       return (
         <div className="container">
-          <h1>历史记录</h1>
+          <h2>打老虎历史记录</h2>
+          {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
+          <button type="button" onClick={onLogout} className="logout-button">退出</button>
           <Link to="/tiger-game" className="link-button">
             返回添加记录
           </Link>
+          {errorMessage && <p className="error-message">{errorMessage}</p>}
           <div className="form-group">
             <label>开始时间:</label>
             <input
@@ -150,25 +211,25 @@ import React, { useState, useEffect } from 'react';
                 {logs.length - logs.findIndex((l) => l.id === log.id)}
               </p>
               <p>
-                <strong>添加时间:</strong> {log.addTime}
+                <strong>添加时间:</strong> {new Date(log.created_at).toLocaleString()}
               </p>
-              {log.modifyTime && (
+              {log.updated_at && (
                 <p>
-                  <strong>修改时间:</strong> {log.modifyTime}
+                  <strong>修改时间:</strong> {new Date(log.updated_at).toLocaleString()}
                 </p>
               )}
               <p>
-                <strong>投入金额:</strong> {log.inputAmount}
+                <strong>投入金额:</strong> {log.input_amount}
               </p>
               <p>
-                <strong>兑换金额:</strong> {log.cashOutAmount}
+                <strong>兑换金额:</strong> {log.cash_out_amount}
               </p>
               <p>
-                <strong>盈亏金额:</strong> {log.cashOutAmount - log.inputAmount}
+                <strong>盈亏金额:</strong> {log.cash_out_amount - log.input_amount}
               </p>
-              {log.mainPhoto && <img src={log.mainPhoto} alt="Main Log" />}
-              {log.winningPhotos &&
-                log.winningPhotos.map((photo, index) => (
+              {log.main_photo && <img src={log.main_photo} alt="Main Log" />}
+              {log.winning_photos &&
+                log.winning_photos.map((photo, index) => (
                   <img key={index} src={photo} alt={`Winning Log ${index + 1}`} />
                 ))}
               {editingLogId === log.id ? (
@@ -222,6 +283,7 @@ import React, { useState, useEffect } from 'react';
               )}
             </div>
           ))}
+          <button type="button" onClick={handleBackToModules} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>返回模块选择</button>
         </div>
       );
     }
