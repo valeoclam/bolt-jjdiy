@@ -213,7 +213,7 @@ import React, { useState, useRef, useEffect } from 'react';
                 onChange={handleMainPhotoChange}
                 ref={fileInputRef}
               />
-              {mainPhoto && <img src={mainPhoto} alt="Main" style={{ maxWidth: '100%', marginTop: '10px' }} />}
+              {mainPhoto && <img src={mainPhoto} alt="Main" style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
             </div>
             <div className="form-group">
               <label htmlFor="winningPhotos">中奖照片:</label>
@@ -227,7 +227,7 @@ import React, { useState, useRef, useEffect } from 'react';
               />
               {winningPhotos &&
                 winningPhotos.map((photo, index) => (
-                  <img key={index} src={photo} alt={`Winning ${index + 1}`} style={{ maxWidth: '100%', marginTop: '10px' }} />
+                  <img key={index} src={photo} alt={`Winning ${index + 1}`} style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
                 ))}
             </div>
             <button type="submit" disabled={loading}>

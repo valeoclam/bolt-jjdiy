@@ -49,13 +49,37 @@ import React, { useState, useEffect } from 'react';
         }
 
         try {
+          if (!supabase) {
+            console.error('Supabase client is not initialized.');
+            setErrorMessage('Supabase client is not initialized.');
+            return;
+          }
+
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('username', loggedInUser.username)
+            .single();
+
+          if (userError) {
+            console.error('获取用户ID时发生错误:', userError);
+            setErrorMessage('获取用户ID失败，请重试。' + userError.message);
+            return;
+          }
+
+          if (!userData) {
+            console.error('未找到用户');
+            setErrorMessage('未找到用户，请重试。');
+            return;
+          }
+
           const { data, error } = await supabase
             .from('user_inspirations')
-            .insert([{ user_id: loggedInUser.id, title, description, status }]);
+            .insert([{ user_id: userData.id, title, description, status }]);
 
           if (error) {
             console.error('添加灵感记录时发生错误:', error);
-            setErrorMessage('添加灵感记录失败，请重试。');
+            setErrorMessage('添加灵感记录失败，请重试。' + error.message);
           } else {
             console.log('灵感记录添加成功:', data);
             setSuccessMessage('灵感记录添加成功!');
@@ -66,7 +90,7 @@ import React, { useState, useEffect } from 'react';
           }
         } catch (error) {
           console.error('发生意外错误:', error);
-          setErrorMessage('发生意外错误，请重试。');
+          setErrorMessage('发生意外错误，请重试。' + error.message);
         }
       };
 

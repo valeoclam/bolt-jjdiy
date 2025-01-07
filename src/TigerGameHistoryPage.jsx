@@ -227,10 +227,10 @@ import React, { useState, useEffect } from 'react';
               <p>
                 <strong>盈亏金额:</strong> {log.cash_out_amount - log.input_amount}
               </p>
-              {log.main_photo && <img src={log.main_photo} alt="Main Log" />}
+              {log.main_photo && <img src={log.main_photo} alt="Main Log" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
               {log.winning_photos &&
                 log.winning_photos.map((photo, index) => (
-                  <img key={index} src={photo} alt={`Winning Log ${index + 1}`} />
+                  <img key={index} src={photo} alt={`Winning Log ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
                 ))}
               {editingLogId === log.id ? (
                 <form onSubmit={handleUpdateLog}>
