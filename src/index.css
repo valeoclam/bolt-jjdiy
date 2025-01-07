@@ -203,3 +203,37 @@ body {
         flex-direction: column;
       }
     }
+
+    .module-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .module-button {
+      padding: 15px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      color: white;
+      transition: background-color 0.3s ease;
+      text-align: center;
+    }
+
+    .inspiration-button {
+      background-color: #28a745;
+    }
+
+    .inspiration-button:hover {
+      background-color: #218838;
+    }
+
+    .tiger-game-button {
+      background-color: #007bff;
+    }
+
+    .tiger-game-button:hover {
+      background-color: #0056b3;
+    }
