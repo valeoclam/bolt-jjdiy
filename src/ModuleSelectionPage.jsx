@@ -14,7 +14,7 @@ import React from 'react';
 
       return (
         <div className="container">
-          <h2>模块选择</h2>
+          <h2>JJ的百宝箱</h2>
           {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
           <div className="module-list">
             <button type="button" onClick={handleInspirationClick} className="module-button inspiration-button">灵感记录</button>
