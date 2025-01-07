@@ -18,6 +18,7 @@ import React, { useState, useRef, useEffect } from 'react';
       const [errorMessage, setErrorMessage] = useState('');
       const [successMessage, setSuccessMessage] = useState('');
       const [loading, setLoading] = useState(false);
+      const [attempts, setAttempts] = useState('');
       const navigate = useNavigate();
       const fileInputRef = useRef(null);
       const winningFileInputRef = useRef(null);
@@ -132,6 +133,7 @@ import React, { useState, useRef, useEffect } from 'react';
           winning_photos: winningPhotos,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          attempts: parseInt(attempts, 10) || 0,
         };
 
         try {
@@ -156,6 +158,7 @@ import React, { useState, useRef, useEffect } from 'react';
             setCashOutAmount('');
             setMainPhoto(null);
             setWinningPhotos([]);
+            setAttempts('');
             if (fileInputRef.current) {
               fileInputRef.current.value = '';
             }
@@ -180,10 +183,54 @@ import React, { useState, useRef, useEffect } from 'react';
 
       return (
         <div className="container">
-          <h2>打老虎</h2>
+          <h2>打打老虎</h2>
           {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
           <button type="button" onClick={onLogout} className="logout-button">退出</button>
           <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="mainPhoto">开始打老虎:</label>
+              <div className="file-input-container">
+                <input
+                  type="file"
+                  id="mainPhoto"
+                  accept="image/*"
+                  onChange={handleMainPhotoChange}
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                />
+                <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button">选择照片</button>
+                {mainPhoto && <img src={mainPhoto} alt="Main" style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
+              </div>
+            </div>
+            <div className="form-group">
+              <label htmlFor="winningPhotos">老虎打完了:</label>
+              <div className="file-input-container">
+                <input
+                  type="file"
+                  id="winningPhotos"
+                  accept="image/*"
+                  multiple
+                  onChange={handleWinningPhotosChange}
+                  ref={winningFileInputRef}
+                  style={{ display: 'none' }}
+                />
+                <button type="button" onClick={() => winningFileInputRef.current.click()} className="select-file-button">选择照片</button>
+                {winningPhotos &&
+                  winningPhotos.map((photo, index) => (
+                    <img key={index} src={photo} alt={`Winning ${index + 1}`} style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
+                  ))}
+              </div>
+            </div>
+            <div className="form-group">
+              <label htmlFor="attempts">尝试次数:</label>
+              <input
+                type="number"
+                id="attempts"
+                value={attempts}
+                onChange={(e) => setAttempts(e.target.value)}
+                required
+              />
+            </div>
             <div className="form-group">
               <label htmlFor="inputAmount">投入金额:</label>
               <input
@@ -203,32 +250,6 @@ import React, { useState, useRef, useEffect } from 'react';
                 onChange={(e) => setCashOutAmount(e.target.value)}
                 required
               />
-            </div>
-            <div className="form-group">
-              <label htmlFor="mainPhoto">主要照片:</label>
-              <input
-                type="file"
-                id="mainPhoto"
-                accept="image/*"
-                onChange={handleMainPhotoChange}
-                ref={fileInputRef}
-              />
-              {mainPhoto && <img src={mainPhoto} alt="Main" style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
-            </div>
-            <div className="form-group">
-              <label htmlFor="winningPhotos">中奖照片:</label>
-              <input
-                type="file"
-                id="winningPhotos"
-                accept="image/*"
-                multiple
-                onChange={handleWinningPhotosChange}
-                ref={winningFileInputRef}
-              />
-              {winningPhotos &&
-                winningPhotos.map((photo, index) => (
-                  <img key={index} src={photo} alt={`Winning ${index + 1}`} style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
-                ))}
             </div>
             <button type="submit" disabled={loading}>
               {loading ? '正在保存...' : '添加记录'}

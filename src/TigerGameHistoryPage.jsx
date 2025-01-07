@@ -12,6 +12,7 @@ import React, { useState, useEffect } from 'react';
       const [endDate, setEndDate] = useState('');
       const [sortedLogs, setSortedLogs] = useState([]);
       const [sortByProfit, setSortByProfit] = useState(false);
+      const [sortByAttempts, setSortByAttempts] = useState(false);
       const [editingLogId, setEditingLogId] = useState(null);
       const [inputAmount, setInputAmount] = useState('');
       const [cashOutAmount, setCashOutAmount] = useState('');
@@ -77,6 +78,16 @@ import React, { useState, useEffect } from 'react';
                 (b.cash_out_amount - b.input_amount)
               : (b.cash_out_amount - a.input_amount) -
                 (a.cash_out_amount - a.input_amount),
+          );
+          return sorted;
+        });
+      };
+
+      const handleSortByAttempts = () => {
+        setSortByAttempts(!sortByAttempts);
+        setSortedLogs((prevLogs) => {
+          const sorted = [...prevLogs].sort((a, b) =>
+            sortByAttempts ? a.attempts - b.attempts : b.attempts - a.attempts,
           );
           return sorted;
         });
@@ -175,12 +186,12 @@ import React, { useState, useEffect } from 'react';
 
       return (
         <div className="container">
-          <h2>打老虎历史记录</h2>
+          <h2>打过的老虎</h2>
           {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
           <button type="button" onClick={onLogout} className="logout-button">退出</button>
-          <Link to="/tiger-game" className="link-button">
+          <button type="button" onClick={() => navigate('/tiger-game')} className="select-file-button" style={{ marginTop: '20px' }}>
             返回添加记录
-          </Link>
+          </button>
           {errorMessage && <p className="error-message">{errorMessage}</p>}
           <div className="form-group">
             <label>开始时间:</label>
@@ -201,9 +212,14 @@ import React, { useState, useEffect } from 'react';
           <p>
             <strong>盈亏总额:</strong> {calculateTotalProfit()}
           </p>
-          <button type="button" onClick={handleSortByProfit}>
-            按盈亏金额排序
-          </button>
+          <div className="sort-buttons">
+            <button type="button" onClick={handleSortByProfit} className="sort-button">
+              按盈亏金额排序
+            </button>
+            <button type="button" onClick={handleSortByAttempts} className="sort-button">
+              按尝试次数排序
+            </button>
+          </div>
           {sortedLogs.map((log, index) => (
             <div key={log.id} className="log-item">
               <p>
@@ -227,63 +243,68 @@ import React, { useState, useEffect } from 'react';
               <p>
                 <strong>盈亏金额:</strong> {log.cash_out_amount - log.input_amount}
               </p>
+              <p>
+                <strong>尝试次数:</strong> {log.attempts}
+              </p>
               {log.main_photo && <img src={log.main_photo} alt="Main Log" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
               {log.winning_photos &&
                 log.winning_photos.map((photo, index) => (
                   <img key={index} src={photo} alt={`Winning Log ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
                 ))}
-              {editingLogId === log.id ? (
-                <form onSubmit={handleUpdateLog}>
-                  <div className="form-group">
-                    <label>投入金额:</label>
-                    <input
-                      type="number"
-                      id="inputAmount"
-                      value={inputAmount}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>兑换金额:</label>
-                    <input
-                      type="number"
-                      id="cashOutAmount"
-                      value={cashOutAmount}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <button type="submit">更新</button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingLogId(null);
-                      navigate('/tiger-game/history');
-                    }}
-                  >
-                    取消
-                  </button>
-                </form>
-              ) : (
-                <>
-                  <button
-                    className="edit-button"
-                    onClick={() => handleEditLog(log)}
-                  >
-                    编辑
-                  </button>
-                  <button
-                    className="delete-button"
-                    onClick={() => handleDeleteLog(log.id)}
-                  >
-                    {confirmDeleteId === log.id ? '确认删除' : '删除'}
-                  </button>
-                </>
-              )}
+              <div className="edit-buttons">
+                {editingLogId === log.id ? (
+                  <form onSubmit={handleUpdateLog}>
+                    <div className="form-group">
+                      <label>投入金额:</label>
+                      <input
+                        type="number"
+                        id="inputAmount"
+                        value={inputAmount}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>兑换金额:</label>
+                      <input
+                        type="number"
+                        id="cashOutAmount"
+                        value={cashOutAmount}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <button type="submit">更新</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingLogId(null);
+                        navigate('/tiger-game/history');
+                      }}
+                    >
+                      取消
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <button
+                      className="edit-button"
+                      onClick={() => handleEditLog(log)}
+                    >
+                      编辑
+                    </button>
+                    <button
+                      className="delete-button"
+                      onClick={() => handleDeleteLog(log.id)}
+                    >
+                      {confirmDeleteId === log.id ? '确认删除' : '删除'}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           ))}
-          <button type="button" onClick={handleBackToModules} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>返回模块选择</button>
+          <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#28a745' }}>返回模块选择</button>
         </div>
       );
     }
