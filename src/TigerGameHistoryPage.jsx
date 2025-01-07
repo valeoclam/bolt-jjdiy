@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
     import { Link, useNavigate } from 'react-router-dom';
 
-    function History() {
+    function TigerGameHistory() {
       const [logs, setLogs] = useState([]);
       const [startDate, setStartDate] = useState('');
       const [endDate, setEndDate] = useState('');
@@ -89,7 +89,7 @@ import React, { useState, useEffect } from 'react';
         setWinningPhotos([]);
         setAddTime(null);
         setModifyTime(null);
-        navigate('/history');
+        navigate('/tiger-game/history');
       };
 
       const handleDeleteLog = async (id) => {
@@ -118,7 +118,7 @@ import React, { useState, useEffect } from 'react';
       return (
         <div className="container">
           <h1>历史记录</h1>
-          <Link to="/" className="link-button">
+          <Link to="/tiger-game" className="link-button">
             返回添加记录
           </Link>
           <div className="form-group">
@@ -198,7 +198,7 @@ import React, { useState, useEffect } from 'react';
                     type="button"
                     onClick={() => {
                       setEditingLogId(null);
-                      navigate('/history');
+                      navigate('/tiger-game/history');
                     }}
                   >
                     取消
@@ -226,4 +226,4 @@ import React, { useState, useEffect } from 'react';
       );
     }
 
-    export default History;
+    export default TigerGameHistory;
