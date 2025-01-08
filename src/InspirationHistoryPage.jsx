@@ -59,8 +59,8 @@ import React, { useState, useEffect } from 'react';
         event.preventDefault();
         setErrorMessage('');
 
-        if (!title || !description) {
-          setErrorMessage('标题和描述是必需的。');
+        if (!title) {
+          setErrorMessage('标题是必需的。');
           return;
         }
 
@@ -111,6 +111,10 @@ import React, { useState, useEffect } from 'react';
 
       const handleBackToModules = () => {
         navigate('/modules');
+      };
+
+      const handleBackToInspiration = () => {
+        navigate('/inspiration');
       };
 
       return (
@@ -190,7 +194,8 @@ import React, { useState, useEffect } from 'react';
               </div>
             ))}
           </div>
-          <button type="button" onClick={handleBackToModules} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>返回模块选择</button>
+          <button type="button" onClick={handleBackToInspiration} style={{ marginTop: '20px', backgroundColor: '#28a745', position: 'fixed', bottom: '60px', left: '50%', transform: 'translateX(-50%)' }}>返回灵感记录</button>
+          <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d', position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)' }}>返回模块选择</button>
         </div>
       );
     }

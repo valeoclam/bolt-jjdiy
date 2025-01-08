@@ -43,8 +43,8 @@ import React, { useState, useEffect } from 'react';
         setSuccessMessage('');
         setErrorMessage('');
 
-        if (!title || !description) {
-          setErrorMessage('标题和描述是必需的。');
+        if (!title) {
+          setErrorMessage('标题是必需的。');
           return;
         }
 
@@ -106,8 +106,8 @@ import React, { useState, useEffect } from 'react';
         setSuccessMessage('');
         setErrorMessage('');
 
-        if (!title || !description) {
-          setErrorMessage('标题和描述是必需的。');
+        if (!title) {
+          setErrorMessage('标题是必需的。');
           return;
         }
 
@@ -166,6 +166,36 @@ import React, { useState, useEffect } from 'react';
         navigate('/inspiration/history');
       };
 
+      const renderDescription = (text) => {
+        const lines = text.split('\n');
+        const listRegex = /^(\d+)\.\s+(.*)$/;
+        let inList = false;
+        let listItems = [];
+        const rendered = [];
+
+        for (const line of lines) {
+          const match = line.match(listRegex);
+          if (match) {
+            if (!inList) {
+              inList = true;
+              listItems = [];
+            }
+            listItems.push(<li key={match[1]}>{match[2]}</li>);
+          } else {
+            if (inList) {
+              inList = false;
+              rendered.push(<ol key={rendered.length}>{listItems}</ol>);
+              listItems = [];
+            }
+            rendered.push(<p key={rendered.length}>{line}</p>);
+          }
+        }
+        if (inList) {
+          rendered.push(<ol key={rendered.length}>{listItems}</ol>);
+        }
+        return rendered;
+      };
+
       return (
         <div className="container">
           <h2>灵感记录</h2>
@@ -212,7 +242,7 @@ import React, { useState, useEffect } from 'react';
             {inspirations.map((inspiration) => (
               <div key={inspiration.id} className="inspiration-item">
                 <h4>{inspiration.title}</h4>
-                <p>{inspiration.description}</p>
+                <div>{renderDescription(inspiration.description)}</div>
                 <p>状态: {inspiration.status}</p>
                 <p>创建时间: {new Date(inspiration.created_at).toLocaleString()}</p>
                 <p>最后修改时间: {new Date(inspiration.updated_at).toLocaleString()}</p>
@@ -223,8 +253,8 @@ import React, { useState, useEffect } from 'react';
               </div>
             ))}
           </div>
-          <button type="button" onClick={handleViewHistory} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>查看历史记录</button>
-          <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回模块选择</button>
+          <button type="button" onClick={handleViewHistory} style={{ marginTop: '20px', backgroundColor: '#28a745', position: 'fixed', bottom: '60px', left: '50%', transform: 'translateX(-50%)' }}>查看历史记录</button>
+          <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d', position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)' }}>返回模块选择</button>
         </div>
       );
     }

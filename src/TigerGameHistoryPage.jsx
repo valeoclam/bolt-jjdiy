@@ -542,6 +542,9 @@ import React, { useState, useEffect, useRef } from 'react';
               <p>
                 <strong>尝试次数:</strong> {log.attempts}
               </p>
+              <p>
+                <strong>遇到预告片:</strong> {log.encountered_trailer ? '是' : '否'}
+              </p>
               {log.main_photo && <img src={log.main_photo} alt="Main Log" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
               <div style={{ display: 'flex', flexWrap: 'wrap' }}>
                 {log.winning_photos &&
@@ -650,7 +653,7 @@ import React, { useState, useEffect, useRef } from 'react';
               </div>
             </div>
           ))}
-          <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#28a745' }}>返回模块选择</button>
+          <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#28a745', position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)' }}>返回模块选择</button>
         </div>
       );
     }
