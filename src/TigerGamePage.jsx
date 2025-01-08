@@ -104,7 +104,7 @@ import React, { useState, useRef, useEffect } from 'react';
           });
 
           const results = await Promise.all(readers);
-          setWinningPhotos(results);
+          setWinningPhotos((prevPhotos) => [...prevPhotos, ...results]);
         } catch (error) {
           console.error('图片压缩失败:', error);
           setErrorMessage('图片压缩失败，请重试。');
@@ -242,7 +242,7 @@ import React, { useState, useRef, useEffect } from 'react';
                   ref={winningFileInputRef}
                   style={{ display: 'none' }}
                 />
-                <button type="button" onClick={() => winningFileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>老虎打完了</button>
+                <button type="button" onClick={() => winningFileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>老虎送钱了</button>
                 {winningPhotos &&
                   winningPhotos.map((photo, index) => (
                     <img key={index} src={photo} alt={`Winning ${index + 1}`} style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />

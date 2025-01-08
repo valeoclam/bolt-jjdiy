@@ -25,6 +25,8 @@ import React, { useState, useEffect, useRef } from 'react';
       const navigate = useNavigate();
       const [errorMessage, setErrorMessage] = useState('');
       const winningFileInputRef = useRef(null);
+      const [tempWinningPhotos, setTempWinningPhotos] = useState([]);
+      const [attempts, setAttempts] = useState('');
 
       useEffect(() => {
         if (loggedInUser) {
@@ -113,8 +115,10 @@ import React, { useState, useEffect, useRef } from 'react';
         setCashOutAmount(log.cash_out_amount);
         setMainPhoto(log.main_photo);
         setWinningPhotos(() => log.winning_photos);
+        setTempWinningPhotos(log.winning_photos || []);
         setAddTime(log.created_at);
         setModifyTime(log.updated_at);
+        setAttempts(log.attempts);
       };
 
       const handleWinningPhotosChange = async (e) => {
@@ -144,7 +148,7 @@ import React, { useState, useEffect, useRef } from 'react';
           });
 
           const results = await Promise.all(readers);
-          setWinningPhotos(results);
+          setTempWinningPhotos((prevPhotos) => [...prevPhotos, ...results]);
         } catch (error) {
           console.error('图片压缩失败:', error);
           setErrorMessage('图片压缩失败，请重试。');
@@ -158,8 +162,9 @@ import React, { useState, useEffect, useRef } from 'react';
           input_amount: parseFloat(inputAmount),
           cash_out_amount: parseFloat(cashOutAmount),
           main_photo: mainPhoto,
-          winning_photos: winningPhotos,
+          winning_photos: tempWinningPhotos,
           updated_at: new Date().toISOString(),
+          attempts: parseInt(attempts, 10) || 0,
         };
         try {
           const { data, error } = await supabase
@@ -180,8 +185,10 @@ import React, { useState, useEffect, useRef } from 'react';
             setCashOutAmount('');
             setMainPhoto(null);
             setWinningPhotos([]);
+            setTempWinningPhotos([]);
             setAddTime(null);
             setModifyTime(null);
+            setAttempts('');
             navigate('/tiger-game/history');
           }
         } catch (error) {
@@ -224,8 +231,16 @@ import React, { useState, useEffect, useRef } from 'react';
             setInputAmount(e.target.value);
           } else if (e.target.id === 'cashOutAmount') {
             setCashOutAmount(e.target.value);
+          } else if (e.target.id === 'attempts') {
+            setAttempts(e.target.value);
           }
         }
+      };
+
+      const handleRemoveWinningPhoto = (indexToRemove) => {
+        setTempWinningPhotos((prevPhotos) =>
+          prevPhotos.filter((_, index) => index !== indexToRemove),
+        );
       };
 
       const handleBackToModules = () => {
@@ -298,13 +313,38 @@ import React, { useState, useEffect, useRef } from 'react';
                 <strong>尝试次数:</strong> {log.attempts}
               </p>
               {log.main_photo && <img src={log.main_photo} alt="Main Log" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
-              {log.winning_photos &&
-                log.winning_photos.map((photo, index) => (
-                  <img key={index} src={photo} alt={`Winning Log ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
-                ))}
+              <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                {tempWinningPhotos &&
+                  tempWinningPhotos.map((photo, index) => (
+                    <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
+                      <img src={photo} alt={`Winning Log ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
+                      {editingLogId === log.id && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveWinningPhoto(index)}
+                          style={{
+                            position: 'absolute',
+                            top: '5px',
+                            right: '5px',
+                            background: 'rgba(0, 0, 0, 0.5)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '20px',
+                            height: '20px',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          x
+                        </button>
+                      )}
+                    </div>
+                  ))}
+              </div>
               <div className="edit-buttons">
                 {editingLogId === log.id ? (
-                  <form onSubmit={handleUpdateLog}>
+                  <form onSubmit={handleUpdateLog} style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                     <div className="form-group">
                       <label>投入金额:</label>
                       <input
@@ -326,7 +366,7 @@ import React, { useState, useEffect, useRef } from 'react';
                       />
                     </div>
                     <div className="form-group">
-                      <label htmlFor="winningPhotos">老虎打完了:</label>
+                      <label htmlFor="winningPhotos">老虎送钱了:</label>
                       <div className="file-input-container">
                         <input
                           type="file"
@@ -337,20 +377,27 @@ import React, { useState, useEffect, useRef } from 'react';
                           ref={winningFileInputRef}
                           style={{ display: 'none' }}
                         />
-                        <button type="button" onClick={() => winningFileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>选择照片</button>
-                        {winningPhotos &&
-                          winningPhotos.map((photo, index) => (
-                            <img key={index} src={photo} alt={`Winning ${index + 1}`} style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
-                          ))}
+                        <button type="button" onClick={() => winningFileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>老虎送钱了</button>
                       </div>
                     </div>
-                    <button type="submit">更新</button>
+                    <div className="form-group">
+                      <label>尝试次数:</label>
+                      <input
+                        type="number"
+                        id="attempts"
+                        value={attempts}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <button type="submit" className="select-file-button">更新</button>
                     <button
                       type="button"
                       onClick={() => {
                         setEditingLogId(null);
                         navigate('/tiger-game/history');
                       }}
+                      className="select-file-button" style={{ backgroundColor: '#dc3545' }}
                     >
                       取消
                     </button>
