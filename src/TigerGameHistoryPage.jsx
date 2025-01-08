@@ -101,6 +101,48 @@ import React, { useState, useEffect, useRef } from 'react';
         return percentage.toFixed(2) + '%';
       };
 
+      const calculateAverageAttemptsForWins = () => {
+        const filteredLogs = logs.filter((log) => {
+          const logTime = new Date(log.created_at).getTime();
+          const startTime = startDate ? new Date(startDate).getTime() : 0;
+          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
+          return logTime >= startTime && logTime <= endTime;
+        });
+
+        const winningLogs = filteredLogs.filter(log => (log.cash_out_amount - log.input_amount) > 0);
+        if (winningLogs.length === 0) return 0;
+        const totalAttempts = winningLogs.reduce((sum, log) => sum + log.attempts, 0);
+        return (totalAttempts / winningLogs.length).toFixed(2);
+      };
+
+      const calculateAverageAttemptsForLosses = () => {
+        const filteredLogs = logs.filter((log) => {
+          const logTime = new Date(log.created_at).getTime();
+          const startTime = startDate ? new Date(startDate).getTime() : 0;
+          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
+          return logTime >= startTime && logTime <= endTime;
+        });
+
+        const losingLogs = filteredLogs.filter(log => (log.cash_out_amount - log.input_amount) < 0);
+        if (losingLogs.length === 0) return 0;
+        const totalAttempts = losingLogs.reduce((sum, log) => sum + log.attempts, 0);
+        return (totalAttempts / losingLogs.length).toFixed(2);
+      };
+
+      const calculateAverageAttemptsWithTrailer = () => {
+        const filteredLogs = logs.filter((log) => {
+          const logTime = new Date(log.created_at).getTime();
+          const startTime = startDate ? new Date(startDate).getTime() : 0;
+          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
+          return logTime >= startTime && logTime <= endTime;
+        });
+
+        const trailerLogs = filteredLogs.filter(log => log.encountered_trailer);
+        if (trailerLogs.length === 0) return 0;
+        const totalAttempts = trailerLogs.reduce((sum, log) => sum + log.attempts, 0);
+        return (totalAttempts / trailerLogs.length).toFixed(2);
+      };
+
       const handleSortByProfit = () => {
         setSortByProfit(!sortByProfit);
         setSortedLogs((prevLogs) => {
@@ -296,6 +338,15 @@ import React, { useState, useEffect, useRef } from 'react';
           </p>
           <p>
             <strong>遇到预告片占比:</strong> {calculateEncounteredTrailerPercentage()}
+          </p>
+          <p>
+            <strong>送钱平均尝试次数:</strong> {calculateAverageAttemptsForWins()}
+          </p>
+          <p>
+            <strong>吃钱平均尝试次数:</strong> {calculateAverageAttemptsForLosses()}
+          </p>
+          <p>
+            <strong>遇到预告片平均尝试次数:</strong> {calculateAverageAttemptsWithTrailer()}
           </p>
           <div className="sort-buttons">
             <button type="button" onClick={handleSortByProfit} className="sort-button">
