@@ -11,12 +11,17 @@ import React, { useState, useEffect } from 'react';
       const [description, setDescription] = useState('');
       const [status, setStatus] = useState('未执行');
       const navigate = useNavigate();
+      const [filteredInspirations, setFilteredInspirations] = useState([]);
 
       useEffect(() => {
         if (loggedInUser) {
           fetchInspirations();
         }
       }, [loggedInUser, searchKeyword, searchStatus]);
+
+      useEffect(() => {
+        filterInspirations();
+      }, [inspirations, searchKeyword, searchStatus]);
 
       const fetchInspirations = async () => {
         try {
@@ -25,14 +30,6 @@ import React, { useState, useEffect } from 'react';
             .select('*')
             .eq('user_id', loggedInUser.id)
             .order('created_at', { ascending: false });
-
-          if (searchKeyword) {
-            query = query.ilike('title', `%${searchKeyword}%`);
-          }
-
-          if (searchStatus) {
-            query = query.eq('status', searchStatus);
-          }
 
           const { data, error } = await query;
 
@@ -46,6 +43,23 @@ import React, { useState, useEffect } from 'react';
           console.error('发生意外错误:', error);
           setErrorMessage('发生意外错误。');
         }
+      };
+
+      const filterInspirations = () => {
+        let filtered = [...inspirations];
+
+        if (searchKeyword) {
+          filtered = filtered.filter(inspiration =>
+            inspiration.title.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+            inspiration.description.toLowerCase().includes(searchKeyword.toLowerCase())
+          );
+        }
+
+        if (searchStatus) {
+          filtered = filtered.filter(inspiration => inspiration.status === searchStatus);
+        }
+
+        setFilteredInspirations(filtered);
       };
 
       const handleEdit = (inspiration) => {
@@ -104,7 +118,7 @@ import React, { useState, useEffect } from 'react';
             }
           } catch (error) {
             console.error('发生意外错误:', error);
-            setErrorMessage('发生意外错误，请重试。');
+            setErrorMessage('发生意外错误。');
           }
         }
       };
@@ -126,7 +140,7 @@ import React, { useState, useEffect } from 'react';
           <div className="search-container">
             <input
               type="text"
-              placeholder="搜索标题"
+              placeholder="搜索标题或描述"
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
             />
@@ -145,7 +159,7 @@ import React, { useState, useEffect } from 'react';
 
           <div className="inspiration-list">
             <h3>所有灵感记录</h3>
-            {inspirations.map((inspiration) => (
+            {filteredInspirations.map((inspiration) => (
               <div key={inspiration.id} className="inspiration-item">
                 <h4>{inspiration.title}</h4>
                 <p>{inspiration.description}</p>
