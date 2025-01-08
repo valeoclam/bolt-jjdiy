@@ -28,6 +28,8 @@ import React, { useState, useEffect, useRef } from 'react';
       const [tempWinningPhotos, setTempWinningPhotos] = useState([]);
       const [attempts, setAttempts] = useState('');
       const chartCanvasRef = useRef(null);
+      const scatterCanvasRef = useRef(null);
+      const [showChart, setShowChart] = useState(true);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -40,10 +42,11 @@ import React, { useState, useEffect, useRef } from 'react';
       }, [logs]);
 
       useEffect(() => {
-        if (logs.length > 0) {
+        if (logs.length > 0 && showChart) {
           drawChart();
+          drawScatterPlot();
         }
-      }, [logs, startDate, endDate]);
+      }, [logs, startDate, endDate, showChart]);
 
       const fetchLogs = async () => {
         try {
@@ -371,6 +374,53 @@ import React, { useState, useEffect, useRef } from 'react';
         });
       };
 
+      const drawScatterPlot = () => {
+        if (!scatterCanvasRef.current) return;
+        const canvas = scatterCanvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const filteredLogs = logs.filter((log) => {
+          const logTime = new Date(log.created_at).getTime();
+          const startTime = startDate ? new Date(startDate).getTime() : 0;
+          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
+          return logTime >= startTime && logTime <= endTime;
+        });
+
+        if (filteredLogs.length === 0) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          return;
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const profits = filteredLogs.map(log => log.cash_out_amount - log.input_amount);
+        const attempts = filteredLogs.map(log => log.attempts);
+
+        const maxProfit = Math.max(...profits, 0);
+        const minProfit = Math.min(...profits, 0);
+        const maxAttempts = Math.max(...attempts, 0);
+        const minAttempts = Math.min(...attempts, 0);
+
+        const profitRange = maxProfit - minProfit;
+        const attemptsRange = maxAttempts - minAttempts;
+
+        const padding = 20;
+
+        filteredLogs.forEach((log, index) => {
+          const profit = profits[index];
+          const attempt = attempts[index];
+
+          const x = attemptsRange === 0 ? padding : padding + (attempt - minAttempts) / attemptsRange * (canvas.width - 2 * padding);
+          const y = profitRange === 0 ? canvas.height - padding : canvas.height - padding - (profit - minProfit) / profitRange * (canvas.height - 2 * padding);
+
+          ctx.beginPath();
+          ctx.arc(x, y, 3, 0, 2 * Math.PI);
+          ctx.fillStyle = profit > 0 ? 'green' : 'red';
+          ctx.fill();
+        });
+      };
+
       return (
         <div className="container">
           <h2>打过的老虎</h2>
@@ -396,10 +446,22 @@ import React, { useState, useEffect, useRef } from 'react';
               onChange={(e) => setEndDate(e.target.value)}
             />
           </div>
-          <p>
-            <strong>盈亏总额:</strong> {calculateTotalProfit()}
-          </p>
-          <canvas ref={chartCanvasRef} width={600} height={200} style={{ border: '1px solid #ddd', marginTop: '20px' }}></canvas>
+          <div className="form-group" style={{ display: 'flex', alignItems: 'center' }}>
+            <label style={{ marginBottom: '0', marginRight: '10px' }}>
+              <strong>盈亏总额:</strong> {calculateTotalProfit()}
+            </label>
+            <label style={{ marginBottom: '0', marginRight: '10px' }}>
+              显示图表
+              <input
+                type="checkbox"
+                checked={showChart}
+                onChange={() => setShowChart(!showChart)}
+                style={{ width: 'auto', margin: '0' }}
+              />
+            </label>
+          </div>
+          {showChart && <canvas ref={chartCanvasRef} width={600} height={200} style={{ border: '1px solid #ddd', marginTop: '20px' }}></canvas>}
+          {showChart && <canvas ref={scatterCanvasRef} width={600} height={200} style={{ border: '1px solid #ddd', marginTop: '20px' }}></canvas>}
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
               <thead>
