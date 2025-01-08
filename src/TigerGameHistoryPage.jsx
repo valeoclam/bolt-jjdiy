@@ -27,6 +27,7 @@ import React, { useState, useEffect, useRef } from 'react';
       const winningFileInputRef = useRef(null);
       const [tempWinningPhotos, setTempWinningPhotos] = useState([]);
       const [attempts, setAttempts] = useState('');
+      const chartCanvasRef = useRef(null);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -37,6 +38,12 @@ import React, { useState, useEffect, useRef } from 'react';
       useEffect(() => {
         setSortedLogs([...logs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
       }, [logs]);
+
+      useEffect(() => {
+        if (logs.length > 0) {
+          drawChart();
+        }
+      }, [logs, startDate, endDate]);
 
       const fetchLogs = async () => {
         try {
@@ -305,6 +312,65 @@ import React, { useState, useEffect, useRef } from 'react';
         navigate('/modules');
       };
 
+      const drawChart = () => {
+        if (!chartCanvasRef.current) return;
+        const canvas = chartCanvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const filteredLogs = logs.filter((log) => {
+          const logTime = new Date(log.created_at).getTime();
+          const startTime = startDate ? new Date(startDate).getTime() : 0;
+          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
+          return logTime >= startTime && logTime <= endTime;
+        });
+
+        const dailyData = {};
+        filteredLogs.forEach(log => {
+          const date = new Date(log.created_at).toLocaleDateString();
+          const profit = log.cash_out_amount - log.input_amount;
+          dailyData[date] = (dailyData[date] || 0) + profit;
+        });
+
+        const dates = Object.keys(dailyData);
+        const profits = Object.values(dailyData);
+
+        if (dates.length === 0) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          return;
+        }
+
+        const barWidth = canvas.width / dates.length;
+        const maxProfit = Math.max(...profits, 0);
+        const minProfit = Math.min(...profits, 0);
+        const range = maxProfit - minProfit;
+        const padding = 20;
+        const zeroY = canvas.height - padding - (range === 0 ? 0 : (0 - minProfit) / range * (canvas.height - 2 * padding));
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.beginPath();
+        ctx.moveTo(0, zeroY);
+        ctx.lineTo(canvas.width, zeroY);
+        ctx.stroke();
+
+        dates.forEach((date, index) => {
+          const x = index * barWidth;
+          const profit = profits[index];
+          const barHeight = range === 0 ? 0 : (profit) / range * (canvas.height - 2 * padding);
+          const y = zeroY - barHeight;
+
+          ctx.fillStyle = profit > 0 ? 'green' : 'red';
+          ctx.fillRect(x, y, barWidth - 2, barHeight);
+
+          ctx.fillStyle = 'black';
+          ctx.font = '10px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(date, x + barWidth / 2, canvas.height - 5);
+          ctx.fillText(profit.toFixed(2), x + barWidth / 2, y - 5);
+        });
+      };
+
       return (
         <div className="container">
           <h2>打过的老虎</h2>
@@ -333,6 +399,7 @@ import React, { useState, useEffect, useRef } from 'react';
           <p>
             <strong>盈亏总额:</strong> {calculateTotalProfit()}
           </p>
+          <canvas ref={chartCanvasRef} width={600} height={200} style={{ border: '1px solid #ddd', marginTop: '20px' }}></canvas>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
               <thead>
