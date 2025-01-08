@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
     import LoginForm from './LoginForm';
     import RegisterForm from './RegisterForm';
+    import packageJson from '../package.json';
 
     function LoginPage({ onLoginSuccess, supabase }) {
       const [isRegistering, setIsRegistering] = useState(false);
       const [registrationSuccess, setRegistrationSuccess] = useState(false);
       const [errorMessage, setErrorMessage] = useState('');
-      const appVersion = '3.0.1';
+      const appVersion = packageJson.version;
 
       const handleSwitchToRegister = () => {
         setIsRegistering(true);

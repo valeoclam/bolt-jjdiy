@@ -26,7 +26,6 @@ import React, { useState, useEffect, useRef } from 'react';
       const [errorMessage, setErrorMessage] = useState('');
       const winningFileInputRef = useRef(null);
       const [tempWinningPhotos, setTempWinningPhotos] = useState([]);
-      const [attempts, setAttempts] = useState('');
 
       useEffect(() => {
         if (loggedInUser) {
@@ -314,8 +313,8 @@ import React, { useState, useEffect, useRef } from 'react';
               </p>
               {log.main_photo && <img src={log.main_photo} alt="Main Log" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
               <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                {tempWinningPhotos &&
-                  tempWinningPhotos.map((photo, index) => (
+                {log.winning_photos &&
+                  log.winning_photos.map((photo, index) => (
                     <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
                       <img src={photo} alt={`Winning Log ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
                       {editingLogId === log.id && (
