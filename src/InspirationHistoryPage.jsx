@@ -12,6 +12,8 @@ import React, { useState, useEffect } from 'react';
       const [status, setStatus] = useState('未执行');
       const navigate = useNavigate();
       const [filteredInspirations, setFilteredInspirations] = useState([]);
+      const [inspirationPhotos, setInspirationPhotos] = useState([]);
+      const [tempInspirationPhotos, setTempInspirationPhotos] = useState([]);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -67,6 +69,8 @@ import React, { useState, useEffect } from 'react';
         setTitle(inspiration.title);
         setDescription(inspiration.description);
         setStatus(inspiration.status);
+        setInspirationPhotos(inspiration.photos || []);
+        setTempInspirationPhotos(inspiration.photos || []);
       };
 
       const handleUpdate = async (event) => {
@@ -81,7 +85,7 @@ import React, { useState, useEffect } from 'react';
         try {
           const { data, error } = await supabase
             .from('user_inspirations')
-            .update({ title, description, status, updated_at: new Date().toISOString() })
+            .update({ title, description, status, photos: tempInspirationPhotos, updated_at: new Date().toISOString() })
             .eq('id', editingInspiration.id);
 
           if (error) {
@@ -92,6 +96,8 @@ import React, { useState, useEffect } from 'react';
             setTitle('');
             setDescription('');
             setStatus('未执行');
+            setInspirationPhotos([]);
+            setTempInspirationPhotos([]);
             setEditingInspiration(null);
             fetchInspirations();
           }
@@ -205,6 +211,12 @@ import React, { useState, useEffect } from 'react';
                     <button type="button" onClick={() => { setEditingInspiration(null); setTitle(''); setDescription(''); setStatus('未执行'); }} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>取消编辑</button>
                   </form>
                 )}
+                 <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                  {Array.isArray(inspiration.photos) &&
+                    inspiration.photos.map((photo, index) => (
+                      <img key={index} src={photo} alt={`Inspiration ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
+                    ))}
+                </div>
               </div>
             ))}
           </div>

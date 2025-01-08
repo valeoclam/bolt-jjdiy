@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
     import { useNavigate } from 'react-router-dom';
+    import imageCompression from 'browser-image-compression';
 
     function InspirationPage({ loggedInUser, supabase, onLogout }) {
       const [title, setTitle] = useState('');
@@ -9,7 +10,10 @@ import React, { useState, useEffect } from 'react';
       const [successMessage, setSuccessMessage] = useState('');
       const [errorMessage, setErrorMessage] = useState('');
       const [editingInspiration, setEditingInspiration] = useState(null);
+      const [inspirationPhotos, setInspirationPhotos] = useState([]);
       const navigate = useNavigate();
+      const fileInputRef = useRef(null);
+      const [tempInspirationPhotos, setTempInspirationPhotos] = useState([]);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -75,7 +79,7 @@ import React, { useState, useEffect } from 'react';
 
           const { data, error } = await supabase
             .from('user_inspirations')
-            .insert([{ user_id: userData.id, title, description, status }]);
+            .insert([{ user_id: userData.id, title, description, status, photos: inspirationPhotos }]);
 
           if (error) {
             console.error('添加灵感记录时发生错误:', error);
@@ -86,7 +90,11 @@ import React, { useState, useEffect } from 'react';
             setTitle('');
             setDescription('');
             setStatus('未执行');
+            setInspirationPhotos([]);
             fetchInspirations();
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
           }
         } catch (error) {
           console.error('发生意外错误:', error);
@@ -99,6 +107,8 @@ import React, { useState, useEffect } from 'react';
         setTitle(inspiration.title);
         setDescription(inspiration.description);
         setStatus(inspiration.status);
+        setInspirationPhotos(inspiration.photos || []);
+        setTempInspirationPhotos(inspiration.photos || []);
       };
 
       const handleUpdate = async (event) => {
@@ -114,7 +124,7 @@ import React, { useState, useEffect } from 'react';
         try {
           const { data, error } = await supabase
             .from('user_inspirations')
-            .update({ title, description, status, updated_at: new Date().toISOString() })
+            .update({ title, description, status, photos: tempInspirationPhotos, updated_at: new Date().toISOString() })
             .eq('id', editingInspiration.id);
 
           if (error) {
@@ -126,12 +136,17 @@ import React, { useState, useEffect } from 'react';
             setTitle('');
             setDescription('');
             setStatus('未执行');
+            setInspirationPhotos([]);
+            setTempInspirationPhotos([]);
             setEditingInspiration(null);
             fetchInspirations();
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
           }
         } catch (error) {
           console.error('发生意外错误:', error);
-          setErrorMessage('发生意外错误，请重试。');
+          setErrorMessage('发生意外错误，请重试。' + error.message);
         }
       };
 
@@ -196,6 +211,46 @@ import React, { useState, useEffect } from 'react';
         return rendered;
       };
 
+      const handleInspirationPhotosChange = async (e) => {
+        setErrorMessage('');
+        const files = Array.from(e.target.files);
+        if (!files || files.length === 0) return;
+
+        try {
+          const compressedFiles = await Promise.all(
+            files.map(async (file) => {
+              return await imageCompression(file, {
+                maxSizeMB: 1,
+                maxWidthOrHeight: 1920,
+                useWebWorker: true,
+              });
+            }),
+          );
+
+          const readers = compressedFiles.map((file) => {
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                resolve(reader.result);
+              };
+              reader.readAsDataURL(file);
+            });
+          });
+
+          const results = await Promise.all(readers);
+          setTempInspirationPhotos((prevPhotos) => [...prevPhotos, ...results]);
+        } catch (error) {
+          console.error('图片压缩失败:', error);
+          setErrorMessage('图片压缩失败，请重试。');
+        }
+      };
+
+      const handleRemoveInspirationPhoto = (indexToRemove) => {
+        setTempInspirationPhotos((prevPhotos) =>
+          prevPhotos.filter((_, index) => index !== indexToRemove),
+        );
+      };
+
       return (
         <div className="container">
           <h2>灵感记录</h2>
@@ -231,8 +286,51 @@ import React, { useState, useEffect } from 'react';
                 <option value="已实现">已实现</option>
               </select>
             </div>
+            {editingInspiration && (
+              <div className="form-group">
+                <div className="file-input-container">
+                  <input
+                    type="file"
+                    id="inspirationPhotos"
+                    accept="image/*"
+                    multiple
+                    onChange={handleInspirationPhotosChange}
+                    ref={fileInputRef}
+                    style={{ display: 'none' }}
+                  />
+                  <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>选择照片</button>
+                  {Array.isArray(tempInspirationPhotos) &&
+                    tempInspirationPhotos.map((photo, index) => (
+                      <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
+                        <img src={photo} alt={`Inspiration ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
+                        {editingInspiration && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveInspirationPhoto(index)}
+                            style={{
+                              position: 'absolute',
+                              top: '5px',
+                              right: '5px',
+                              background: 'rgba(0, 0, 0, 0.5)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '50%',
+                              width: '20px',
+                              height: '20px',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            x
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
             <button type="submit">{editingInspiration ? '更新灵感' : '添加灵感'}</button>
-            {editingInspiration && <button type="button" onClick={() => { setEditingInspiration(null); setTitle(''); setDescription(''); setStatus('未执行'); }} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>取消编辑</button>}
+            {editingInspiration && <button type="button" onClick={() => { setEditingInspiration(null); setTitle(''); setDescription(''); setStatus('未执行'); setInspirationPhotos([]); setTempInspirationPhotos([]); }} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>取消编辑</button>}
           </form>
           {successMessage && <p className="success-message">{successMessage}</p>}
           {errorMessage && <p className="error-message">{errorMessage}</p>}
@@ -249,6 +347,12 @@ import React, { useState, useEffect } from 'react';
                 <div className="edit-buttons">
                   <button onClick={() => handleEdit(inspiration)}>编辑</button>
                   <button onClick={() => handleDelete(inspiration)}>删除</button>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                  {Array.isArray(inspiration.photos) &&
+                    inspiration.photos.map((photo, index) => (
+                      <img key={index} src={photo} alt={`Inspiration ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
+                    ))}
                 </div>
               </div>
             ))}

@@ -184,6 +184,12 @@ import React, { useState, useRef, useEffect } from 'react';
         navigate('/tiger-game/history');
       };
 
+      const handleRemoveWinningPhoto = (indexToRemove) => {
+        setWinningPhotos((prevPhotos) =>
+          prevPhotos.filter((_, index) => index !== indexToRemove),
+        );
+      };
+
       return (
         <div className="container">
           <h2>打打老虎</h2>
@@ -265,9 +271,30 @@ import React, { useState, useRef, useEffect } from 'react';
                   style={{ display: 'none' }}
                 />
                 <button type="button" onClick={() => winningFileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>老虎送钱了</button>
-                {winningPhotos &&
+                {Array.isArray(winningPhotos) &&
                   winningPhotos.map((photo, index) => (
-                    <img key={index} src={photo} alt={`Winning ${index + 1}`} style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
+                    <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
+                      <img src={photo} alt={`Winning ${index + 1}`} style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveWinningPhoto(index)}
+                        style={{
+                          position: 'absolute',
+                          top: '5px',
+                          right: '5px',
+                          background: 'rgba(0, 0, 0, 0.5)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '20px',
+                          height: '20px',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        x
+                      </button>
+                    </div>
                   ))}
               </div>
             </div>

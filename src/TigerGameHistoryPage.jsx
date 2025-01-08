@@ -276,9 +276,12 @@ import React, { useState, useEffect, useRef } from 'react';
       };
 
       const handleRemoveWinningPhoto = (indexToRemove) => {
-        setTempWinningPhotos((prevPhotos) =>
-          prevPhotos.filter((_, index) => index !== indexToRemove),
-        );
+        setTempWinningPhotos((prevPhotos) => {
+          if (Array.isArray(prevPhotos)) {
+            return prevPhotos.filter((_, index) => index !== indexToRemove)
+          }
+          return [];
+        });
       };
 
       const handleBackToModules = () => {
