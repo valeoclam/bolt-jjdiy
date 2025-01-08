@@ -366,7 +366,6 @@ import React, { useState, useEffect, useRef } from 'react';
                       />
                     </div>
                     <div className="form-group">
-                      <label htmlFor="winningPhotos">老虎送钱了:</label>
                       <div className="file-input-container">
                         <input
                           type="file"
@@ -390,14 +389,14 @@ import React, { useState, useEffect, useRef } from 'react';
                         required
                       />
                     </div>
-                    <button type="submit" className="select-file-button">更新</button>
+                    <button type="submit" className="select-file-button" style={{ padding: '10px 15px' }}>更新</button>
                     <button
                       type="button"
                       onClick={() => {
                         setEditingLogId(null);
                         navigate('/tiger-game/history');
                       }}
-                      className="select-file-button" style={{ backgroundColor: '#dc3545' }}
+                      className="select-file-button" style={{ backgroundColor: '#dc3545', padding: '10px 15px' }}
                     >
                       取消
                     </button>

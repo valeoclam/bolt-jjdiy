@@ -6,6 +6,7 @@ import React, { useState } from 'react';
       const [isRegistering, setIsRegistering] = useState(false);
       const [registrationSuccess, setRegistrationSuccess] = useState(false);
       const [errorMessage, setErrorMessage] = useState('');
+      const appVersion = '3.0.1';
 
       const handleSwitchToRegister = () => {
         setIsRegistering(true);
@@ -41,6 +42,7 @@ import React, { useState } from 'react';
           )}
           {errorMessage && <p className="error-message">{errorMessage}</p>}
           {registrationSuccess && <p className="success-message">注册成功，请登录。</p>}
+          <p style={{ textAlign: 'center', marginTop: '20px', color: '#777' }}>版本号: {appVersion}</p>
         </div>
       );
     }
