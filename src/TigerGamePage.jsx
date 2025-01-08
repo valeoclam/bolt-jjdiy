@@ -290,6 +290,9 @@ import React, { useState, useRef, useEffect } from 'react';
                           height: '20px',
                           fontSize: '12px',
                           cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
                         }}
                       >
                         x
