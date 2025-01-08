@@ -26,6 +26,7 @@ import React, { useState, useEffect, useRef } from 'react';
       const [errorMessage, setErrorMessage] = useState('');
       const winningFileInputRef = useRef(null);
       const [tempWinningPhotos, setTempWinningPhotos] = useState([]);
+      const [attempts, setAttempts] = useState('');
 
       useEffect(() => {
         if (loggedInUser) {
@@ -66,10 +67,11 @@ import React, { useState, useEffect, useRef } from 'react';
           const endTime = endDate ? new Date(endDate).getTime() : Infinity;
           return logTime >= startTime && logTime <= endTime;
         });
-        return filteredLogs.reduce(
+        const totalProfit = filteredLogs.reduce(
           (total, log) => total + (log.cash_out_amount - log.input_amount),
           0,
         );
+        return totalProfit.toFixed(2);
       };
 
       const calculateAverageAttempts = () => {
@@ -82,6 +84,21 @@ import React, { useState, useEffect, useRef } from 'react';
         if (filteredLogs.length === 0) return 0;
         const totalAttempts = filteredLogs.reduce((sum, log) => sum + log.attempts, 0);
         return (totalAttempts / filteredLogs.length).toFixed(2);
+      };
+
+      const calculateEncounteredTrailerPercentage = () => {
+        const filteredLogs = logs.filter((log) => {
+          const logTime = new Date(log.created_at).getTime();
+          const startTime = startDate ? new Date(startDate).getTime() : 0;
+          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
+          return logTime >= startTime && logTime <= endTime;
+        });
+
+        if (filteredLogs.length === 0) return '0.00%';
+
+        const encounteredTrailerCount = filteredLogs.filter(log => log.encountered_trailer).length;
+        const percentage = (encounteredTrailerCount / filteredLogs.length) * 100;
+        return percentage.toFixed(2) + '%';
       };
 
       const handleSortByProfit = () => {
@@ -277,6 +294,9 @@ import React, { useState, useEffect, useRef } from 'react';
           <p>
             <strong>平均尝试次数:</strong> {calculateAverageAttempts()}
           </p>
+          <p>
+            <strong>遇到预告片占比:</strong> {calculateEncounteredTrailerPercentage()}
+          </p>
           <div className="sort-buttons">
             <button type="button" onClick={handleSortByProfit} className="sort-button">
               按盈亏金额排序
@@ -306,7 +326,7 @@ import React, { useState, useEffect, useRef } from 'react';
                 <strong>兑换金额:</strong> {log.cash_out_amount}
               </p>
               <p>
-                <strong>盈亏金额:</strong> {log.cash_out_amount - log.input_amount}
+                <strong>盈亏金额:</strong> {(log.cash_out_amount - log.input_amount).toFixed(2)}
               </p>
               <p>
                 <strong>尝试次数:</strong> {log.attempts}

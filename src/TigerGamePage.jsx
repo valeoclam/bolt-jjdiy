@@ -191,8 +191,7 @@ import React, { useState, useRef, useEffect } from 'react';
           <button type="button" onClick={onLogout} className="logout-button">退出</button>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="mainPhoto">开始打老虎:</label>
-              <div className="file-input-container">
+              <div className="file-input-container" style={{ marginTop: '20px' }}>
                 <input
                   type="file"
                   id="mainPhoto"
@@ -201,7 +200,7 @@ import React, { useState, useRef, useEffect } from 'react';
                   ref={fileInputRef}
                   style={{ display: 'none' }}
                 />
-                <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button">选择照片</button>
+                <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px' }}>开始打老虎</button>
                 {mainPhoto && <img src={mainPhoto} alt="Main" style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
               </div>
             </div>
@@ -255,7 +254,6 @@ import React, { useState, useRef, useEffect } from 'react';
               </label>
             </div>
             <div className="form-group">
-              <label htmlFor="winningPhotos">老虎送钱了:</label>
               <div className="file-input-container">
                 <input
                   type="file"
