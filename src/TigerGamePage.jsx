@@ -19,6 +19,7 @@ import React, { useState, useRef, useEffect } from 'react';
       const [successMessage, setSuccessMessage] = useState('');
       const [loading, setLoading] = useState(false);
       const [attempts, setAttempts] = useState('');
+      const [encounteredTrailer, setEncounteredTrailer] = useState(false);
       const navigate = useNavigate();
       const fileInputRef = useRef(null);
       const winningFileInputRef = useRef(null);
@@ -134,6 +135,7 @@ import React, { useState, useRef, useEffect } from 'react';
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           attempts: parseInt(attempts, 10) || 0,
+          encountered_trailer: encounteredTrailer,
         };
 
         try {
@@ -159,6 +161,7 @@ import React, { useState, useRef, useEffect } from 'react';
             setMainPhoto(null);
             setWinningPhotos([]);
             setAttempts('');
+            setEncounteredTrailer(false);
             if (fileInputRef.current) {
               fileInputRef.current.value = '';
             }
@@ -185,9 +188,10 @@ import React, { useState, useRef, useEffect } from 'react';
         <div className="container">
           <h2>打打老虎</h2>
           {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
-          <button type="button" onClick={onLogout} className="logout-button" style={{ marginBottom: '20px' }}>退出</button>
+          <button type="button" onClick={onLogout} className="logout-button">退出</button>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
+              <label htmlFor="mainPhoto">开始打老虎:</label>
               <div className="file-input-container">
                 <input
                   type="file"
@@ -197,7 +201,7 @@ import React, { useState, useRef, useEffect } from 'react';
                   ref={fileInputRef}
                   style={{ display: 'none' }}
                 />
-                <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button">开始打老虎</button>
+                <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button">选择照片</button>
                 {mainPhoto && <img src={mainPhoto} alt="Main" style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
               </div>
             </div>
@@ -232,6 +236,26 @@ import React, { useState, useRef, useEffect } from 'react';
               />
             </div>
             <div className="form-group">
+              <label>
+                遇到预告片:
+                <input
+                  type="radio"
+                  name="encounteredTrailer"
+                  checked={encounteredTrailer}
+                  onChange={() => setEncounteredTrailer(true)}
+                />
+                是
+                <input
+                  type="radio"
+                  name="encounteredTrailer"
+                  checked={!encounteredTrailer}
+                  onChange={() => setEncounteredTrailer(false)}
+                />
+                否
+              </label>
+            </div>
+            <div className="form-group">
+              <label htmlFor="winningPhotos">老虎送钱了:</label>
               <div className="file-input-container">
                 <input
                   type="file"
