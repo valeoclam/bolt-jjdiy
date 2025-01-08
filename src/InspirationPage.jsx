@@ -79,7 +79,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
           const { data, error } = await supabase
             .from('user_inspirations')
-            .insert([{ user_id: userData.id, title, description, status, photos: inspirationPhotos }]);
+            .insert([{ user_id: userData.id, title, description, status, photos: tempInspirationPhotos }]);
 
           if (error) {
             console.error('添加灵感记录时发生错误:', error);
@@ -91,6 +91,7 @@ import React, { useState, useEffect, useRef } from 'react';
             setDescription('');
             setStatus('未执行');
             setInspirationPhotos([]);
+            setTempInspirationPhotos([]);
             fetchInspirations();
             if (fileInputRef.current) {
               fileInputRef.current.value = '';
@@ -302,30 +303,28 @@ import React, { useState, useEffect, useRef } from 'react';
                   tempInspirationPhotos.map((photo, index) => (
                     <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
                       <img src={photo} alt={`Inspiration ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
-                      {editingInspiration && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveInspirationPhoto(index)}
-                          style={{
-                            position: 'absolute',
-                            top: '5px',
-                            right: '5px',
-                            background: 'rgba(0, 0, 0, 0.5)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '50%',
-                            width: '20px',
-                            height: '20px',
-                            fontSize: '12px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          x
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveInspirationPhoto(index)}
+                        style={{
+                          position: 'absolute',
+                          top: '5px',
+                          right: '5px',
+                          background: 'rgba(0, 0, 0, 0.5)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '20px',
+                          height: '20px',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        x
+                      </button>
                     </div>
                   ))}
               </div>
