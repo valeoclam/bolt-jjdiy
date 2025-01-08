@@ -276,12 +276,14 @@ import React, { useState, useEffect, useRef } from 'react';
       };
 
       const handleRemoveWinningPhoto = (indexToRemove) => {
-        setTempWinningPhotos((prevPhotos) => {
-          if (Array.isArray(prevPhotos)) {
-            return prevPhotos.filter((_, index) => index !== indexToRemove)
-          }
-          return [];
-        });
+        if (window.confirm('确定要删除此照片吗？此操作不可恢复。')) {
+          setTempWinningPhotos((prevPhotos) => {
+            if (Array.isArray(prevPhotos)) {
+              return prevPhotos.filter((_, index) => index !== indexToRemove)
+            }
+            return [];
+          });
+        }
       };
 
       const handleBackToModules = () => {
