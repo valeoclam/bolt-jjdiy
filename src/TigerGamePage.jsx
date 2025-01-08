@@ -222,22 +222,22 @@ import React, { useState, useRef, useEffect } from 'react';
               </div>
             </div>
             <div className="form-group">
-              <label htmlFor="attempts">尝试次数:</label>
-              <input
-                type="number"
-                id="attempts"
-                value={attempts}
-                onChange={(e) => setAttempts(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group">
               <label htmlFor="inputAmount">投入金额:</label>
               <input
                 type="number"
                 id="inputAmount"
                 value={inputAmount}
                 onChange={(e) => setInputAmount(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="attempts">尝试次数:</label>
+              <input
+                type="number"
+                id="attempts"
+                value={attempts}
+                onChange={(e) => setAttempts(e.target.value)}
                 required
               />
             </div>
