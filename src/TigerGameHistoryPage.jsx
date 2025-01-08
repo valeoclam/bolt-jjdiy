@@ -333,20 +333,36 @@ import React, { useState, useEffect, useRef } from 'react';
           <p>
             <strong>盈亏总额:</strong> {calculateTotalProfit()}
           </p>
-          <p>
-            <strong>平均尝试次数:</strong> {calculateAverageAttempts()}
-          </p>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+              <thead>
+                <tr>
+                  <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>指标</th>
+                  <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>平均尝试次数</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>打过的老虎</td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{calculateAverageAttempts()}</td>
+                </tr>
+                <tr>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>送钱老虎</td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{calculateAverageAttemptsForWins()}</td>
+                </tr>
+                <tr>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>吃钱老虎</td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{calculateAverageAttemptsForLosses()}</td>
+                </tr>
+                 <tr>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>遇到预告片</td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{calculateAverageAttemptsWithTrailer()}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <p>
             <strong>遇到预告片占比:</strong> {calculateEncounteredTrailerPercentage()}
-          </p>
-          <p>
-            <strong>送钱平均尝试次数:</strong> {calculateAverageAttemptsForWins()}
-          </p>
-          <p>
-            <strong>吃钱平均尝试次数:</strong> {calculateAverageAttemptsForLosses()}
-          </p>
-          <p>
-            <strong>遇到预告片平均尝试次数:</strong> {calculateAverageAttemptsWithTrailer()}
           </p>
           <div className="sort-buttons">
             <button type="button" onClick={handleSortByProfit} className="sort-button">
