@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
     import { useNavigate } from 'react-router-dom';
+    import imageCompression from 'browser-image-compression';
 
     function InspirationHistoryPage({ loggedInUser, supabase, onLogout }) {
       const [inspirations, setInspirations] = useState([]);
@@ -14,6 +15,8 @@ import React, { useState, useEffect } from 'react';
       const [filteredInspirations, setFilteredInspirations] = useState([]);
       const [inspirationPhotos, setInspirationPhotos] = useState([]);
       const [tempInspirationPhotos, setTempInspirationPhotos] = useState([]);
+      const editFileInputRef = useRef(null);
+      const MAX_PHOTOS = 12;
 
       useEffect(() => {
         if (loggedInUser) {
@@ -65,7 +68,7 @@ import React, { useState, useEffect } from 'react';
       };
 
       const handleEdit = (inspiration) => {
-        setEditingInspiration(inspiration);
+         setEditingInspiration(inspiration);
         setTitle(inspiration.title);
         setDescription(inspiration.description);
         setStatus(inspiration.status);
@@ -100,6 +103,9 @@ import React, { useState, useEffect } from 'react';
             setTempInspirationPhotos([]);
             setEditingInspiration(null);
             fetchInspirations();
+             if (editFileInputRef.current) {
+              editFileInputRef.current.value = '';
+            }
           }
         } catch (error) {
           console.error('发生意外错误:', error);
@@ -135,6 +141,50 @@ import React, { useState, useEffect } from 'react';
 
       const handleBackToInspiration = () => {
         navigate('/inspiration');
+      };
+
+      const handleEditInspirationPhotosChange = async (e) => {
+        setErrorMessage('');
+        const files = Array.from(e.target.files);
+        if (!files || files.length === 0) return;
+         if (tempInspirationPhotos.length + files.length > MAX_PHOTOS) {
+          setErrorMessage(`最多只能添加 ${MAX_PHOTOS} 张照片。`);
+          return;
+        }
+
+        try {
+          const compressedFiles = await Promise.all(
+            files.map(async (file) => {
+              return await imageCompression(file, {
+                maxSizeMB: 1,
+                maxWidthOrHeight: 1920,
+                useWebWorker: true,
+              });
+            }),
+          );
+
+          const readers = compressedFiles.map((file) => {
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                resolve(reader.result);
+              };
+              reader.readAsDataURL(file);
+            });
+          });
+
+          const results = await Promise.all(readers);
+          setTempInspirationPhotos((prevPhotos) => [...prevPhotos, ...results]);
+        } catch (error) {
+          console.error('图片压缩失败:', error);
+          setErrorMessage('图片压缩失败，请重试。');
+        }
+      };
+
+      const handleRemoveInspirationPhoto = (indexToRemove) => {
+        setTempInspirationPhotos((prevPhotos) =>
+          prevPhotos.filter((_, index) => index !== indexToRemove),
+        );
       };
 
       return (
@@ -206,6 +256,50 @@ import React, { useState, useEffect } from 'react';
                         <option value="执行中">执行中</option>
                         <option value="已实现">已实现</option>
                       </select>
+                    </div>
+                     <div className="form-group">
+                      <div className="file-input-container">
+                        <input
+                          type="file"
+                          id="editInspirationPhotos"
+                          accept="image/*"
+                          multiple
+                          onChange={handleEditInspirationPhotosChange}
+                          ref={editFileInputRef}
+                          style={{ display: 'none' }}
+                        />
+                        <button type="button" onClick={() => editFileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>编辑照片</button>
+                        {Array.isArray(tempInspirationPhotos) &&
+                          tempInspirationPhotos.map((photo, index) => (
+                            <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
+                              <img src={photo} alt={`Inspiration ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
+                              {editingInspiration && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveInspirationPhoto(index)}
+                                  style={{
+                                    position: 'absolute',
+                                    top: '5px',
+                                    right: '5px',
+                                    background: 'rgba(0, 0, 0, 0.5)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '20px',
+                                    height: '20px',
+                                    fontSize: '12px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                  }}
+                                >
+                                  x
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                      </div>
                     </div>
                     <button type="submit">更新灵感</button>
                     <button type="button" onClick={() => { setEditingInspiration(null); setTitle(''); setDescription(''); setStatus('未执行'); }} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>取消编辑</button>

@@ -14,6 +14,8 @@ import React, { useState, useEffect, useRef } from 'react';
       const navigate = useNavigate();
       const fileInputRef = useRef(null);
       const [tempInspirationPhotos, setTempInspirationPhotos] = useState([]);
+      const editFileInputRef = useRef(null);
+      const MAX_PHOTOS = 12;
 
       useEffect(() => {
         if (loggedInUser) {
@@ -144,6 +146,9 @@ import React, { useState, useEffect, useRef } from 'react';
             if (fileInputRef.current) {
               fileInputRef.current.value = '';
             }
+             if (editFileInputRef.current) {
+              editFileInputRef.current.value = '';
+            }
           }
         } catch (error) {
           console.error('发生意外错误:', error);
@@ -216,6 +221,48 @@ import React, { useState, useEffect, useRef } from 'react';
         setErrorMessage('');
         const files = Array.from(e.target.files);
         if (!files || files.length === 0) return;
+         if (tempInspirationPhotos.length + files.length > MAX_PHOTOS) {
+          setErrorMessage(`最多只能添加 ${MAX_PHOTOS} 张照片。`);
+          return;
+        }
+
+        try {
+          const compressedFiles = await Promise.all(
+            files.map(async (file) => {
+              return await imageCompression(file, {
+                maxSizeMB: 1,
+                maxWidthOrHeight: 1920,
+                useWebWorker: true,
+              });
+            }),
+          );
+
+          const readers = compressedFiles.map((file) => {
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                resolve(reader.result);
+              };
+              reader.readAsDataURL(file);
+            });
+          });
+
+          const results = await Promise.all(readers);
+          setTempInspirationPhotos((prevPhotos) => [...prevPhotos, ...results]);
+        } catch (error) {
+          console.error('图片压缩失败:', error);
+          setErrorMessage('图片压缩失败，请重试。');
+        }
+      };
+
+      const handleEditInspirationPhotosChange = async (e) => {
+        setErrorMessage('');
+        const files = Array.from(e.target.files);
+        if (!files || files.length === 0) return;
+         if (tempInspirationPhotos.length + files.length > MAX_PHOTOS) {
+          setErrorMessage(`最多只能添加 ${MAX_PHOTOS} 张照片。`);
+          return;
+        }
 
         try {
           const compressedFiles = await Promise.all(
@@ -329,6 +376,52 @@ import React, { useState, useEffect, useRef } from 'react';
                   ))}
               </div>
             </div>
+             {editingInspiration && (
+              <div className="form-group">
+                <div className="file-input-container">
+                  <input
+                    type="file"
+                    id="editInspirationPhotos"
+                    accept="image/*"
+                    multiple
+                    onChange={handleEditInspirationPhotosChange}
+                    ref={editFileInputRef}
+                    style={{ display: 'none' }}
+                  />
+                  <button type="button" onClick={() => editFileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>编辑照片</button>
+                  {Array.isArray(tempInspirationPhotos) &&
+                    tempInspirationPhotos.map((photo, index) => (
+                      <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
+                        <img src={photo} alt={`Inspiration ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
+                        {editingInspiration && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveInspirationPhoto(index)}
+                            style={{
+                              position: 'absolute',
+                              top: '5px',
+                              right: '5px',
+                              background: 'rgba(0, 0, 0, 0.5)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '50%',
+                              width: '20px',
+                              height: '20px',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            x
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
             <button type="submit">{editingInspiration ? '更新灵感' : '添加灵感'}</button>
             {editingInspiration && <button type="button" onClick={() => { setEditingInspiration(null); setTitle(''); setDescription(''); setStatus('未执行'); setInspirationPhotos([]); setTempInspirationPhotos([]); }} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>取消编辑</button>}
           </form>
@@ -337,17 +430,13 @@ import React, { useState, useEffect, useRef } from 'react';
 
           <div className="inspiration-list">
             <h3>最近的灵感</h3>
-            {inspirations.map((inspiration) => (
+             {inspirations.map((inspiration) => (
               <div key={inspiration.id} className="inspiration-item">
                 <h4>{inspiration.title}</h4>
                 <div>{renderDescription(inspiration.description)}</div>
                 <p>状态: {inspiration.status}</p>
                 <p>创建时间: {new Date(inspiration.created_at).toLocaleString()}</p>
                 <p>最后修改时间: {new Date(inspiration.updated_at).toLocaleString()}</p>
-                <div className="edit-buttons">
-                  <button onClick={() => handleEdit(inspiration)}>编辑</button>
-                  <button onClick={() => handleDelete(inspiration)}>删除</button>
-                </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap' }}>
                   {Array.isArray(inspiration.photos) &&
                     inspiration.photos.map((photo, index) => (
