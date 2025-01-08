@@ -29,7 +29,7 @@ import React, { useState, useEffect, useRef } from 'react';
       const [attempts, setAttempts] = useState('');
       const chartCanvasRef = useRef(null);
       const scatterCanvasRef = useRef(null);
-      const [showChart, setShowChart] = useState(true);
+      const [showChart, setShowChart] = useState(false);
       const [filteredLogs, setFilteredLogs] = useState([]);
 
       useEffect(() => {
@@ -310,18 +310,26 @@ import React, { useState, useEffect, useRef } from 'react';
         const maxProfit = Math.max(...profits, 0);
         const minProfit = Math.min(...profits, 0);
         const range = maxProfit - minProfit;
-        const padding = 20;
+        const padding = 40;
         const zeroY = canvas.height - padding - (range === 0 ? 0 : (0 - minProfit) / range * (canvas.height - 2 * padding));
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+        // Draw x-axis
         ctx.beginPath();
-        ctx.moveTo(0, zeroY);
-        ctx.lineTo(canvas.width, zeroY);
+        ctx.moveTo(padding, zeroY);
+        ctx.lineTo(canvas.width - padding, zeroY);
         ctx.stroke();
 
+        // Draw y-axis
+        ctx.beginPath();
+        ctx.moveTo(padding, padding);
+        ctx.lineTo(padding, canvas.height - padding);
+        ctx.stroke();
+
+        // Draw bars
         dates.forEach((date, index) => {
-          const x = index * barWidth;
+          const x = padding + index * barWidth;
           const profit = profits[index];
           const barHeight = range === 0 ? 0 : (profit) / range * (canvas.height - 2 * padding);
           const y = zeroY - barHeight;
@@ -335,6 +343,24 @@ import React, { useState, useEffect, useRef } from 'react';
           ctx.fillText(date, x + barWidth / 2, canvas.height - 5);
           ctx.fillText(profit.toFixed(2), x + barWidth / 2, y - 5);
         });
+
+        // Add chart title
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('每日盈亏图', canvas.width / 2, padding / 2);
+
+        // Add x-axis label
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('日期', canvas.width / 2, canvas.height - 5);
+
+        // Add y-axis label
+        ctx.save();
+        ctx.translate(padding / 2, canvas.height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.fillText('盈亏金额', 0, 0);
+        ctx.restore();
       };
 
       const drawScatterPlot = () => {
@@ -361,7 +387,19 @@ import React, { useState, useEffect, useRef } from 'react';
         const profitRange = maxProfit - minProfit;
         const attemptsRange = maxAttempts - minAttempts;
 
-        const padding = 20;
+        const padding = 40;
+
+        // Draw x-axis
+        ctx.beginPath();
+        ctx.moveTo(padding, canvas.height - padding);
+        ctx.lineTo(canvas.width - padding, canvas.height - padding);
+        ctx.stroke();
+
+        // Draw y-axis
+        ctx.beginPath();
+        ctx.moveTo(padding, padding);
+        ctx.lineTo(padding, canvas.height - padding);
+        ctx.stroke();
 
         filteredLogs.forEach((log, index) => {
           const profit = profits[index];
@@ -375,6 +413,24 @@ import React, { useState, useEffect, useRef } from 'react';
           ctx.fillStyle = profit > 0 ? 'green' : 'red';
           ctx.fill();
         });
+
+        // Add chart title
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('盈亏 vs 尝试次数', canvas.width / 2, padding / 2);
+
+        // Add x-axis label
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('尝试次数', canvas.width / 2, canvas.height - 5);
+
+        // Add y-axis label
+        ctx.save();
+        ctx.translate(padding / 2, canvas.height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.fillText('盈亏金额', 0, 0);
+        ctx.restore();
       };
 
       return (
