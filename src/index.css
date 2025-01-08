@@ -278,3 +278,9 @@ body {
     .sort-button:hover {
       background-color: #0056b3;
     }
+    .file-input-container img {
+      margin: 5px;
+    }
+    .file-input-container button {
+      margin-top: 5px;
+    }

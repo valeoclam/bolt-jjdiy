@@ -168,7 +168,7 @@ import React, { useState, useEffect, useRef } from 'react';
             }
           } catch (error) {
             console.error('发生意外错误:', error);
-            setErrorMessage('发生意外错误，请重试。');
+            setErrorMessage('发生意外错误。');
           }
         }
       };
@@ -286,49 +286,48 @@ import React, { useState, useEffect, useRef } from 'react';
                 <option value="已实现">已实现</option>
               </select>
             </div>
-            {editingInspiration && (
-              <div className="form-group">
-                <div className="file-input-container">
-                  <input
-                    type="file"
-                    id="inspirationPhotos"
-                    accept="image/*"
-                    multiple
-                    onChange={handleInspirationPhotosChange}
-                    ref={fileInputRef}
-                    style={{ display: 'none' }}
-                  />
-                  <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>选择照片</button>
-                  {Array.isArray(tempInspirationPhotos) &&
-                    tempInspirationPhotos.map((photo, index) => (
-                      <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
-                        <img src={photo} alt={`Inspiration ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
-                        {editingInspiration && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveInspirationPhoto(index)}
-                            style={{
-                              position: 'absolute',
-                              top: '5px',
-                              right: '5px',
-                              background: 'rgba(0, 0, 0, 0.5)',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '50%',
-                              width: '20px',
-                              height: '20px',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            x
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                </div>
+            <div className="form-group">
+              <div className="file-input-container">
+                <input
+                  type="file"
+                  id="inspirationPhotos"
+                  accept="image/*"
+                  multiple
+                  onChange={handleInspirationPhotosChange}
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                />
+                <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>选择照片</button>
+                {Array.isArray(tempInspirationPhotos) &&
+                  tempInspirationPhotos.map((photo, index) => (
+                    <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
+                      <img src={photo} alt={`Inspiration ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveInspirationPhoto(index)}
+                        style={{
+                          position: 'absolute',
+                          top: '5px',
+                          right: '5px',
+                          background: 'rgba(0, 0, 0, 0.5)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '20px',
+                          height: '20px',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        x
+                      </button>
+                    </div>
+                  ))}
               </div>
-            )}
+            </div>
             <button type="submit">{editingInspiration ? '更新灵感' : '添加灵感'}</button>
             {editingInspiration && <button type="button" onClick={() => { setEditingInspiration(null); setTitle(''); setDescription(''); setStatus('未执行'); setInspirationPhotos([]); setTempInspirationPhotos([]); }} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>取消编辑</button>}
           </form>
