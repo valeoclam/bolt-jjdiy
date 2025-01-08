@@ -30,6 +30,7 @@ import React, { useState, useEffect, useRef } from 'react';
       const chartCanvasRef = useRef(null);
       const scatterCanvasRef = useRef(null);
       const [showChart, setShowChart] = useState(true);
+      const [filteredLogs, setFilteredLogs] = useState([]);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -40,6 +41,16 @@ import React, { useState, useEffect, useRef } from 'react';
       useEffect(() => {
         setSortedLogs([...logs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
       }, [logs]);
+
+      useEffect(() => {
+        const filtered = logs.filter((log) => {
+          const logTime = new Date(log.created_at).getTime();
+          const startTime = startDate ? new Date(startDate).getTime() : 0;
+          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
+          return logTime >= startTime && logTime <= endTime;
+        });
+        setFilteredLogs(filtered);
+      }, [logs, startDate, endDate]);
 
       useEffect(() => {
         if (logs.length > 0 && showChart) {
@@ -71,39 +82,19 @@ import React, { useState, useEffect, useRef } from 'react';
       };
 
       const calculateTotalProfit = () => {
-        const filteredLogs = logs.filter((log) => {
-          const logTime = new Date(log.created_at).getTime();
-          const startTime = startDate ? new Date(startDate).getTime() : 0;
-          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
-          return logTime >= startTime && logTime <= endTime;
-        });
-        const totalProfit = filteredLogs.reduce(
+        return filteredLogs.reduce(
           (total, log) => total + (log.cash_out_amount - log.input_amount),
           0,
-        );
-        return totalProfit.toFixed(2);
+        ).toFixed(2);
       };
 
       const calculateAverageAttempts = () => {
-        const filteredLogs = logs.filter((log) => {
-          const logTime = new Date(log.created_at).getTime();
-          const startTime = startDate ? new Date(startDate).getTime() : 0;
-          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
-          return logTime >= startTime && logTime <= endTime;
-        });
         if (filteredLogs.length === 0) return 0;
         const totalAttempts = filteredLogs.reduce((sum, log) => sum + log.attempts, 0);
         return (totalAttempts / filteredLogs.length).toFixed(2);
       };
 
       const calculateEncounteredTrailerPercentage = () => {
-        const filteredLogs = logs.filter((log) => {
-          const logTime = new Date(log.created_at).getTime();
-          const startTime = startDate ? new Date(startDate).getTime() : 0;
-          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
-          return logTime >= startTime && logTime <= endTime;
-        });
-
         if (filteredLogs.length === 0) return '0.00%';
 
         const encounteredTrailerCount = filteredLogs.filter(log => log.encountered_trailer).length;
@@ -112,13 +103,6 @@ import React, { useState, useEffect, useRef } from 'react';
       };
 
       const calculateAverageAttemptsForWins = () => {
-        const filteredLogs = logs.filter((log) => {
-          const logTime = new Date(log.created_at).getTime();
-          const startTime = startDate ? new Date(startDate).getTime() : 0;
-          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
-          return logTime >= startTime && logTime <= endTime;
-        });
-
         const winningLogs = filteredLogs.filter(log => (log.cash_out_amount - log.input_amount) > 0);
         if (winningLogs.length === 0) return 0;
         const totalAttempts = winningLogs.reduce((sum, log) => sum + log.attempts, 0);
@@ -126,13 +110,6 @@ import React, { useState, useEffect, useRef } from 'react';
       };
 
       const calculateAverageAttemptsForLosses = () => {
-        const filteredLogs = logs.filter((log) => {
-          const logTime = new Date(log.created_at).getTime();
-          const startTime = startDate ? new Date(startDate).getTime() : 0;
-          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
-          return logTime >= startTime && logTime <= endTime;
-        });
-
         const losingLogs = filteredLogs.filter(log => (log.cash_out_amount - log.input_amount) < 0);
         if (losingLogs.length === 0) return 0;
         const totalAttempts = losingLogs.reduce((sum, log) => sum + log.attempts, 0);
@@ -140,13 +117,6 @@ import React, { useState, useEffect, useRef } from 'react';
       };
 
       const calculateAverageAttemptsWithTrailer = () => {
-        const filteredLogs = logs.filter((log) => {
-          const logTime = new Date(log.created_at).getTime();
-          const startTime = startDate ? new Date(startDate).getTime() : 0;
-          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
-          return logTime >= startTime && logTime <= endTime;
-        });
-
         const trailerLogs = filteredLogs.filter(log => log.encountered_trailer);
         if (trailerLogs.length === 0) return 0;
         const totalAttempts = trailerLogs.reduce((sum, log) => sum + log.attempts, 0);
@@ -321,13 +291,6 @@ import React, { useState, useEffect, useRef } from 'react';
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        const filteredLogs = logs.filter((log) => {
-          const logTime = new Date(log.created_at).getTime();
-          const startTime = startDate ? new Date(startDate).getTime() : 0;
-          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
-          return logTime >= startTime && logTime <= endTime;
-        });
-
         const dailyData = {};
         filteredLogs.forEach(log => {
           const date = new Date(log.created_at).toLocaleDateString();
@@ -379,13 +342,6 @@ import React, { useState, useEffect, useRef } from 'react';
         const canvas = scatterCanvasRef.current;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
-
-        const filteredLogs = logs.filter((log) => {
-          const logTime = new Date(log.created_at).getTime();
-          const startTime = startDate ? new Date(startDate).getTime() : 0;
-          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
-          return logTime >= startTime && logTime <= endTime;
-        });
 
         if (filteredLogs.length === 0) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -446,6 +402,9 @@ import React, { useState, useEffect, useRef } from 'react';
               onChange={(e) => setEndDate(e.target.value)}
             />
           </div>
+          <p>
+            <strong>符合条件的记录数:</strong> {filteredLogs.length}
+          </p>
           <div className="form-group" style={{ display: 'flex', alignItems: 'center' }}>
             <label style={{ marginBottom: '0', marginRight: '10px' }}>
               <strong>盈亏总额:</strong> {calculateTotalProfit()}
