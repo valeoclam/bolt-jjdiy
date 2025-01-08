@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
     import { Link, useNavigate } from 'react-router-dom';
     import { createClient } from '@supabase/supabase-js';
+    import imageCompression from 'browser-image-compression';
 
     const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8';
@@ -23,6 +24,7 @@ import React, { useState, useEffect } from 'react';
       const [confirmDeleteId, setConfirmDeleteId] = useState(null);
       const navigate = useNavigate();
       const [errorMessage, setErrorMessage] = useState('');
+      const winningFileInputRef = useRef(null);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -31,7 +33,7 @@ import React, { useState, useEffect } from 'react';
       }, [loggedInUser]);
 
       useEffect(() => {
-        setSortedLogs([...logs].reverse());
+        setSortedLogs([...logs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
       }, [logs]);
 
       const fetchLogs = async () => {
@@ -69,6 +71,18 @@ import React, { useState, useEffect } from 'react';
         );
       };
 
+      const calculateAverageAttempts = () => {
+        const filteredLogs = logs.filter((log) => {
+          const logTime = new Date(log.created_at).getTime();
+          const startTime = startDate ? new Date(startDate).getTime() : 0;
+          const endTime = endDate ? new Date(endDate).getTime() : Infinity;
+          return logTime >= startTime && logTime <= endTime;
+        });
+        if (filteredLogs.length === 0) return 0;
+        const totalAttempts = filteredLogs.reduce((sum, log) => sum + log.attempts, 0);
+        return (totalAttempts / filteredLogs.length).toFixed(2);
+      };
+
       const handleSortByProfit = () => {
         setSortByProfit(!sortByProfit);
         setSortedLogs((prevLogs) => {
@@ -101,6 +115,40 @@ import React, { useState, useEffect } from 'react';
         setWinningPhotos(() => log.winning_photos);
         setAddTime(log.created_at);
         setModifyTime(log.updated_at);
+      };
+
+      const handleWinningPhotosChange = async (e) => {
+        setErrorMessage('');
+        const files = Array.from(e.target.files);
+        if (!files || files.length === 0) return;
+
+        try {
+          const compressedFiles = await Promise.all(
+            files.map(async (file) => {
+              return await imageCompression(file, {
+                maxSizeMB: 1,
+                maxWidthOrHeight: 1920,
+                useWebWorker: true,
+              });
+            }),
+          );
+
+          const readers = compressedFiles.map((file) => {
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                resolve(reader.result);
+              };
+              reader.readAsDataURL(file);
+            });
+          });
+
+          const results = await Promise.all(readers);
+          setWinningPhotos(results);
+        } catch (error) {
+          console.error('图片压缩失败:', error);
+          setErrorMessage('图片压缩失败，请重试。');
+        }
       };
 
       const handleUpdateLog = async (e) => {
@@ -212,6 +260,9 @@ import React, { useState, useEffect } from 'react';
           <p>
             <strong>盈亏总额:</strong> {calculateTotalProfit()}
           </p>
+          <p>
+            <strong>平均尝试次数:</strong> {calculateAverageAttempts()}
+          </p>
           <div className="sort-buttons">
             <button type="button" onClick={handleSortByProfit} className="sort-button">
               按盈亏金额排序
@@ -273,6 +324,25 @@ import React, { useState, useEffect } from 'react';
                         onChange={handleInputChange}
                         required
                       />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="winningPhotos">老虎打完了:</label>
+                      <div className="file-input-container">
+                        <input
+                          type="file"
+                          id="winningPhotos"
+                          accept="image/*"
+                          multiple
+                          onChange={handleWinningPhotosChange}
+                          ref={winningFileInputRef}
+                          style={{ display: 'none' }}
+                        />
+                        <button type="button" onClick={() => winningFileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>选择照片</button>
+                        {winningPhotos &&
+                          winningPhotos.map((photo, index) => (
+                            <img key={index} src={photo} alt={`Winning ${index + 1}`} style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
+                          ))}
+                      </div>
                     </div>
                     <button type="submit">更新</button>
                     <button
