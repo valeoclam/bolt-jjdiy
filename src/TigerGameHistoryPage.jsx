@@ -32,6 +32,8 @@ import React, { useState, useEffect, useRef } from 'react';
       const [showChart, setShowChart] = useState(false);
       const [filteredLogs, setFilteredLogs] = useState([]);
       const [encounteredTrailer, setEncounteredTrailer] = useState(false);
+      const containerRef = useRef(null);
+      const [chartWidth, setChartWidth] = useState(600);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -54,11 +56,17 @@ import React, { useState, useEffect, useRef } from 'react';
       }, [logs, startDate, endDate]);
 
       useEffect(() => {
+        if (containerRef.current) {
+          setChartWidth(containerRef.current.offsetWidth - 40);
+        }
+      }, []);
+
+      useEffect(() => {
         if (logs.length > 0 && showChart) {
           drawChart();
           drawScatterPlot();
         }
-      }, [logs, startDate, endDate, showChart]);
+      }, [logs, startDate, endDate, showChart, chartWidth]);
 
       const fetchLogs = async () => {
         try {
@@ -448,7 +456,7 @@ import React, { useState, useEffect, useRef } from 'react';
       };
 
       return (
-        <div className="container">
+        <div className="container" ref={containerRef}>
           <h2>打过的老虎们</h2>
           {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
           <button type="button" onClick={onLogout} className="logout-button">退出</button>
@@ -489,8 +497,8 @@ import React, { useState, useEffect, useRef } from 'react';
               />
             </label>
           </div>
-          {showChart && <canvas ref={chartCanvasRef} width={600} height={200} style={{ border: '1px solid #ddd', marginTop: '20px' }}></canvas>}
-          {showChart && <canvas ref={scatterCanvasRef} width={600} height={200} style={{ border: '1px solid #ddd', marginTop: '20px' }}></canvas>}
+          {showChart && <canvas ref={chartCanvasRef} width={chartWidth} height={200} style={{ border: '1px solid #ddd', marginTop: '20px' }}></canvas>}
+          {showChart && <canvas ref={scatterCanvasRef} width={chartWidth} height={200} style={{ border: '1px solid #ddd', marginTop: '20px' }}></canvas>}
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
               <thead>
