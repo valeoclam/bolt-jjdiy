@@ -440,7 +440,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
       return (
         <div className="container">
-          <h2>打过的老虎</h2>
+          <h2>打过的老虎们</h2>
           {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
           <button type="button" onClick={onLogout} className="logout-button">退出</button>
           <button type="button" onClick={() => navigate('/tiger-game')} className="select-file-button" style={{ marginTop: '20px' }}>

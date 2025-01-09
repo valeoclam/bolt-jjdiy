@@ -192,7 +192,7 @@ import React, { useState, useRef, useEffect } from 'react';
 
       return (
         <div className="container">
-          <h2>打打老虎</h2>
+          <h2>打虎日记</h2>
           {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
           <button type="button" onClick={onLogout} className="logout-button">退出</button>
           <form onSubmit={handleSubmit}>

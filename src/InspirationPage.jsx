@@ -259,7 +259,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
       return (
         <div className="container">
-          <h2>灵感记录</h2>
+          <h2>灵感随记</h2>
           {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
           <button type="button" onClick={onLogout} className="logout-button">退出</button>
           <form onSubmit={editingInspiration ? handleUpdate : handleSubmit}>
