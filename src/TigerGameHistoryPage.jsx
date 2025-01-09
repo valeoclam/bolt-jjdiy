@@ -421,6 +421,11 @@ import React, { useState, useEffect, useRef } from 'react';
           ctx.arc(x, y, 3, 0, 2 * Math.PI);
           ctx.fillStyle = profit > 0 ? 'green' : 'red';
           ctx.fill();
+
+          ctx.fillStyle = 'black';
+          ctx.font = '10px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(profit.toFixed(2), x, y - 5);
         });
 
         // Add chart title
