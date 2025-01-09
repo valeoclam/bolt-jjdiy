@@ -307,7 +307,7 @@ import React, { useState, useRef, useEffect } from 'react';
           </form>
           {successMessage && <p className="success-message">{successMessage}</p>}
           {errorMessage && <p className="error-message">{errorMessage}</p>}
-          <button type="button" onClick={handleViewHistory} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>查看历史记录</button>
+          <button type="button" onClick={handleViewHistory} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>查看打过的老虎们</button>
           <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
         </div>
       );
