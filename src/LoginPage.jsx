@@ -43,7 +43,7 @@ import React, { useState } from 'react';
           )}
           {errorMessage && <p className="error-message">{errorMessage}</p>}
           {registrationSuccess && <p className="success-message">注册成功，请登录。</p>}
-          <p style={{ textAlign: 'center', marginTop: '20px', color: '#777' }}>V{appVersion}</p>
+          <p style={{ textAlign: 'center', marginTop: '20px', color: '#777' }}>v{appVersion}</p>
         </div>
       );
     }
