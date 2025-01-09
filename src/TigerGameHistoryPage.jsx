@@ -366,11 +366,6 @@ import React, { useState, useEffect, useRef } from 'react';
         ctx.textAlign = 'center';
         ctx.fillText('每日盈亏图', canvas.width / 2, padding / 2);
 
-        // Add x-axis label
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('日期', canvas.width / 2, canvas.height - 5);
-
         // Add y-axis label
         ctx.save();
         ctx.translate(padding / 2, canvas.height / 2);
