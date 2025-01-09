@@ -429,6 +429,7 @@ import React, { useState, useEffect, useRef } from 'react';
           ctx.font = '10px Arial';
           ctx.textAlign = 'center';
           ctx.fillText(profit.toFixed(2), x, y - 5);
+          ctx.fillText(attempt, x, canvas.height - padding + 10);
         });
 
         // Add chart title
