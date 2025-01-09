@@ -358,8 +358,8 @@ import React, { useState, useEffect, useRef } from 'react';
               </div>
             ))}
           </div>
-          <button type="button" onClick={handleViewHistory} style={{ marginTop: '20px', backgroundColor: '#28a745', position: 'fixed', bottom: '60px', left: '50%', transform: 'translateX(-50%)' }}>查看历史记录</button>
-          <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d', position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)' }}>返回模块选择</button>
+          <button type="button" onClick={handleViewHistory} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>查看历史记录</button>
+          <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
         </div>
       );
     }
