@@ -17,6 +17,7 @@ import React, { useState, useEffect, useRef } from 'react';
       const [tempInspirationPhotos, setTempInspirationPhotos] = useState([]);
       const editFileInputRef = useRef(null);
       const MAX_PHOTOS = 12;
+      const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -114,7 +115,7 @@ import React, { useState, useEffect, useRef } from 'react';
       };
 
       const handleDelete = async (inspiration) => {
-        if (window.confirm('确定要删除此灵感记录吗？')) {
+        if (confirmDeleteId === inspiration.id) {
           try {
             const { data, error } = await supabase
               .from('user_inspirations')
@@ -127,11 +128,14 @@ import React, { useState, useEffect, useRef } from 'react';
             } else {
               console.log('灵感记录删除成功:', data);
               fetchInspirations();
+              setConfirmDeleteId(null);
             }
           } catch (error) {
             console.error('发生意外错误:', error);
             setErrorMessage('发生意外错误。');
           }
+        } else {
+          setConfirmDeleteId(inspiration.id);
         }
       };
 
@@ -233,7 +237,9 @@ import React, { useState, useEffect, useRef } from 'react';
                 <p>最后修改时间: {new Date(inspiration.updated_at).toLocaleString()}</p>
                 <div className="edit-buttons">
                   <button onClick={() => handleEdit(inspiration)}>编辑</button>
-                  <button onClick={() => handleDelete(inspiration)}>删除</button>
+                  <button onClick={() => handleDelete(inspiration)} >
+                    {confirmDeleteId === inspiration.id ? '确认删除' : '删除'}
+                  </button>
                 </div>
                 {editingInspiration && editingInspiration.id === inspiration.id && (
                   <form onSubmit={handleUpdate}>
@@ -321,8 +327,8 @@ import React, { useState, useEffect, useRef } from 'react';
               </div>
             ))}
           </div>
-          <button type="button" onClick={handleBackToInspiration} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>返回灵感随记</button>
-          <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
+          <button type="button" onClick={handleBackToInspiration} style={{ marginTop: '20px', backgroundColor: '#28a745', position: 'fixed', bottom: '60px', left: '50%', transform: 'translateX(-50%)' }}>返回灵感随记</button>
+          <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d', position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)' }}>返回神奇百宝箱</button>
         </div>
       );
     }
