@@ -31,6 +31,7 @@ import React, { useState, useEffect, useRef } from 'react';
       const scatterCanvasRef = useRef(null);
       const [showChart, setShowChart] = useState(false);
       const [filteredLogs, setFilteredLogs] = useState([]);
+      const [encounteredTrailer, setEncounteredTrailer] = useState(false);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -157,6 +158,7 @@ import React, { useState, useEffect, useRef } from 'react';
         setAddTime(log.created_at);
         setModifyTime(log.updated_at);
         setAttempts(log.attempts);
+        setEncounteredTrailer(log.encountered_trailer);
       };
 
       const handleWinningPhotosChange = async (e) => {
@@ -203,6 +205,7 @@ import React, { useState, useEffect, useRef } from 'react';
           winning_photos: tempWinningPhotos,
           updated_at: new Date().toISOString(),
           attempts: parseInt(attempts, 10) || 0,
+          encountered_trailer: encounteredTrailer,
         };
         try {
           const { data, error } = await supabase
@@ -227,6 +230,7 @@ import React, { useState, useEffect, useRef } from 'react';
             setAddTime(null);
             setModifyTime(null);
             setAttempts('');
+            setEncounteredTrailer(false);
             navigate('/tiger-game/history');
           }
         } catch (error) {
@@ -629,6 +633,25 @@ import React, { useState, useEffect, useRef } from 'react';
                         onChange={handleInputChange}
                         required
                       />
+                    </div>
+                    <div className="form-group">
+                      <label>
+                        遇到预告片:
+                        <input
+                          type="radio"
+                          name="encounteredTrailer"
+                          checked={encounteredTrailer}
+                          onChange={() => setEncounteredTrailer(true)}
+                        />
+                        是
+                        <input
+                          type="radio"
+                          name="encounteredTrailer"
+                          checked={!encounteredTrailer}
+                          onChange={() => setEncounteredTrailer(false)}
+                        />
+                        否
+                      </label>
                     </div>
                     <button type="submit" className="select-file-button" style={{ padding: '10px 15px' }}>更新</button>
                     <button
