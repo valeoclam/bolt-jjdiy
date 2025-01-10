@@ -259,6 +259,20 @@ import React, { useState, useRef, useEffect } from 'react';
         toggleKeyboard(inputField, inputElement);
       };
 
+      useEffect(() => {
+        const handleClickOutside = (event) => {
+          if (keyboardRef.current && !keyboardRef.current.contains(event.target) &&
+              inputRef.current && !inputRef.current.contains(event.target)) {
+            setShowKeyboard(false);
+          }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+          document.removeEventListener('mousedown', handleClickOutside);
+        };
+      }, []);
+
       return (
         <div className="container">
           <h2>打虎日记</h2>
