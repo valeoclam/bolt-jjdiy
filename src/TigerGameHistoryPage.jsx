@@ -476,9 +476,12 @@ function TigerGameHistory({ loggedInUser, onLogout }) {
       <h2>打过的老虎们</h2>
       {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
       <button type="button" onClick={onLogout} className="logout-button">退出</button>
-      <button type="button" onClick={() => navigate('/tiger-game')} className="select-file-button" style={{ marginTop: '20px' }}>
-        返回打虎日记
-      </button>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <button type="button" onClick={() => navigate('/tiger-game')} className="select-file-button" style={{ marginTop: '20px' }}>
+          返回打虎日记
+        </button>
+        <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#28a745' }}>返回神奇百宝箱</button>
+      </div>
       {errorMessage && <p className="error-message">{errorMessage}</p>}
       <div className="form-group">
         <label>开始时间:</label>
@@ -742,7 +745,6 @@ function TigerGameHistory({ loggedInUser, onLogout }) {
           </div>
         </div>
       ))}
-      <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#28a745', position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)' }}>返回神奇百宝箱</button>
     </div>
   );
 }
