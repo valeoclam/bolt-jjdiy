@@ -27,6 +27,8 @@ import React, { useState, useRef, useEffect } from 'react';
       const [prizeAmount, setPrizeAmount] = useState('');
       const [activeInput, setActiveInput] = useState(null);
       const [showKeyboard, setShowKeyboard] = useState(false);
+      const keyboardRef = useRef(null);
+      const inputRef = useRef(null);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -243,6 +245,18 @@ import React, { useState, useRef, useEffect } from 'react';
         setShowKeyboard(!showKeyboard);
       };
 
+      const handleInputFocus = (inputField, inputElement) => {
+        setActiveInput(inputField);
+        setShowKeyboard(true);
+        if (inputElement) {
+          const inputRect = inputElement.getBoundingClientRect();
+          if (keyboardRef.current) {
+            keyboardRef.current.style.top = `${inputRect.bottom + 5}px`;
+            keyboardRef.current.style.left = `${inputRect.left}px`;
+          }
+        }
+      };
+
       return (
         <div className="container">
           <h2>打虎日记</h2>
@@ -270,7 +284,8 @@ import React, { useState, useRef, useEffect } from 'react';
                 id="inputAmount"
                 value={inputAmount}
                 onChange={(e) => setInputAmount(e.target.value)}
-                onFocus={() => toggleKeyboard('inputAmount')}
+                onFocus={(e) => handleInputFocus('inputAmount', e.target)}
+                ref={inputRef}
                 required
               />
             </div>
@@ -281,7 +296,7 @@ import React, { useState, useRef, useEffect } from 'react';
                 id="betAmount"
                 value={betAmount}
                 onChange={(e) => setBetAmount(e.target.value)}
-                onFocus={() => toggleKeyboard('betAmount')}
+                onFocus={(e) => handleInputFocus('betAmount', e.target)}
                 required
               />
             </div>
@@ -292,7 +307,7 @@ import React, { useState, useRef, useEffect } from 'react';
                 id="prizeAmount"
                 value={prizeAmount}
                 onChange={(e) => setPrizeAmount(e.target.value)}
-                onFocus={() => toggleKeyboard('prizeAmount')}
+                onFocus={(e) => handleInputFocus('prizeAmount', e.target)}
                 required
               />
             </div>
@@ -303,7 +318,7 @@ import React, { useState, useRef, useEffect } from 'react';
                 id="cashOutAmount"
                 value={cashOutAmount}
                 onChange={(e) => setCashOutAmount(e.target.value)}
-                onFocus={() => toggleKeyboard('cashOutAmount')}
+                onFocus={(e) => handleInputFocus('cashOutAmount', e.target)}
                 required
               />
             </div>
@@ -314,7 +329,7 @@ import React, { useState, useRef, useEffect } from 'react';
                 id="attempts"
                 value={attempts}
                 onChange={(e) => setAttempts(e.target.value)}
-                onFocus={() => toggleKeyboard('attempts')}
+                onFocus={(e) => handleInputFocus('attempts', e.target)}
                 required
               />
             </div>
@@ -386,7 +401,7 @@ import React, { useState, useRef, useEffect } from 'react';
           {successMessage && <p className="success-message">{successMessage}</p>}
           {errorMessage && <p className="error-message">{errorMessage}</p>}
           {showKeyboard && (
-            <div className="numeric-keyboard">
+            <div className="numeric-keyboard" ref={keyboardRef}>
               <div className="keyboard-row">
                 <button type="button" onClick={() => handleNumberClick('1')}>1</button>
                 <button type="button" onClick={() => handleNumberClick('2')}>2</button>
