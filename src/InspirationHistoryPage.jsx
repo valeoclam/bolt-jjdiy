@@ -18,6 +18,7 @@ import React, { useState, useEffect, useRef } from 'react';
       const editFileInputRef = useRef(null);
       const MAX_PHOTOS = 12;
       const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+      const containerRef = useRef(null);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -195,11 +196,25 @@ import React, { useState, useEffect, useRef } from 'react';
         return filteredInspirations.filter(inspiration => inspiration.status === status).length;
       };
 
+      useEffect(() => {
+        const handleClickOutside = (event) => {
+          if (containerRef.current && !containerRef.current.contains(event.target)) {
+            setConfirmDeleteId(null);
+          }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+          document.removeEventListener('mousedown', handleClickOutside);
+        };
+      }, []);
+
       return (
-        <div className="container">
+        <div className="container" ref={containerRef}>
           <h2>灵感集中营</h2>
           {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
           <button type="button" onClick={onLogout} className="logout-button">退出</button>
+          <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
           <button type="button" onClick={handleBackToInspiration} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>返回灵感随记</button>
 
           <div className="search-container">
@@ -328,7 +343,6 @@ import React, { useState, useEffect, useRef } from 'react';
               </div>
             ))}
           </div>
-          <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
         </div>
       );
     }

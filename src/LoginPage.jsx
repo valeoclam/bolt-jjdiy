@@ -26,6 +26,29 @@ import React, { useState } from 'react';
         setIsRegistering(false);
       };
 
+      const handleLoginSuccessWithRole = async (user) => {
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+          if (error) {
+            console.error('获取用户角色时发生错误:', error);
+            onLoginSuccess(user);
+          } else if (data) {
+            console.log('用户角色:', data.role);
+            onLoginSuccess({ ...user, role: data.role });
+          } else {
+            onLoginSuccess(user);
+          }
+        } catch (error) {
+          console.error('发生意外错误:', error);
+          onLoginSuccess(user);
+        }
+      };
+
       return (
         <div className="container">
           {isRegistering ? (
@@ -36,7 +59,7 @@ import React, { useState } from 'react';
             />
           ) : (
             <LoginForm
-              onLoginSuccess={onLoginSuccess}
+              onLoginSuccess={handleLoginSuccessWithRole}
               supabase={supabase}
               onSwitchToRegister={handleSwitchToRegister}
             />

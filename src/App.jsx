@@ -8,6 +8,9 @@ import React, { useState } from 'react';
     import Tracker from './TigerGamePage';
     import TigerGameHistory from './TigerGameHistoryPage';
     import InspirationHistoryPage from './InspirationHistoryPage';
+    import LazyDiaryPage from './LazyDiaryPage';
+    import EditQuestionsPage from './EditQuestionsPage';
+    import AdminPage from './AdminPage';
 
     const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8';
@@ -37,6 +40,9 @@ import React, { useState } from 'react';
           <Route path="/inspiration/history" element={<InspirationHistoryPage loggedInUser={loggedInUser} supabase={supabase} onLogout={handleLogout} />} />
           <Route path="/tiger-game" element={<Tracker loggedInUser={loggedInUser} onLogout={handleLogout} />} />
           <Route path="/tiger-game/history" element={<TigerGameHistory loggedInUser={loggedInUser} onLogout={handleLogout} />} />
+          <Route path="/lazy-diary" element={<LazyDiaryPage loggedInUser={loggedInUser} onLogout={handleLogout} />} />
+          <Route path="/edit-questions" element={<EditQuestionsPage loggedInUser={loggedInUser} onLogout={handleLogout} />} />
+          <Route path="/admin" element={<AdminPage loggedInUser={loggedInUser} onLogout={handleLogout} />} />
         </Routes>
       );
     }
