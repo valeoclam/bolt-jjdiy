@@ -30,6 +30,7 @@ import React, { useState, useRef, useEffect } from 'react';
       const keyboardRef = useRef(null);
       const inputRef = useRef(null);
       const [keyboardPosition, setKeyboardPosition] = useState({ top: 0, left: 0 });
+      const keyboardOffset = 5;
 
       useEffect(() => {
         if (loggedInUser) {
@@ -243,13 +244,12 @@ import React, { useState, useRef, useEffect } from 'react';
 
       const toggleKeyboard = (inputField, inputElement) => {
         setActiveInput(inputField);
-        setShowKeyboard(!showKeyboard);
+        setShowKeyboard(true);
         if (inputElement) {
           const inputRect = inputElement.getBoundingClientRect();
           const containerRect = document.querySelector('.container').getBoundingClientRect();
-          const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
           setKeyboardPosition({
-            top: inputRect.bottom + scrollTop - containerRect.top + 5,
+            top: inputRect.bottom - containerRect.top + keyboardOffset,
             left: inputRect.left - containerRect.left,
           });
         }
