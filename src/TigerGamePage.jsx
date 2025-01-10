@@ -28,6 +28,8 @@ import React, { useState, useRef, useEffect } from 'react';
       const [activeInput, setActiveInput] = useState(null);
       const [showKeyboard, setShowKeyboard] = useState(false);
       const keyboardRef = useRef(null);
+      const inputRef = useRef(null);
+      const [keyboardPosition, setKeyboardPosition] = useState({ top: 0, left: 0 });
 
       useEffect(() => {
         if (loggedInUser) {
@@ -244,11 +246,12 @@ import React, { useState, useRef, useEffect } from 'react';
         setShowKeyboard(!showKeyboard);
         if (inputElement) {
           const inputRect = inputElement.getBoundingClientRect();
-           const containerRect = document.querySelector('.container').getBoundingClientRect();
-          if (keyboardRef.current) {
-            keyboardRef.current.style.top = `${inputRect.bottom + window.scrollY - containerRect.top + 5}px`;
-            keyboardRef.current.style.left = `${inputRect.left - containerRect.left}px`;
-          }
+          const containerRect = document.querySelector('.container').getBoundingClientRect();
+          const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+          setKeyboardPosition({
+            top: inputRect.bottom + scrollTop - containerRect.top + 5,
+            left: inputRect.left - containerRect.left,
+          });
         }
       };
 
@@ -261,7 +264,8 @@ import React, { useState, useRef, useEffect } from 'react';
 
       useEffect(() => {
         const handleClickOutside = (event) => {
-          if (keyboardRef.current && !keyboardRef.current.contains(event.target)) {
+          if (keyboardRef.current && !keyboardRef.current.contains(event.target) &&
+              inputRef.current && !inputRef.current.contains(event.target)) {
             setShowKeyboard(false);
           }
         };
@@ -300,6 +304,7 @@ import React, { useState, useRef, useEffect } from 'react';
                 value={inputAmount}
                 onChange={(e) => setInputAmount(e.target.value)}
                 onFocus={(e) => handleInputFocus('inputAmount', e.target)}
+                ref={inputRef}
                 required
               />
             </div>
@@ -311,6 +316,7 @@ import React, { useState, useRef, useEffect } from 'react';
                 value={betAmount}
                 onChange={(e) => setBetAmount(e.target.value)}
                 onFocus={(e) => handleInputFocus('betAmount', e.target)}
+                ref={inputRef}
                 required
               />
             </div>
@@ -322,6 +328,7 @@ import React, { useState, useRef, useEffect } from 'react';
                 value={prizeAmount}
                 onChange={(e) => setPrizeAmount(e.target.value)}
                 onFocus={(e) => handleInputFocus('prizeAmount', e.target)}
+                ref={inputRef}
                 required
               />
             </div>
@@ -333,6 +340,7 @@ import React, { useState, useRef, useEffect } from 'react';
                 value={cashOutAmount}
                 onChange={(e) => setCashOutAmount(e.target.value)}
                 onFocus={(e) => handleInputFocus('cashOutAmount', e.target)}
+                ref={inputRef}
                 required
               />
             </div>
@@ -344,6 +352,7 @@ import React, { useState, useRef, useEffect } from 'react';
                 value={attempts}
                 onChange={(e) => setAttempts(e.target.value)}
                 onFocus={(e) => handleInputFocus('attempts', e.target)}
+                ref={inputRef}
                 required
               />
             </div>
@@ -415,7 +424,11 @@ import React, { useState, useRef, useEffect } from 'react';
           {successMessage && <p className="success-message">{successMessage}</p>}
           {errorMessage && <p className="error-message">{errorMessage}</p>}
           {showKeyboard && (
-            <div className="numeric-keyboard" ref={keyboardRef}>
+            <div className="numeric-keyboard" ref={keyboardRef} style={{
+              position: 'absolute',
+              top: keyboardPosition.top,
+              left: keyboardPosition.left,
+            }}>
               <div className="keyboard-row">
                 <button type="button" onClick={() => handleNumberClick('1')}>1</button>
                 <button type="button" onClick={() => handleNumberClick('2')}>2</button>
