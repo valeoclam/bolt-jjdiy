@@ -25,6 +25,8 @@ import React, { useState, useRef, useEffect } from 'react';
       const winningFileInputRef = useRef(null);
       const [betAmount, setBetAmount] = useState('');
       const [prizeAmount, setPrizeAmount] = useState('');
+      const [activeInput, setActiveInput] = useState(null);
+      const [showKeyboard, setShowKeyboard] = useState(false);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -196,6 +198,51 @@ import React, { useState, useRef, useEffect } from 'react';
         );
       };
 
+      const handleNumberClick = (number) => {
+        if (activeInput === 'inputAmount') {
+          setInputAmount(prev => prev + number);
+        } else if (activeInput === 'betAmount') {
+          setBetAmount(prev => prev + number);
+        } else if (activeInput === 'prizeAmount') {
+          setPrizeAmount(prev => prev + number);
+        } else if (activeInput === 'cashOutAmount') {
+          setCashOutAmount(prev => prev + number);
+        } else if (activeInput === 'attempts') {
+          setAttempts(prev => prev + number);
+        }
+      };
+
+      const handleBackspaceClick = () => {
+        if (activeInput === 'inputAmount') {
+          setInputAmount(prev => prev.slice(0, -1));
+        } else if (activeInput === 'betAmount') {
+          setBetAmount(prev => prev.slice(0, -1));
+        } else if (activeInput === 'prizeAmount') {
+          setPrizeAmount(prev => prev.slice(0, -1));
+        } else if (activeInput === 'cashOutAmount') {
+          setCashOutAmount(prev => prev.slice(0, -1));
+        } else if (activeInput === 'attempts') {
+          setAttempts(prev => prev.slice(0, -1));
+        }
+      };
+
+      const handleDecimalClick = () => {
+        if (activeInput === 'inputAmount' && !inputAmount.includes('.')) {
+          setInputAmount(prev => prev + '.');
+        } else if (activeInput === 'betAmount' && !betAmount.includes('.')) {
+          setBetAmount(prev => prev + '.');
+        } else if (activeInput === 'prizeAmount' && !prizeAmount.includes('.')) {
+          setPrizeAmount(prev => prev + '.');
+        } else if (activeInput === 'cashOutAmount' && !cashOutAmount.includes('.')) {
+          setCashOutAmount(prev => prev + '.');
+        }
+      };
+
+      const toggleKeyboard = (inputField) => {
+        setActiveInput(inputField);
+        setShowKeyboard(!showKeyboard);
+      };
+
       return (
         <div className="container">
           <h2>打虎日记</h2>
@@ -223,6 +270,7 @@ import React, { useState, useRef, useEffect } from 'react';
                 id="inputAmount"
                 value={inputAmount}
                 onChange={(e) => setInputAmount(e.target.value)}
+                onFocus={() => toggleKeyboard('inputAmount')}
                 required
               />
             </div>
@@ -233,6 +281,7 @@ import React, { useState, useRef, useEffect } from 'react';
                 id="betAmount"
                 value={betAmount}
                 onChange={(e) => setBetAmount(e.target.value)}
+                onFocus={() => toggleKeyboard('betAmount')}
                 required
               />
             </div>
@@ -243,6 +292,7 @@ import React, { useState, useRef, useEffect } from 'react';
                 id="prizeAmount"
                 value={prizeAmount}
                 onChange={(e) => setPrizeAmount(e.target.value)}
+                onFocus={() => toggleKeyboard('prizeAmount')}
                 required
               />
             </div>
@@ -253,6 +303,7 @@ import React, { useState, useRef, useEffect } from 'react';
                 id="cashOutAmount"
                 value={cashOutAmount}
                 onChange={(e) => setCashOutAmount(e.target.value)}
+                onFocus={() => toggleKeyboard('cashOutAmount')}
                 required
               />
             </div>
@@ -263,6 +314,7 @@ import React, { useState, useRef, useEffect } from 'react';
                 id="attempts"
                 value={attempts}
                 onChange={(e) => setAttempts(e.target.value)}
+                onFocus={() => toggleKeyboard('attempts')}
                 required
               />
             </div>
@@ -333,6 +385,30 @@ import React, { useState, useRef, useEffect } from 'react';
           </form>
           {successMessage && <p className="success-message">{successMessage}</p>}
           {errorMessage && <p className="error-message">{errorMessage}</p>}
+          {showKeyboard && (
+            <div className="numeric-keyboard">
+              <div className="keyboard-row">
+                <button type="button" onClick={() => handleNumberClick('1')}>1</button>
+                <button type="button" onClick={() => handleNumberClick('2')}>2</button>
+                <button type="button" onClick={() => handleNumberClick('3')}>3</button>
+              </div>
+              <div className="keyboard-row">
+                <button type="button" onClick={() => handleNumberClick('4')}>4</button>
+                <button type="button" onClick={() => handleNumberClick('5')}>5</button>
+                <button type="button" onClick={() => handleNumberClick('6')}>6</button>
+              </div>
+              <div className="keyboard-row">
+                <button type="button" onClick={() => handleNumberClick('7')}>7</button>
+                <button type="button" onClick={() => handleNumberClick('8')}>8</button>
+                <button type="button" onClick={() => handleNumberClick('9')}>9</button>
+              </div>
+              <div className="keyboard-row">
+                <button type="button" onClick={() => handleNumberClick('0')}>0</button>
+                <button type="button" onClick={handleDecimalClick}>.</button>
+                <button type="button" onClick={handleBackspaceClick}>&#8592;</button>
+              </div>
+            </div>
+          )}
           <button type="button" onClick={handleViewHistory} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>查看打过的老虎们</button>
           <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
         </div>

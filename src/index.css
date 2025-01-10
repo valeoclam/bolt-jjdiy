@@ -284,3 +284,41 @@ body {
     .file-input-container button {
       margin-top: 5px;
     }
+    .numeric-keyboard {
+      display: flex;
+      flex-direction: column;
+      width: 250px;
+      margin-top: 10px;
+      position: absolute;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+    }
+
+    .keyboard-row {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 5px;
+    }
+
+    .numeric-keyboard button {
+      background-color: #f0f0f0;
+      color: #333;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      width: 30%;
+      transition: background-color 0.3s ease;
+    }
+
+    .numeric-keyboard button:hover {
+      background-color: #e0e0e0;
+    }
