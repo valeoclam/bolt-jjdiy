@@ -240,14 +240,9 @@ import React, { useState, useRef, useEffect } from 'react';
         }
       };
 
-      const toggleKeyboard = (inputField) => {
+      const toggleKeyboard = (inputField, inputElement) => {
         setActiveInput(inputField);
         setShowKeyboard(!showKeyboard);
-      };
-
-      const handleInputFocus = (inputField, inputElement) => {
-        setActiveInput(inputField);
-        setShowKeyboard(true);
         if (inputElement) {
           const inputRect = inputElement.getBoundingClientRect();
           if (keyboardRef.current) {
@@ -255,6 +250,13 @@ import React, { useState, useRef, useEffect } from 'react';
             keyboardRef.current.style.left = `${inputRect.left}px`;
           }
         }
+      };
+
+      const handleInputFocus = (inputField, inputElement) => {
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+          inputElement.blur();
+        }
+        toggleKeyboard(inputField, inputElement);
       };
 
       return (

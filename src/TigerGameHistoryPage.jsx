@@ -480,7 +480,7 @@ function TigerGameHistory({ loggedInUser, onLogout }) {
         <button type="button" onClick={() => navigate('/tiger-game')} className="select-file-button" style={{ marginTop: '20px' }}>
           返回打虎日记
         </button>
-        <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#28a745' }}>返回神奇百宝箱</button>
+        <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
       </div>
       {errorMessage && <p className="error-message">{errorMessage}</p>}
       <div className="form-group">
