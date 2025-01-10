@@ -262,6 +262,7 @@ import React, { useState, useEffect, useRef } from 'react';
           <h2>灵感随记</h2>
           {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
           <button type="button" onClick={onLogout} className="logout-button">退出</button>
+          <button type="button" onClick={handleViewHistory} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>查看灵感集中营</button>
           <form onSubmit={editingInspiration ? handleUpdate : handleSubmit}>
             <div className="form-group">
               <label htmlFor="title">标题:</label>
@@ -358,7 +359,6 @@ import React, { useState, useEffect, useRef } from 'react';
               </div>
             ))}
           </div>
-          <button type="button" onClick={handleViewHistory} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>查看历史记录</button>
           <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
         </div>
       );

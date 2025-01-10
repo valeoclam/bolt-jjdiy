@@ -200,6 +200,7 @@ import React, { useState, useEffect, useRef } from 'react';
           <h2>灵感集中营</h2>
           {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
           <button type="button" onClick={onLogout} className="logout-button">退出</button>
+          <button type="button" onClick={handleBackToInspiration} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>返回灵感随记</button>
 
           <div className="search-container">
             <input
@@ -327,8 +328,7 @@ import React, { useState, useEffect, useRef } from 'react';
               </div>
             ))}
           </div>
-          <button type="button" onClick={handleBackToInspiration} style={{ marginTop: '20px', backgroundColor: '#28a745', position: 'fixed', bottom: '60px', left: '50%', transform: 'translateX(-50%)' }}>返回灵感随记</button>
-          <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d', position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)' }}>返回神奇百宝箱</button>
+          <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
         </div>
       );
     }

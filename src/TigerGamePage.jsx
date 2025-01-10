@@ -281,6 +281,7 @@ import React, { useState, useRef, useEffect } from 'react';
           <h2>打虎日记</h2>
           {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
           <button type="button" onClick={onLogout} className="logout-button">退出</button>
+          <button type="button" onClick={handleViewHistory} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>查看打过的老虎们</button>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <div className="file-input-container" style={{ marginTop: '20px' }}>
@@ -451,7 +452,6 @@ import React, { useState, useRef, useEffect } from 'react';
               </div>
             </div>
           )}
-          <button type="button" onClick={handleViewHistory} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>查看打过的老虎们</button>
           <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
         </div>
       );
