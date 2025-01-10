@@ -1,7 +1,7 @@
 {
       "name": "supabase-inspiration-app",
       "private": true,
-      "version": "2.5.8.010825_beta",
+      "version": "2.5.9.010825_beta",
       "type": "module",
       "scripts": {
         "dev": "vite",
