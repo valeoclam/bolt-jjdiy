@@ -134,6 +134,14 @@ function TigerGameHistory({ loggedInUser, onLogout }) {
     return (totalAttempts / trailerLogs.length).toFixed(2);
   };
 
+  const calculateAveragePrizeMultiplier = () => {
+    if (filteredLogs.length === 0) return 0;
+    let validLogs = filteredLogs.filter(log => log.bet_amount > 0);
+    if (validLogs.length === 0) return 0;
+    const totalMultiplier = validLogs.reduce((sum, log) => sum + (log.prize_amount / log.bet_amount), 0);
+    return (totalMultiplier / validLogs.length).toFixed(2);
+  };
+
   const handleSortByProfit = () => {
     setSortByProfit(!sortByProfit);
     setSortedLogs((prevLogs) => {
@@ -490,6 +498,9 @@ function TigerGameHistory({ loggedInUser, onLogout }) {
       </div>
       <p>
         <strong>符合条件的记录数:</strong> {filteredLogs.length}
+      </p>
+       <p>
+        <strong>平均中奖倍数:</strong> {calculateAveragePrizeMultiplier()}
       </p>
       <div className="form-group" style={{ display: 'flex', alignItems: 'center' }}>
         <label style={{ marginBottom: '0', marginRight: '10px' }}>
