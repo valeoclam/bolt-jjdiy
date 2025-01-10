@@ -28,7 +28,6 @@ import React, { useState, useRef, useEffect } from 'react';
       const [activeInput, setActiveInput] = useState(null);
       const [showKeyboard, setShowKeyboard] = useState(false);
       const keyboardRef = useRef(null);
-      const inputRef = useRef(null);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -245,9 +244,10 @@ import React, { useState, useRef, useEffect } from 'react';
         setShowKeyboard(!showKeyboard);
         if (inputElement) {
           const inputRect = inputElement.getBoundingClientRect();
+           const containerRect = document.querySelector('.container').getBoundingClientRect();
           if (keyboardRef.current) {
-            keyboardRef.current.style.top = `${inputRect.bottom + 5}px`;
-            keyboardRef.current.style.left = `${inputRect.left}px`;
+            keyboardRef.current.style.top = `${inputRect.bottom + window.scrollY - containerRect.top + 5}px`;
+            keyboardRef.current.style.left = `${inputRect.left - containerRect.left}px`;
           }
         }
       };
@@ -261,8 +261,7 @@ import React, { useState, useRef, useEffect } from 'react';
 
       useEffect(() => {
         const handleClickOutside = (event) => {
-          if (keyboardRef.current && !keyboardRef.current.contains(event.target) &&
-              inputRef.current && !inputRef.current.contains(event.target)) {
+          if (keyboardRef.current && !keyboardRef.current.contains(event.target)) {
             setShowKeyboard(false);
           }
         };
@@ -301,7 +300,6 @@ import React, { useState, useRef, useEffect } from 'react';
                 value={inputAmount}
                 onChange={(e) => setInputAmount(e.target.value)}
                 onFocus={(e) => handleInputFocus('inputAmount', e.target)}
-                ref={inputRef}
                 required
               />
             </div>
