@@ -15,6 +15,7 @@ import React, { useState, useEffect, useRef } from 'react';
       const fileInputRef = useRef(null);
       const [tempInspirationPhotos, setTempInspirationPhotos] = useState([]);
       const MAX_PHOTOS = 12;
+      const successTimeoutRef = useRef(null);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -97,6 +98,10 @@ import React, { useState, useEffect, useRef } from 'react';
             if (fileInputRef.current) {
               fileInputRef.current.value = '';
             }
+            if (successTimeoutRef.current) {
+              clearTimeout(successTimeoutRef.current);
+            }
+            successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
           }
         } catch (error) {
           console.error('发生意外错误:', error);
@@ -145,6 +150,10 @@ import React, { useState, useEffect, useRef } from 'react';
             if (fileInputRef.current) {
               fileInputRef.current.value = '';
             }
+            if (successTimeoutRef.current) {
+              clearTimeout(successTimeoutRef.current);
+            }
+            successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
           }
         } catch (error) {
           console.error('发生意外错误:', error);
@@ -167,6 +176,10 @@ import React, { useState, useEffect, useRef } from 'react';
               console.log('灵感记录删除成功:', data);
               setSuccessMessage('灵感记录删除成功!');
               fetchInspirations();
+              if (successTimeoutRef.current) {
+                clearTimeout(successTimeoutRef.current);
+              }
+              successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
             }
           } catch (error) {
             console.error('发生意外错误:', error);

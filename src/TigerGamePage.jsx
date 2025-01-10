@@ -31,6 +31,7 @@ import React, { useState, useRef, useEffect } from 'react';
       const inputRef = useRef(null);
       const [keyboardPosition, setKeyboardPosition] = useState({ top: 0, left: 0 });
       const keyboardOffset = 5;
+      const successTimeoutRef = useRef(null);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -180,6 +181,10 @@ import React, { useState, useRef, useEffect } from 'react';
             if (winningFileInputRef.current) {
               winningFileInputRef.current.value = '';
             }
+            if (successTimeoutRef.current) {
+              clearTimeout(successTimeoutRef.current);
+            }
+            successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
           }
         } catch (error) {
           console.error('发生意外错误:', error);
@@ -247,7 +252,7 @@ import React, { useState, useRef, useEffect } from 'react';
         setShowKeyboard(true);
         if (inputElement) {
           const inputRect = inputElement.getBoundingClientRect();
-          const containerRect = document.querySelector('.container').getBoundingClientRect();
+           const containerRect = document.querySelector('.container').getBoundingClientRect();
           setKeyboardPosition({
             top: inputRect.bottom - containerRect.top + keyboardOffset,
             left: inputRect.left - containerRect.left,
@@ -429,26 +434,35 @@ import React, { useState, useRef, useEffect } from 'react';
               position: 'absolute',
               top: keyboardPosition.top,
               left: keyboardPosition.left,
+              zIndex: 1000,
+              backgroundColor: '#f0f0f0',
+              border: '1px solid #ddd',
+              borderRadius: '8px',
+              padding: '10px',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '5px',
             }}>
               <div className="keyboard-row">
-                <button type="button" onClick={() => handleNumberClick('1')}>1</button>
-                <button type="button" onClick={() => handleNumberClick('2')}>2</button>
-                <button type="button" onClick={() => handleNumberClick('3')}>3</button>
+                <button type="button" onClick={() => handleNumberClick('1')} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: 'white', cursor: 'pointer', fontSize: '16px', transition: 'background-color 0.3s ease' }}>1</button>
+                <button type="button" onClick={() => handleNumberClick('2')} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: 'white', cursor: 'pointer', fontSize: '16px', transition: 'background-color 0.3s ease' }}>2</button>
+                <button type="button" onClick={() => handleNumberClick('3')} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: 'white', cursor: 'pointer', fontSize: '16px', transition: 'background-color 0.3s ease' }}>3</button>
               </div>
               <div className="keyboard-row">
-                <button type="button" onClick={() => handleNumberClick('4')}>4</button>
-                <button type="button" onClick={() => handleNumberClick('5')}>5</button>
-                <button type="button" onClick={() => handleNumberClick('6')}>6</button>
+                <button type="button" onClick={() => handleNumberClick('4')} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: 'white', cursor: 'pointer', fontSize: '16px', transition: 'background-color 0.3s ease' }}>4</button>
+                <button type="button" onClick={() => handleNumberClick('5')} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: 'white', cursor: 'pointer', fontSize: '16px', transition: 'background-color 0.3s ease' }}>5</button>
+                <button type="button" onClick={() => handleNumberClick('6')} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: 'white', cursor: 'pointer', fontSize: '16px', transition: 'background-color 0.3s ease' }}>6</button>
               </div>
               <div className="keyboard-row">
-                <button type="button" onClick={() => handleNumberClick('7')}>7</button>
-                <button type="button" onClick={() => handleNumberClick('8')}>8</button>
-                <button type="button" onClick={() => handleNumberClick('9')}>9</button>
+                <button type="button" onClick={() => handleNumberClick('7')} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: 'white', cursor: 'pointer', fontSize: '16px', transition: 'background-color 0.3s ease' }}>7</button>
+                <button type="button" onClick={() => handleNumberClick('8')} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: 'white', cursor: 'pointer', fontSize: '16px', transition: 'background-color 0.3s ease' }}>8</button>
+                <button type="button" onClick={() => handleNumberClick('9')} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: 'white', cursor: 'pointer', fontSize: '16px', transition: 'background-color 0.3s ease' }}>9</button>
               </div>
               <div className="keyboard-row">
-                <button type="button" onClick={() => handleNumberClick('0')}>0</button>
-                <button type="button" onClick={handleDecimalClick}>.</button>
-                <button type="button" onClick={handleBackspaceClick}>&#8592;</button>
+                <button type="button" onClick={() => handleNumberClick('0')} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: 'white', cursor: 'pointer', fontSize: '16px', transition: 'background-color 0.3s ease' }}>0</button>
+                <button type="button" onClick={handleDecimalClick} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: 'white', cursor: 'pointer', fontSize: '16px', transition: 'background-color 0.3s ease' }}>.</button>
+                <button type="button" onClick={handleBackspaceClick} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: 'white', cursor: 'pointer', fontSize: '16px', transition: 'background-color 0.3s ease' }}>&#8592;</button>
               </div>
             </div>
           )}
