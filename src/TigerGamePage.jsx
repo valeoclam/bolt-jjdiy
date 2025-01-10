@@ -23,6 +23,8 @@ import React, { useState, useRef, useEffect } from 'react';
       const navigate = useNavigate();
       const fileInputRef = useRef(null);
       const winningFileInputRef = useRef(null);
+      const [betAmount, setBetAmount] = useState('');
+      const [prizeAmount, setPrizeAmount] = useState('');
 
       useEffect(() => {
         if (loggedInUser) {
@@ -136,6 +138,8 @@ import React, { useState, useRef, useEffect } from 'react';
           updated_at: new Date().toISOString(),
           attempts: parseInt(attempts, 10) || 0,
           encountered_trailer: encounteredTrailer,
+          bet_amount: parseFloat(betAmount),
+          prize_amount: parseFloat(prizeAmount),
         };
 
         try {
@@ -162,6 +166,8 @@ import React, { useState, useRef, useEffect } from 'react';
             setWinningPhotos([]);
             setAttempts('');
             setEncounteredTrailer(false);
+            setBetAmount('');
+            setPrizeAmount('');
             if (fileInputRef.current) {
               fileInputRef.current.value = '';
             }
@@ -220,13 +226,23 @@ import React, { useState, useRef, useEffect } from 'react';
                 required
               />
             </div>
-            <div className="form-group">
-              <label htmlFor="attempts">尝试次数:</label>
+             <div className="form-group">
+              <label htmlFor="betAmount">下注金额:</label>
               <input
                 type="number"
-                id="attempts"
-                value={attempts}
-                onChange={(e) => setAttempts(e.target.value)}
+                id="betAmount"
+                value={betAmount}
+                onChange={(e) => setBetAmount(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="prizeAmount">中奖金额:</label>
+              <input
+                type="number"
+                id="prizeAmount"
+                value={prizeAmount}
+                onChange={(e) => setPrizeAmount(e.target.value)}
                 required
               />
             </div>
@@ -237,6 +253,16 @@ import React, { useState, useRef, useEffect } from 'react';
                 id="cashOutAmount"
                 value={cashOutAmount}
                 onChange={(e) => setCashOutAmount(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="attempts">尝试次数:</label>
+              <input
+                type="number"
+                id="attempts"
+                value={attempts}
+                onChange={(e) => setAttempts(e.target.value)}
                 required
               />
             </div>
