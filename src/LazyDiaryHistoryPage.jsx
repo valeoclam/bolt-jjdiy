@@ -114,6 +114,12 @@ import React, { useState, useEffect, useRef } from 'react';
                         <p><strong>回答:</strong> {answer.answer}</p>
                       </div>
                     ))}
+                    <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                      {Array.isArray(record.photos) &&
+                        record.photos.map((photo, index) => (
+                          <img key={index} src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
+                        ))}
+                    </div>
                   </div>
                 ))}
               </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
     import { useNavigate } from 'react-router-dom';
     import { createClient } from '@supabase/supabase-js';
+    import imageCompression from 'browser-image-compression';
 
     const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8';
@@ -19,6 +20,9 @@ import React, { useState, useEffect, useRef } from 'react';
       const [successMessage, setSuccessMessage] = useState('');
       const [errorMessage, setErrorMessage] = useState('');
       const successTimeoutRef = useRef(null);
+      const fileInputRef = useRef(null);
+      const [tempDiaryPhotos, setTempDiaryPhotos] = useState([]);
+      const MAX_PHOTOS = 6;
 
       useEffect(() => {
         if (loggedInUser) {
@@ -112,12 +116,12 @@ import React, { useState, useEffect, useRef } from 'react';
               answer: answer,
             };
 
-            let updatedAnswers = currentRecord ? [...currentRecord.answers, newAnswer] : [];
+            let updatedAnswers = currentRecord ? [...currentRecord.answers, newAnswer] : [newAnswer];
 
             if (currentRecord) {
               const { data, error } = await supabase
                 .from('lazy_diary_records')
-                .update({ answers: updatedAnswers, updated_at: new Date().toISOString() })
+                .update({ answers: updatedAnswers, updated_at: new Date().toISOString(), photos: tempDiaryPhotos })
                 .eq('id', currentRecord.id);
 
               if (error) {
@@ -125,8 +129,12 @@ import React, { useState, useEffect, useRef } from 'react';
                 setErrorMessage('更新懒人日记记录失败，请重试。');
               } else {
                 console.log('懒人日记记录更新成功:', data);
-                setCurrentRecord(prevRecord => ({ ...prevRecord, answers: updatedAnswers, updated_at: new Date().toISOString() }));
+                setCurrentRecord(prevRecord => ({ ...prevRecord, answers: updatedAnswers, updated_at: new Date().toISOString(), photos: tempDiaryPhotos }));
                 setSuccessMessage('懒人日记记录更新成功!');
+                setTempDiaryPhotos([]);
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = '';
+                }
                 if (successTimeoutRef.current) {
                   clearTimeout(successTimeoutRef.current);
                 }
@@ -136,6 +144,7 @@ import React, { useState, useEffect, useRef } from 'react';
               const newRecord = {
                 user_id: userData.id,
                 answers: updatedAnswers,
+                photos: tempDiaryPhotos,
               };
 
               const { data, error } = await supabase
@@ -147,8 +156,12 @@ import React, { useState, useEffect, useRef } from 'react';
                 setErrorMessage('添加懒人日记记录失败，请重试。');
               } else {
                 console.log('懒人日记记录添加成功:', data);
-                setCurrentRecord({ ...newRecord, id: data[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+                setCurrentRecord({ ...newRecord, id: data[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), photos: tempDiaryPhotos });
                 setSuccessMessage('懒人日记记录添加成功!');
+                setTempDiaryPhotos([]);
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = '';
+                }
                 if (successTimeoutRef.current) {
                   clearTimeout(successTimeoutRef.current);
                 }
@@ -216,6 +229,50 @@ import React, { useState, useEffect, useRef } from 'react';
         navigate('/lazy-diary/history');
       };
 
+      const handleDiaryPhotosChange = async (e) => {
+        setErrorMessage('');
+        const files = Array.from(e.target.files);
+        if (!files || files.length === 0) return;
+        if (tempDiaryPhotos.length + files.length > MAX_PHOTOS) {
+          setErrorMessage(`最多只能添加 ${MAX_PHOTOS} 张照片。`);
+          return;
+        }
+
+        try {
+          const compressedFiles = await Promise.all(
+            files.map(async (file) => {
+              return await imageCompression(file, {
+                maxSizeMB: 1,
+                maxWidthOrHeight: 1920,
+                useWebWorker: true,
+              });
+            }),
+          );
+
+          const readers = compressedFiles.map((file) => {
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                resolve(reader.result);
+              };
+              reader.readAsDataURL(file);
+            });
+          });
+
+          const results = await Promise.all(readers);
+          setTempDiaryPhotos((prevPhotos) => [...prevPhotos, ...results]);
+        } catch (error) {
+          console.error('图片压缩失败:', error);
+          setErrorMessage('图片压缩失败，请重试。');
+        }
+      };
+
+      const handleRemoveDiaryPhoto = (indexToRemove) => {
+        setTempDiaryPhotos((prevPhotos) =>
+          prevPhotos.filter((_, index) => index !== indexToRemove),
+        );
+      };
+
       return (
         <div className="container">
           <h2>懒人日记</h2>
@@ -229,6 +286,48 @@ import React, { useState, useEffect, useRef } from 'react';
               placeholder="请在此输入你的答案"
               style={{ height: '100px' }}
             />
+          </div>
+          <div className="form-group">
+            <div className="file-input-container">
+              <input
+                type="file"
+                id="diaryPhotos"
+                accept="image/*"
+                multiple
+                onChange={handleDiaryPhotosChange}
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+              />
+              <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>选择照片</button>
+              {Array.isArray(tempDiaryPhotos) &&
+                tempDiaryPhotos.map((photo, index) => (
+                  <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
+                    <img src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveDiaryPhoto(index)}
+                      style={{
+                        position: 'absolute',
+                        top: '5px',
+                        right: '5px',
+                        background: 'rgba(0, 0, 0, 0.5)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '20px',
+                        height: '20px',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      x
+                    </button>
+                  </div>
+                ))}
+            </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
             <button type="button" onClick={handleStartRecording} disabled={isRecording} style={{ backgroundColor: '#28a745' }}>
@@ -249,6 +348,12 @@ import React, { useState, useEffect, useRef } from 'react';
               <div key={index} className="inspiration-item">
                 <p><strong>问题:</strong> {record.question}</p>
                 <p><strong>回答:</strong> {record.answer}</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                  {Array.isArray(currentRecord.photos) &&
+                    currentRecord.photos.map((photo, index) => (
+                      <img key={index} src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
+                    ))}
+                </div>
               </div>
             ))}
           </div>
