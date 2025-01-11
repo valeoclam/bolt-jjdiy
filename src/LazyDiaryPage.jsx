@@ -42,10 +42,13 @@ import React, { useState, useEffect, useRef } from 'react';
           if (error) {
             console.error('获取问题列表时发生错误:', error);
           } else {
-            setQuestions(data);
-            if (data && data.length > 0) {
+            const fixedQuestion = data.find(question => question.is_fixed);
+            if (fixedQuestion) {
+              setCurrentQuestion(fixedQuestion.question);
+            } else if (data && data.length > 0) {
               setCurrentQuestion(data[0].question);
             }
+            setQuestions(data);
           }
         } catch (error) {
           console.error('发生意外错误:', error);

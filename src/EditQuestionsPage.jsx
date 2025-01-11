@@ -20,6 +20,8 @@ import React, { useState, useEffect, useRef } from 'react';
       const [addSuccessMessage, setAddSuccessMessage] = useState('');
       const [updateSuccessMessage, setUpdateSuccessMessage] = useState('');
       const addTimeoutRef = useRef(null);
+      const [isFixed, setIsFixed] = useState(false);
+      const [editedIsFixed, setEditedIsFixed] = useState(false);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -68,13 +70,14 @@ import React, { useState, useEffect, useRef } from 'react';
           try {
             const { data, error } = await supabase
               .from('lazy_diary_questions')
-              .insert([{ question: newQuestion }]);
+              .insert([{ question: newQuestion, is_fixed: isFixed }]);
 
             if (error) {
               console.error('添加问题时发生错误:', error);
             } else if (data && data.length > 0) {
               console.log('问题添加成功:', data);
               setNewQuestion('');
+              setIsFixed(false);
               setAddSuccessMessage('问题添加成功!');
               if (addTimeoutRef.current) {
                 clearTimeout(addTimeoutRef.current);
@@ -90,9 +93,10 @@ import React, { useState, useEffect, useRef } from 'react';
         }
       };
 
-      const handleEditQuestion = (id, question) => {
+      const handleEditQuestion = (id, question, isFixed) => {
         setEditingQuestionId(id);
         setEditedQuestion(question);
+        setEditedIsFixed(isFixed);
       };
 
       const handleUpdateQuestion = async (id) => {
@@ -101,7 +105,7 @@ import React, { useState, useEffect, useRef } from 'react';
           try {
             const { data, error } = await supabase
               .from('lazy_diary_questions')
-              .update({ question: editedQuestion, updated_at: new Date().toISOString() })
+              .update({ question: editedQuestion, updated_at: new Date().toISOString(), is_fixed: editedIsFixed })
               .eq('id', id);
 
             if (error) {
@@ -110,11 +114,12 @@ import React, { useState, useEffect, useRef } from 'react';
               console.log('问题更新成功:', data);
               setQuestions((prevQuestions) =>
                 prevQuestions.map((question) =>
-                  question.id === id ? { ...question, question: editedQuestion, updated_at: new Date().toISOString() } : question,
+                  question.id === id ? { ...question, question: editedQuestion, updated_at: new Date().toISOString(), is_fixed: editedIsFixed } : question,
                 ),
               );
               setEditingQuestionId(null);
               setEditedQuestion('');
+              setEditedIsFixed(false);
               setUpdateSuccessMessage('问题更新成功!');
               setTimeout(() => setUpdateSuccessMessage(''), 3000);
             }
@@ -155,6 +160,7 @@ import React, { useState, useEffect, useRef } from 'react';
       const handleCancelEdit = () => {
         setEditingQuestionId(null);
         setEditedQuestion('');
+        setEditedIsFixed(false);
       };
 
       const handleBackToModules = () => {
@@ -191,6 +197,14 @@ import React, { useState, useEffect, useRef } from 'react';
                 value={newQuestion}
                 onChange={(e) => setNewQuestion(e.target.value)}
               />
+              <label>
+                <input
+                  type="checkbox"
+                  checked={isFixed}
+                  onChange={() => setIsFixed(!isFixed)}
+                />
+                固定问题
+              </label>
               <button type="button" onClick={handleAddQuestion} style={{ marginTop: '10px', backgroundColor: '#28a745' }} disabled={loading}>
                 {loading ? '正在保存...' : '添加'}
               </button>
@@ -217,6 +231,14 @@ import React, { useState, useEffect, useRef } from 'react';
                       onChange={(e) => setEditedQuestion(e.target.value)}
                       style={{ height: '80px' }}
                     />
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={editedIsFixed}
+                        onChange={() => setEditedIsFixed(!editedIsFixed)}
+                      />
+                      固定问题
+                    </label>
                     <div className="edit-buttons">
                       <button onClick={() => handleUpdateQuestion(question.id)} disabled={loading}>
                         {loading ? '正在保存...' : '更新'}
@@ -227,10 +249,11 @@ import React, { useState, useEffect, useRef } from 'react';
                 ) : (
                   <>
                     <p>{question.question}</p>
+                    <p><strong>类型:</strong> {question.is_fixed ? '固定问题' : '随机问题'}</p>
                     <div className="edit-buttons">
                       {loggedInUser && loggedInUser.role === 'admin' && (
                         <>
-                          <button onClick={() => handleEditQuestion(question.id, question.question)}>编辑</button>
+                          <button onClick={() => handleEditQuestion(question.id, question.question, question.is_fixed)}>编辑</button>
                           <button onClick={() => handleDeleteQuestion(question.id)} style={{ backgroundColor: '#dc3545' }}>
                             {confirmDeleteId === question.id ? '确认删除' : '删除'}
                           </button>

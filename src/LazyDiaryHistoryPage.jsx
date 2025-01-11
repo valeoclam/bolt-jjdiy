@@ -14,13 +14,14 @@ import React, { useState, useEffect, useRef } from 'react';
       const [endDate, setEndDate] = useState('');
       const containerRef = useRef(null);
       const [errorMessage, setErrorMessage] = useState('');
+      const [searchKeyword, setSearchKeyword] = useState('');
 
       useEffect(() => {
         if (loggedInUser) {
           setLoading(true);
           fetchRecords();
         }
-      }, [loggedInUser, startDate, endDate]);
+      }, [loggedInUser, startDate, endDate, searchKeyword]);
 
       const fetchRecords = async () => {
         try {
@@ -54,7 +55,15 @@ import React, { useState, useEffect, useRef } from 'react';
       };
 
       const groupRecordsByDate = (records) => {
-        const grouped = records.reduce((acc, record) => {
+        const filteredRecords = records.filter(record => {
+          if (!searchKeyword) return true;
+          return record.answers.some(answer =>
+            answer.question.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+            answer.answer.toLowerCase().includes(searchKeyword.toLowerCase())
+          );
+        });
+
+        const grouped = filteredRecords.reduce((acc, record) => {
           const date = new Date(record.created_at).toLocaleDateString();
           if (!acc[date]) {
             acc[date] = {
@@ -98,6 +107,16 @@ import React, { useState, useEffect, useRef } from 'react';
               type="datetime-local"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="searchKeyword">搜索关键字:</label>
+            <input
+              type="text"
+              id="searchKeyword"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              placeholder="输入关键字搜索"
             />
           </div>
           {errorMessage && <p className="error-message">{errorMessage}</p>}
