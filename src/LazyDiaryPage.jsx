@@ -175,8 +175,8 @@ import React, { useState, useEffect, useRef } from 'react';
                 });
 
               if (uploadError) {
-                console.error('上传录音文件失败:', uploadError);
-                setErrorMessage('上传录音文件失败，请重试。');
+                console.error('上传录音文件失败:', uploadError, uploadError.message);
+                setErrorMessage('上传录音文件失败，请重试。' + uploadError.message);
                 return;
               }
               audioPath = uploadData.path;
