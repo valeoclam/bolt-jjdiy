@@ -235,6 +235,20 @@ function Tracker({ loggedInUser, onLogout }) {
     }
   };
 
+    const handleClearClick = () => {
+        if (activeInput === 'inputAmount') {
+            setInputAmount('');
+        } else if (activeInput === 'betAmount') {
+            setBetAmount('');
+        } else if (activeInput === 'prizeAmount') {
+            setPrizeAmount('');
+        } else if (activeInput === 'cashOutAmount') {
+            setCashOutAmount('');
+        } else if (activeInput === 'attempts') {
+            setAttempts('');
+        }
+    };
+
   const handleDecimalClick = () => {
     if (activeInput === 'inputAmount' && !inputAmount.includes('.')) {
       setInputAmount(prev => prev + '.');
@@ -440,30 +454,30 @@ function Tracker({ loggedInUser, onLogout }) {
           borderRadius: '8px',
           padding: '5px',
           boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-          display: 'flex',
-          flexDirection: 'column',
-          width: 'auto',
-          maxWidth: '250px',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '5px',
         }}>
           <div className="keyboard-row">
             <button type="button" onClick={() => handleNumberClick('1')} className="keyboard-button">1</button>
             <button type="button" onClick={() => handleNumberClick('2')} className="keyboard-button">2</button>
             <button type="button" onClick={() => handleNumberClick('3')} className="keyboard-button">3</button>
+             <button type="button" onClick={handleClearClick} className="keyboard-button clear-button">C</button>
           </div>
           <div className="keyboard-row">
             <button type="button" onClick={() => handleNumberClick('4')} className="keyboard-button">4</button>
             <button type="button" onClick={() => handleNumberClick('5')} className="keyboard-button">5</button>
             <button type="button" onClick={() => handleNumberClick('6')} className="keyboard-button">6</button>
+            <button type="button" onClick={handleBackspaceClick} className="keyboard-button">&#8592;</button>
           </div>
           <div className="keyboard-row">
             <button type="button" onClick={() => handleNumberClick('7')} className="keyboard-button">7</button>
             <button type="button" onClick={() => handleNumberClick('8')} className="keyboard-button">8</button>
             <button type="button" onClick={() => handleNumberClick('9')} className="keyboard-button">9</button>
-          </div>
-          <div className="keyboard-row">
             <button type="button" onClick={() => handleNumberClick('0')} className="keyboard-button">0</button>
+          </div>
+           <div className="keyboard-row">
             <button type="button" onClick={handleDecimalClick} className="keyboard-button">.</button>
-            <button type="button" onClick={handleBackspaceClick} className="keyboard-button">&#8592;</button>
           </div>
         </div>
       )}
