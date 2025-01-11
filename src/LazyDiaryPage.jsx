@@ -9,7 +9,6 @@ import React, { useState, useEffect, useRef } from 'react';
     function LazyDiaryPage({ loggedInUser, onLogout }) {
       const [currentQuestion, setCurrentQuestion] = useState('');
       const [answer, setAnswer] = useState('');
-      const [records, setRecords] = useState([]);
       const [isRecording, setIsRecording] = useState(false);
       const navigate = useNavigate();
       const recognitionRef = useRef(null);
@@ -17,6 +16,9 @@ import React, { useState, useEffect, useRef } from 'react';
       const [currentRecord, setCurrentRecord] = useState(null);
       const [questions, setQuestions] = useState([]);
       const [questionIndex, setQuestionIndex] = useState(0);
+      const [successMessage, setSuccessMessage] = useState('');
+      const [errorMessage, setErrorMessage] = useState('');
+      const successTimeoutRef = useRef(null);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -60,7 +62,10 @@ import React, { useState, useEffect, useRef } from 'react';
             .single();
 
           if (error) {
-            console.error('获取今日懒人日记记录时发生错误:', error);
+            if (error.code !== '404') {
+              console.error('获取今日懒人日记记录时发生错误:', error);
+              setErrorMessage('获取今日懒人日记记录失败，请重试。');
+            }
             setCurrentRecord(null);
           } else {
             setCurrentRecord(data);
@@ -70,6 +75,7 @@ import React, { useState, useEffect, useRef } from 'react';
           }
         } catch (error) {
           console.error('发生意外错误:', error);
+          setErrorMessage('发生意外错误，请重试。');
           setCurrentRecord(null);
         } finally {
           setLoading(false);
@@ -91,11 +97,13 @@ import React, { useState, useEffect, useRef } from 'react';
 
             if (userError) {
               console.error('获取用户ID时发生错误:', userError);
+              setErrorMessage('获取用户ID失败，请重试。');
               return;
             }
 
             if (!userData) {
               console.error('未找到用户');
+              setErrorMessage('未找到用户，请重试。');
               return;
             }
 
@@ -104,7 +112,7 @@ import React, { useState, useEffect, useRef } from 'react';
               answer: answer,
             };
 
-            let updatedAnswers = currentRecord ? [...currentRecord.answers, newAnswer] : [newAnswer];
+            let updatedAnswers = currentRecord ? [...currentRecord.answers, newAnswer] : [];
 
             if (currentRecord) {
               const { data, error } = await supabase
@@ -114,9 +122,15 @@ import React, { useState, useEffect, useRef } from 'react';
 
               if (error) {
                 console.error('更新懒人日记记录时发生错误:', error);
+                setErrorMessage('更新懒人日记记录失败，请重试。');
               } else {
                 console.log('懒人日记记录更新成功:', data);
                 setCurrentRecord(prevRecord => ({ ...prevRecord, answers: updatedAnswers, updated_at: new Date().toISOString() }));
+                setSuccessMessage('懒人日记记录更新成功!');
+                if (successTimeoutRef.current) {
+                  clearTimeout(successTimeoutRef.current);
+                }
+                successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
               }
             } else {
               const newRecord = {
@@ -130,13 +144,20 @@ import React, { useState, useEffect, useRef } from 'react';
 
               if (error) {
                 console.error('添加懒人日记记录时发生错误:', error);
+                setErrorMessage('添加懒人日记记录失败，请重试。');
               } else {
                 console.log('懒人日记记录添加成功:', data);
                 setCurrentRecord({ ...newRecord, id: data[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+                setSuccessMessage('懒人日记记录添加成功!');
+                if (successTimeoutRef.current) {
+                  clearTimeout(successTimeoutRef.current);
+                }
+                successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
               }
             }
           } catch (error) {
             console.error('发生意外错误:', error);
+            setErrorMessage('发生意外错误，请重试。');
           }
         }
         setAnswer('');
@@ -220,6 +241,8 @@ import React, { useState, useEffect, useRef } from 'react';
           <button type="button" onClick={handleSaveAndNext} disabled={loading} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>
             {loading ? '正在保存...' : '保存并进入下一个问题'}
           </button>
+          {successMessage && <p className="success-message">{successMessage}</p>}
+          {errorMessage && <p className="error-message">{errorMessage}</p>}
           <div className="inspiration-list">
             <h3>今日记录</h3>
             {currentRecord && currentRecord.answers && currentRecord.answers.map((record, index) => (

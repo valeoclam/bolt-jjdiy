@@ -7,12 +7,13 @@ import React, { useState, useEffect, useRef } from 'react';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
-      const [records, setRecords] = useState([]);
+      const [groupedRecords, setGroupedRecords] = useState([]);
       const [loading, setLoading] = useState(false);
       const navigate = useNavigate();
       const [startDate, setStartDate] = useState('');
       const [endDate, setEndDate] = useState('');
       const containerRef = useRef(null);
+      const [errorMessage, setErrorMessage] = useState('');
 
       useEffect(() => {
         if (loggedInUser) {
@@ -40,14 +41,32 @@ import React, { useState, useEffect, useRef } from 'react';
 
           if (error) {
             console.error('获取懒人日记记录时发生错误:', error);
+            setErrorMessage('获取懒人日记记录失败，请重试。');
           } else {
-            setRecords(data || []);
+            groupRecordsByDate(data || []);
           }
         } catch (error) {
           console.error('发生意外错误:', error);
+          setErrorMessage('发生意外错误，请重试。');
         } finally {
           setLoading(false);
         }
+      };
+
+      const groupRecordsByDate = (records) => {
+        const grouped = records.reduce((acc, record) => {
+          const date = new Date(record.created_at).toLocaleDateString();
+          if (!acc[date]) {
+            acc[date] = {
+              date: date,
+              records: [],
+            };
+          }
+          acc[date].records.push(record);
+          return acc;
+        }, {});
+
+        setGroupedRecords(Object.values(grouped));
       };
 
       const handleBackToModules = () => {
@@ -81,15 +100,20 @@ import React, { useState, useEffect, useRef } from 'react';
               onChange={(e) => setEndDate(e.target.value)}
             />
           </div>
+          {errorMessage && <p className="error-message">{errorMessage}</p>}
           <div className="inspiration-list">
             <h3>历史记录</h3>
-            {records.map((record) => (
-              <div key={record.id} className="inspiration-item">
-                <p><strong>记录时间:</strong> {new Date(record.created_at).toLocaleString()}</p>
-                {record.answers && record.answers.map((answer, index) => (
-                  <div key={index}>
-                    <p><strong>问题:</strong> {answer.question}</p>
-                    <p><strong>回答:</strong> {answer.answer}</p>
+            {groupedRecords.map((groupedRecord) => (
+              <div key={groupedRecord.date} className="inspiration-item">
+                <h4>{groupedRecord.date}</h4>
+                {groupedRecord.records.map((record) => (
+                  <div key={record.id}>
+                    {record.answers && record.answers.map((answer, index) => (
+                      <div key={index}>
+                        <p><strong>问题:</strong> {answer.question}</p>
+                        <p><strong>回答:</strong> {answer.answer}</p>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
