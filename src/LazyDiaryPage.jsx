@@ -60,30 +60,41 @@ import React, { useState, useEffect, useRef } from 'react';
 
       const fetchTodayRecord = async () => {
         try {
+          setLoading(true);
           const today = new Date().toISOString().split('T')[0];
-          const { data, error } = await supabase
-            .from('lazy_diary_records')
-            .select('*')
-            .eq('user_id', loggedInUser.id)
-            .gte('created_at', `${today}T00:00:00.000Z`)
-            .lt('created_at', `${today}T23:59:59.999Z`)
-            .single();
+          const url = `${supabaseUrl}/rest/v1/lazy_diary_records?select=*&user_id=eq.${loggedInUser.id}&created_at=gte.${today}T00:00:00.000Z&created_at=lt.${today}T23:59:59.999Z`;
 
-          if (error) {
-            if (error.code !== '404') {
-              console.error('获取今日懒人日记记录时发生错误:', error);
-              setErrorMessage('获取今日懒人日记记录失败，请重试。');
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'apikey': supabaseKey,
+            },
+          });
+
+          if (!response.ok) {
+            if (response.status === 404) {
+              setNoRecordMessage('还没有今日的记录，请开始记录吧！');
+              setCurrentRecord(null);
+              setErrorMessage('');
             } else {
-               setNoRecordMessage('还没有今日的记录，请开始记录吧！');
-               setCurrentRecord(null);
-               setErrorMessage('');
+              console.error('获取今日懒人日记记录时发生错误:', response.status, response.statusText);
+              setErrorMessage('获取今日懒人日记记录失败，请重试。');
             }
-          } else {
-            setCurrentRecord(data);
-            if (data && data.answers) {
-              setQuestionIndex(data.answers.length);
+            return;
+          }
+
+          const data = await response.json();
+          if (data && data.length > 0) {
+            setCurrentRecord(data[0]);
+            if (data[0].answers) {
+              setQuestionIndex(data[0].answers.length);
             }
             setNoRecordMessage('');
+          } else {
+            setNoRecordMessage('还没有今日的记录，请开始记录吧！');
+            setCurrentRecord(null);
+            setErrorMessage('');
           }
         } catch (error) {
           console.error('发生意外错误:', error);
