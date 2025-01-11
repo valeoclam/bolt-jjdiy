@@ -31,6 +31,7 @@ import React, { useState, useEffect, useRef } from 'react';
       const [audioUrl, setAudioUrl] = useState(null);
       const [inputType, setInputType] = useState('audio'); // 'audio' or 'voice'
       const timerRef = useRef(null);
+      const [answeredFixedQuestion, setAnsweredFixedQuestion] = useState(false);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -75,12 +76,6 @@ import React, { useState, useEffect, useRef } from 'react';
           if (error) {
             console.error('获取问题列表时发生错误:', error);
           } else {
-            const fixedQuestion = data.find(question => question.is_fixed);
-            if (fixedQuestion) {
-              setCurrentQuestion(fixedQuestion.question);
-            } else if (data && data.length > 0) {
-              setCurrentQuestion(data[0].question);
-            }
             setQuestions(data);
           }
         } catch (error) {
@@ -118,6 +113,25 @@ import React, { useState, useEffect, useRef } from 'react';
             setCurrentRecord(data);
             if (data && data.answers) {
               setQuestionIndex(data.answers.length);
+              const fixedQuestion = questions.find(question => question.is_fixed);
+              const answeredFixed = data.answers.some(answer => answer.question === fixedQuestion?.question);
+              setAnsweredFixedQuestion(answeredFixed);
+              if (fixedQuestion && answeredFixed) {
+                const nextQuestionIndex = (data.answers.length) % questions.length;
+                setCurrentQuestion(questions[nextQuestionIndex]?.question || '');
+                setQuestionIndex(nextQuestionIndex);
+              } else if (fixedQuestion) {
+                setCurrentQuestion(fixedQuestion.question);
+              } else if (questions && questions.length > 0) {
+                setCurrentQuestion(questions[0].question);
+              }
+            } else {
+              const fixedQuestion = questions.find(question => question.is_fixed);
+              if (fixedQuestion) {
+                setCurrentQuestion(fixedQuestion.question);
+              } else if (questions && questions.length > 0) {
+                setCurrentQuestion(questions[0].question);
+              }
             }
             setNoRecordMessage('');
           }
@@ -248,8 +262,15 @@ import React, { useState, useEffect, useRef } from 'react';
         if (questions && questions.length > 0) {
           setQuestionIndex((prevIndex) => {
             const nextIndex = (prevIndex + 1) % questions.length;
-            setCurrentQuestion(questions[nextIndex].question);
-            return nextIndex;
+            const fixedQuestion = questions.find(question => question.is_fixed);
+            if (fixedQuestion && answeredFixedQuestion) {
+              const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
+              setCurrentQuestion(nextQuestion?.question || '');
+              return nextIndex;
+            } else {
+              setCurrentQuestion(questions[nextIndex].question);
+              return nextIndex;
+            }
           });
         }
       };
