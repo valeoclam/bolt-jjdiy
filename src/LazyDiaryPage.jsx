@@ -24,6 +24,13 @@ import React, { useState, useEffect, useRef } from 'react';
       const [tempDiaryPhotos, setTempDiaryPhotos] = useState([]);
       const MAX_PHOTOS = 6;
       const [noRecordMessage, setNoRecordMessage] = useState('');
+      const [recordingTime, setRecordingTime] = useState(0);
+      const [recordingWarning, setRecordingWarning] = useState(false);
+      const [audioBlob, setAudioBlob] = useState(null);
+      const [mediaRecorder, setMediaRecorder] = useState(null);
+      const [audioUrl, setAudioUrl] = useState(null);
+      const [inputType, setInputType] = useState('audio'); // 'audio' or 'voice'
+      const timerRef = useRef(null);
 
       useEffect(() => {
         if (loggedInUser) {
@@ -32,6 +39,31 @@ import React, { useState, useEffect, useRef } from 'react';
           fetchTodayRecord();
         }
       }, [loggedInUser]);
+
+      useEffect(() => {
+        let intervalId;
+        if (isRecording && inputType === 'audio') {
+          intervalId = setInterval(() => {
+            setRecordingTime((prevTime) => prevTime + 1);
+          }, 1000);
+        } else {
+          clearInterval(intervalId);
+          setRecordingTime(0);
+          setRecordingWarning(false);
+        }
+        return () => clearInterval(intervalId);
+      }, [isRecording, inputType]);
+
+      useEffect(() => {
+        if (recordingTime >= 50 && recordingTime < 60) {
+          setRecordingWarning(true);
+        } else {
+          setRecordingWarning(false);
+        }
+        if (recordingTime >= 60) {
+          handleStopRecording();
+        }
+      }, [recordingTime]);
 
       const fetchQuestions = async () => {
         try {
@@ -60,41 +92,34 @@ import React, { useState, useEffect, useRef } from 'react';
 
       const fetchTodayRecord = async () => {
         try {
-          setLoading(true);
           const today = new Date().toISOString().split('T')[0];
-          const url = `${supabaseUrl}/rest/v1/lazy_diary_records?select=*&user_id=eq.${loggedInUser.id}&created_at=gte.${today}T00:00:00.000Z&created_at=lt.${today}T23:59:59.999Z`;
+          const { data, error } = await supabase
+            .from('lazy_diary_records')
+            .select('*')
+            .eq('user_id', loggedInUser.id)
+            .gte('created_at', `${today}T00:00:00.000Z`)
+            .lt('created_at', `${today}T23:59:59.999Z`)
+            .single({
+              headers: {
+                'Accept': 'application/json',
+              },
+            });
 
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-              'apikey': supabaseKey,
-            },
-          });
-
-          if (!response.ok) {
-            if (response.status === 404) {
-              setNoRecordMessage('还没有今日的记录，请开始记录吧！');
-              setCurrentRecord(null);
-              setErrorMessage('');
-            } else {
-              console.error('获取今日懒人日记记录时发生错误:', response.status, response.statusText);
+          if (error) {
+            if (error.code !== '404') {
+              console.error('获取今日懒人日记记录时发生错误:', error);
               setErrorMessage('获取今日懒人日记记录失败，请重试。');
+            } else {
+               setNoRecordMessage('还没有今日的记录，请开始记录吧！');
+               setCurrentRecord(null);
+               setErrorMessage('');
             }
-            return;
-          }
-
-          const data = await response.json();
-          if (data && data.length > 0) {
-            setCurrentRecord(data[0]);
-            if (data[0].answers) {
-              setQuestionIndex(data[0].answers.length);
+          } else {
+            setCurrentRecord(data);
+            if (data && data.answers) {
+              setQuestionIndex(data.answers.length);
             }
             setNoRecordMessage('');
-          } else {
-            setNoRecordMessage('还没有今日的记录，请开始记录吧！');
-            setCurrentRecord(null);
-            setErrorMessage('');
           }
         } catch (error) {
           console.error('发生意外错误:', error);
@@ -139,11 +164,28 @@ import React, { useState, useEffect, useRef } from 'react';
             };
 
             let updatedAnswers = currentRecord ? [...currentRecord.answers, newAnswer] : [newAnswer];
+            let audioPath = null;
+
+            if (audioBlob) {
+              const fileName = `audio-${loggedInUser.id}-${new Date().getTime()}.webm`;
+              const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('lazy-diary-audio')
+                .upload(fileName, audioBlob, {
+                  contentType: 'audio/webm',
+                });
+
+              if (uploadError) {
+                console.error('上传录音文件失败:', uploadError);
+                setErrorMessage('上传录音文件失败，请重试。');
+                return;
+              }
+              audioPath = uploadData.path;
+            }
 
             if (currentRecord) {
               const { data, error } = await supabase
                 .from('lazy_diary_records')
-                .update({ answers: updatedAnswers, updated_at: new Date().toISOString(), photos: tempDiaryPhotos })
+                .update({ answers: updatedAnswers, updated_at: new Date().toISOString(), photos: tempDiaryPhotos, audio_path: audioPath })
                 .eq('id', currentRecord.id);
 
               if (error) {
@@ -151,9 +193,11 @@ import React, { useState, useEffect, useRef } from 'react';
                 setErrorMessage('更新懒人日记记录失败，请重试。' + error.message);
               } else {
                 console.log('懒人日记记录更新成功:', data);
-                setCurrentRecord(prevRecord => ({ ...prevRecord, answers: updatedAnswers, updated_at: new Date().toISOString(), photos: tempDiaryPhotos }));
+                setCurrentRecord(prevRecord => ({ ...prevRecord, answers: updatedAnswers, updated_at: new Date().toISOString(), photos: tempDiaryPhotos, audio_path: audioPath }));
                 setSuccessMessage('懒人日记记录更新成功!');
                 setTempDiaryPhotos([]);
+                setAudioBlob(null);
+                setAudioUrl(null);
                 if (fileInputRef.current) {
                   fileInputRef.current.value = '';
                 }
@@ -167,6 +211,7 @@ import React, { useState, useEffect, useRef } from 'react';
                 user_id: userData.id,
                 answers: updatedAnswers,
                 photos: tempDiaryPhotos,
+                audio_path: audioPath,
               };
 
               const { data, error } = await supabase
@@ -178,9 +223,11 @@ import React, { useState, useEffect, useRef } from 'react';
                 setErrorMessage('添加懒人日记记录失败，请重试。' + error.message);
               } else {
                  console.log('懒人日记记录添加成功:', data);
-                setCurrentRecord({ ...newRecord, id: data[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), photos: tempDiaryPhotos });
+                setCurrentRecord({ ...newRecord, id: data[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), photos: tempDiaryPhotos, audio_path: audioPath });
                 setSuccessMessage('懒人日记记录添加成功!');
                 setTempDiaryPhotos([]);
+                setAudioBlob(null);
+                setAudioUrl(null);
                 if (fileInputRef.current) {
                   fileInputRef.current.value = '';
                 }
@@ -207,7 +254,54 @@ import React, { useState, useEffect, useRef } from 'react';
         }
       };
 
-      const handleStartRecording = () => {
+      const handleStartRecording = async () => {
+        setIsRecording(true);
+        setAudioBlob(null);
+        setAudioUrl(null);
+        if (recognitionRef.current) {
+          recognitionRef.current.stop();
+        }
+        if (inputType === 'audio') {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            setMediaRecorder(recorder);
+            recorder.start();
+
+            const chunks = [];
+            recorder.ondataavailable = (event) => {
+              chunks.push(event.data);
+            };
+
+            recorder.onstop = () => {
+              const blob = new Blob(chunks, { type: 'audio/webm' });
+              setAudioBlob(blob);
+              setAudioUrl(URL.createObjectURL(blob));
+              stream.getTracks().forEach(track => track.stop());
+            };
+          } catch (error) {
+            console.error('录音启动失败:', error);
+            setErrorMessage('录音启动失败，请检查麦克风权限。');
+            setIsRecording(false);
+          }
+        } else {
+          handleVoiceInput();
+        }
+      };
+
+      const handleStopRecording = () => {
+        if (mediaRecorder) {
+          mediaRecorder.stop();
+          setIsRecording(false);
+        }
+        if (recognitionRef.current) {
+          recognitionRef.current.stop();
+          setIsRecording(false);
+          handleSaveAndNext();
+        }
+      };
+
+      const handleVoiceInput = () => {
         setIsRecording(true);
         if (!recognitionRef.current) {
           const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -233,7 +327,7 @@ import React, { useState, useEffect, useRef } from 'react';
         recognitionRef.current.start();
       };
 
-      const handleStopRecording = () => {
+      const handleStopVoiceInput = () => {
         if (recognitionRef.current) {
           recognitionRef.current.stop();
           setIsRecording(false);
@@ -354,13 +448,33 @@ import React, { useState, useEffect, useRef } from 'react';
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <button type="button" onClick={handleStartRecording} disabled={isRecording} style={{ backgroundColor: '#28a745' }}>
-              {isRecording ? '正在录音...' : '开始录音'}
+            <button
+              type="button"
+              onClick={handleStartRecording}
+              disabled={isRecording}
+              style={{ backgroundColor: '#28a745' }}
+            >
+              {isRecording ? '正在录音/语音输入...' : '开始录音/语音输入'}
             </button>
-            <button type="button" onClick={handleStopRecording} disabled={!isRecording} style={{ backgroundColor: '#dc3545' }}>
-              停止录音
+            <button
+              type="button"
+              onClick={handleStopRecording}
+              disabled={!isRecording}
+              style={{ backgroundColor: '#dc3545' }}
+            >
+              停止
             </button>
+            <select
+              value={inputType}
+              onChange={(e) => setInputType(e.target.value)}
+            >
+              <option value="audio">录音</option>
+              <option value="voice">语音输入</option>
+            </select>
           </div>
+          {recordingWarning && <p className="error-message">录音即将结束，请尽快完成！</p>}
+          {recordingTime > 0 && <p>录音时长: {recordingTime} 秒</p>}
+          {audioUrl && <audio src={audioUrl} controls />}
           <button type="button" onClick={handleSaveAndNext} disabled={loading} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>
             {loading ? '正在保存...' : '保存并进入下一个问题'}
           </button>
@@ -380,6 +494,9 @@ import React, { useState, useEffect, useRef } from 'react';
                         <img key={index} src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
                       ))}
                   </div>
+                   {currentRecord.audio_path && (
+                      <audio src={`${supabaseUrl}/storage/v1/object/public/${currentRecord.audio_path}`} controls />
+                    )}
                 </div>
               ))
             ) : null}

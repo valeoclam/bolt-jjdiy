@@ -139,6 +139,9 @@ import React, { useState, useEffect, useRef } from 'react';
                           <img key={index} src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
                         ))}
                     </div>
+                    {record.audio_path && (
+                      <audio src={`${supabaseUrl}/storage/v1/object/public/${record.audio_path}`} controls />
+                    )}
                   </div>
                 ))}
               </div>
