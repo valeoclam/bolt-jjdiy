@@ -23,6 +23,7 @@ import React, { useState, useEffect, useRef } from 'react';
       const fileInputRef = useRef(null);
       const [tempDiaryPhotos, setTempDiaryPhotos] = useState([]);
       const MAX_PHOTOS = 6;
+      const [noRecordMessage, setNoRecordMessage] = useState('');
 
       useEffect(() => {
         if (loggedInUser) {
@@ -72,22 +73,28 @@ import React, { useState, useEffect, useRef } from 'react';
             if (error.code !== '404') {
               console.error('获取今日懒人日记记录时发生错误:', error);
               setErrorMessage('获取今日懒人日记记录失败，请重试。');
+            } else {
+               setNoRecordMessage('还没有今日的记录，请开始记录吧！');
+               setCurrentRecord(null);
+               setErrorMessage('');
             }
-            setCurrentRecord(null);
           } else {
             setCurrentRecord(data);
             if (data && data.answers) {
               setQuestionIndex(data.answers.length);
             }
+            setNoRecordMessage('');
           }
         } catch (error) {
           console.error('发生意外错误:', error);
           setErrorMessage('发生意外错误，请重试。');
           setCurrentRecord(null);
+          setNoRecordMessage('');
         } finally {
           setLoading(false);
         }
       };
+
 
       const handleAnswerChange = (e) => {
         setAnswer(e.target.value);
@@ -95,6 +102,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
       const handleSaveAndNext = async () => {
         if (currentQuestion && answer) {
+          setLoading(true);
           try {
             const { data: userData, error: userError } = await supabase
               .from('users')
@@ -129,7 +137,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
               if (error) {
                 console.error('更新懒人日记记录时发生错误:', error);
-                setErrorMessage('更新懒人日记记录失败，请重试。');
+                setErrorMessage('更新懒人日记记录失败，请重试。' + error.message);
               } else {
                 console.log('懒人日记记录更新成功:', data);
                 setCurrentRecord(prevRecord => ({ ...prevRecord, answers: updatedAnswers, updated_at: new Date().toISOString(), photos: tempDiaryPhotos }));
@@ -156,9 +164,9 @@ import React, { useState, useEffect, useRef } from 'react';
 
               if (error) {
                 console.error('添加懒人日记记录时发生错误:', error);
-                setErrorMessage('添加懒人日记记录失败，请重试。');
+                setErrorMessage('添加懒人日记记录失败，请重试。' + error.message);
               } else {
-                console.log('懒人日记记录添加成功:', data);
+                 console.log('懒人日记记录添加成功:', data);
                 setCurrentRecord({ ...newRecord, id: data[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), photos: tempDiaryPhotos });
                 setSuccessMessage('懒人日记记录添加成功!');
                 setTempDiaryPhotos([]);
@@ -173,7 +181,9 @@ import React, { useState, useEffect, useRef } from 'react';
             }
           } catch (error) {
             console.error('发生意外错误:', error);
-            setErrorMessage('发生意外错误，请重试。');
+            setErrorMessage('发生意外错误，请重试。' + error.message);
+          } finally {
+            setLoading(false);
           }
         }
         setAnswer('');
@@ -345,20 +355,23 @@ import React, { useState, useEffect, useRef } from 'react';
           </button>
           {successMessage && <p className="success-message">{successMessage}</p>}
           {errorMessage && <p className="error-message">{errorMessage}</p>}
+          {noRecordMessage && <p className="error-message">{noRecordMessage}</p>}
           <div className="inspiration-list">
             <h3>今日记录</h3>
-            {currentRecord && currentRecord.answers && currentRecord.answers.map((record, index) => (
-              <div key={index} className="inspiration-item">
-                <p><strong>问题:</strong> {record.question}</p>
-                <p><strong>回答:</strong> {record.answer}</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                  {Array.isArray(currentRecord.photos) &&
-                    currentRecord.photos.map((photo, index) => (
-                      <img key={index} src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
-                    ))}
+             {currentRecord && currentRecord.answers && currentRecord.answers.length > 0 ? (
+              currentRecord.answers.map((record, index) => (
+                <div key={index} className="inspiration-item">
+                  <p><strong>问题:</strong> {record.question}</p>
+                  <p><strong>回答:</strong> {record.answer}</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                    {Array.isArray(currentRecord.photos) &&
+                      currentRecord.photos.map((photo, index) => (
+                        <img key={index} src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
+                      ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : null}
           </div>
           <button type="button" onClick={handleViewHistory} style={{ marginTop: '10px', backgroundColor: '#28a745' }}>查看历史记录</button>
           <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
