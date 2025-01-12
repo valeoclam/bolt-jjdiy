@@ -35,7 +35,6 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
   const [isCustomInputMode, setIsCustomInputMode] = useState(true);
   const [customInput, setCustomInput] = useState('');
     const [audioObjectURLs, setAudioObjectURLs] = useState({});
-    const [audioChunks, setAudioChunks] = useState([]); // 新增状态
     const [testAudioUrl, setTestAudioUrl] = useState(null); // 新增状态
 
   useEffect(() => {
@@ -300,7 +299,6 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     setIsRecording(true);
     setAudioBlob(null);
     setAudioUrl(null);
-    setAudioChunks([]); // 初始化 audioChunks
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
@@ -314,7 +312,8 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
 
       recorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'audio/webm' });
-        setAudioChunks(prevChunks => [...prevChunks, blob]); // 添加到 audioChunks
+        setAudioBlob(blob);
+        setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach(track => track.stop());
       };
     } catch (error) {
@@ -353,7 +352,6 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         } else {
           setAnswer(prevAnswer => prevAnswer + transcript); // 追加文本
         }
-        setIsRecording(false);
       };
       recognitionRef.current.onerror = (event) => {
         console.error("语音识别错误:", event.error);
@@ -380,12 +378,6 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
   const handleStopRecordingAndVoiceInput = () => {
     handleStopRecording();
     handleStopVoiceInput();
-    // 合并录音片段
-    if (audioChunks.length > 0) {
-      const combinedBlob = new Blob(audioChunks, { type: 'audio/webm' });
-      setAudioBlob(combinedBlob);
-      setAudioUrl(URL.createObjectURL(combinedBlob));
-    }
   };
 
   const handleTestAudio = () => {
@@ -582,19 +574,35 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
         <button
           type="button"
-          onClick={handleStartRecordingAndVoiceInput}
+          onClick={handleStartRecording}
           disabled={isRecording}
           style={{ backgroundColor: '#28a745' }}
         >
-          {isRecording ? '正在录音/语音输入...' : '开始录音/语音输入'}
+          {isRecording ? '正在录音...' : '开始录音'}
         </button>
         <button
           type="button"
-          onClick={handleStopRecordingAndVoiceInput}
+          onClick={handleStopRecording}
           disabled={!isRecording}
           style={{ backgroundColor: '#dc3545' }}
         >
-          停止录音/语音输入
+          停止录音
+        </button>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+        <button
+          type="button"
+          onClick={handleVoiceInput}
+          style={{ backgroundColor: '#007bff' }}
+        >
+          开始语音输入
+        </button>
+        <button
+          type="button"
+          onClick={handleStopVoiceInput}
+          style={{ backgroundColor: '#dc3545' }}
+        >
+          停止语音输入
         </button>
       </div>
       {recordingWarning && <p className="error-message">录音即将结束，请尽快完成！</p>}
