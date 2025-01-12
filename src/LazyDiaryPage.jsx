@@ -291,6 +291,11 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
   };
 
   const handleStartRecording = async () => {
+      if (audioBlob) {
+          if (!window.confirm('您确定要删除上次的录音并开始新的录音吗？')) {
+              return;
+          }
+      }
     setIsRecording(true);
     setAudioBlob(null);
     setAudioUrl(null);
