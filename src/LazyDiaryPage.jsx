@@ -361,9 +361,9 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         setIsRecording(false);
       };
       recognitionRef.current.onerror = (event) => {
-        console.error('语音识别错误:', event.error);
+        console.error("语音识别错误:", event.error);
         setIsRecording(false);
-        setIsRecording(false);
+        setErrorMessage("语音输入失败，请检查麦克风权限或网络连接。");
       };
     }
     recognitionRef.current.start();
