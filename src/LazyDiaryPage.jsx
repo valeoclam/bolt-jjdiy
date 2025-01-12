@@ -304,7 +304,7 @@ const handleStartRecording = async () => {
   }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const recorder = new MediaRecorder(stream, { mimeType: 'audio/wav' }); // 修改为 audio/wav
+    const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' }); // 修改为 audio/webm;codecs=opus
     setMediaRecorder(recorder);
     recorder.start();
 
@@ -314,7 +314,7 @@ const handleStartRecording = async () => {
     };
 
     recorder.onstop = () => {
-      const blob = new Blob(chunks, { type: 'audio/wav' }); // 修改为 audio/wav
+      const blob = new Blob(chunks, { type: 'audio/webm' }); // 修改为 audio/webm
       setAudioBlob(blob);
       setAudioUrl(URL.createObjectURL(blob));
       stream.getTracks().forEach(track => track.stop());
@@ -329,6 +329,7 @@ const handleStartRecording = async () => {
     }
   }
 };
+
 
 
   const handleStopRecording = () => {
