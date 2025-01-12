@@ -44,6 +44,17 @@ import React, { useState, useEffect, useRef } from 'react';
       }, [loggedInUser]);
 
       useEffect(() => {
+        if (questions.length > 0) {
+          const fixedQuestion = questions.find(question => question.is_fixed);
+          if (fixedQuestion) {
+            setCurrentQuestion(fixedQuestion.question);
+          } else {
+            setCurrentQuestion(questions[0].question);
+          }
+        }
+      }, [questions]);
+
+      useEffect(() => {
         let intervalId;
         if (isRecording && inputType === 'audio') {
           intervalId = setInterval(() => {
@@ -109,7 +120,7 @@ import React, { useState, useEffect, useRef } from 'react';
             }
           } else {
             setCurrentRecord(data && data[0]);
-            if (data && data[0] && data[0].answers) {
+             if (data && data[0] && data[0].answers) {
               setQuestionIndex(data[0].answers.length);
               const fixedQuestion = questions.find(question => question.is_fixed);
               const answeredFixed = data[0].answers.some(answer => answer.question === fixedQuestion?.question);
@@ -538,13 +549,19 @@ import React, { useState, useEffect, useRef } from 'react';
           <div className="form-group">
             {!isCustomInputMode ? (
               <>
-                <p><strong>问题:</strong> {currentQuestion}</p>
-                <textarea
-                  value={answer}
-                  onChange={handleAnswerChange}
-                  placeholder="请在此输入你的答案"
-                  style={{ height: '100px' }}
-                />
+                {questions.length === 0 ? (
+                  <p>问题库为空，请联系管理员添加问题</p>
+                ) : (
+                  <>
+                    <p><strong>问题:</strong> {currentQuestion}</p>
+                    <textarea
+                      value={answer}
+                      onChange={handleAnswerChange}
+                      placeholder="请在此输入你的答案"
+                      style={{ height: '100px' }}
+                    />
+                  </>
+                )}
               </>
             ) : (
               <textarea
