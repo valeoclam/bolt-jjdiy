@@ -12,6 +12,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [isVoiceInputActive, setIsVoiceInputActive] = useState(false); // 新增状态
   const navigate = useNavigate();
   const recognitionRef = useRef(null);
   const [loading, setLoading] = useState(false);
@@ -290,98 +291,86 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     }
   };
 
-const handleStartRecording = async () => {
-    if (audioBlob) {
-        if (!window.confirm('您确定要删除上次的录音并开始新的录音吗？')) {
-            return;
-        }
+  const handleStartRecording = async () => {
+      if (audioBlob) {
+          if (!window.confirm('您确定要删除上次的录音并开始新的录音吗？')) {
+              return;
+          }
+      }
+    setIsRecording(true);
+    setAudioBlob(null);
+    setAudioUrl(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      setMediaRecorder(recorder);
+      recorder.start();
+
+      const chunks = [];
+      recorder.ondataavailable = (event) => {
+        chunks.push(event.data);
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        setAudioUrl(URL.createObjectURL(blob));
+        stream.getTracks().forEach(track => track.stop());
+      };
+    } catch (error) {
+      console.error('录音启动失败:', error);
+      setErrorMessage('录音启动失败，请检查麦克风权限。');
+      setIsRecording(false);
+      if (error.name === 'NotAllowedError') {
+        setErrorMessage('请允许麦克风权限，以便使用录音功能。');
+      }
     }
-  setIsRecording(true);
-  setAudioBlob(null);
-  setAudioUrl(null);
-  if (recognitionRef.current) {
-    recognitionRef.current.stop();
-  }
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' }); // 修改为 audio/webm;codecs=opus
-    setMediaRecorder(recorder);
-    recorder.start();
-
-    const chunks = [];
-    recorder.ondataavailable = (event) => {
-      chunks.push(event.data);
-    };
-
-    recorder.onstop = () => {
-      const blob = new Blob(chunks, { type: 'audio/webm' }); // 修改为 audio/webm
-      setAudioBlob(blob);
-      setAudioUrl(URL.createObjectURL(blob));
-      stream.getTracks().forEach(track => track.stop());
-      handleVoiceInput();
-    };
-  } catch (error) {
-    console.error('录音启动失败:', error);
-    setErrorMessage('录音启动失败，请检查麦克风权限。');
-    setIsRecording(false);
-    if (error.name === 'NotAllowedError') {
-      setErrorMessage('请允许麦克风权限，以便使用语音输入功能。');
-    }
-  }
-};
-
-
+  };
 
   const handleStopRecording = () => {
     if (mediaRecorder) {
       mediaRecorder.stop();
       setIsRecording(false);
     }
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsRecording(false);
-        handleSaveAndNext();
-    }
   };
 
-const handleVoiceInput = () => {
-  if (!recognitionRef.current) {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('您的浏览器不支持语音识别，请尝试其他浏览器。');
-      setIsRecording(false);
-      return;
-    }
-    recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.lang = 'zh-CN';
-    recognitionRef.current.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map((result) => result[0].transcript)
-        .join('');
-      if (isCustomInputMode) {
-        setCustomInput(transcript);
-      } else {
-        setAnswer(transcript);
+  const handleStartVoiceInput = () => {
+    setIsVoiceInputActive(true);
+    if (!recognitionRef.current) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert('您的浏览器不支持语音识别，请尝试其他浏览器。');
+        setIsVoiceInputActive(false);
+        return;
       }
-      setIsRecording(false);
-    };
-    recognitionRef.current.onerror = (event) => {
-      console.error("语音识别错误:", event.error);
-      setIsRecording(false);
-      setErrorMessage("语音输入失败，请检查麦克风权限或网络连接。");
-    };
-  }
-  setTimeout(() => {
-    recognitionRef.current.start();
-  }, 100); // 添加 100 毫秒延迟
-};
-
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.lang = 'zh-CN';
+      recognitionRef.current.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map((result) => result[0].transcript)
+          .join('');
+        if (isCustomInputMode) {
+          setCustomInput(transcript);
+        } else {
+          setAnswer(transcript);
+        }
+        setIsVoiceInputActive(false);
+      };
+      recognitionRef.current.onerror = (event) => {
+        console.error("语音识别错误:", event.error);
+        setIsVoiceInputActive(false);
+        setErrorMessage("语音输入失败，请检查麦克风权限或网络连接。");
+      };
+    }
+    setTimeout(() => {
+      recognitionRef.current.start();
+    }, 100);
+  };
 
   const handleStopVoiceInput = () => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
-      setIsRecording(false);
-        handleSaveAndNext();
+      setIsVoiceInputActive(false);
     }
   };
 
@@ -575,7 +564,7 @@ const handleVoiceInput = () => {
           disabled={isRecording}
           style={{ backgroundColor: '#28a745' }}
         >
-          {isRecording ? '正在录音/语音输入...' : '开始语音输入'}
+          {isRecording ? '正在录音...' : '开始录音'}
         </button>
         <button
           type="button"
@@ -583,7 +572,25 @@ const handleVoiceInput = () => {
           disabled={!isRecording}
           style={{ backgroundColor: '#dc3545' }}
         >
-          停止
+          停止录音
+        </button>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+        <button
+          type="button"
+          onClick={handleStartVoiceInput}
+          disabled={isVoiceInputActive}
+          style={{ backgroundColor: '#007bff' }}
+        >
+          {isVoiceInputActive ? '正在语音输入...' : '开始语音输入'}
+        </button>
+        <button
+          type="button"
+          onClick={handleStopVoiceInput}
+          disabled={!isVoiceInputActive}
+          style={{ backgroundColor: '#dc3545' }}
+        >
+          停止语音输入
         </button>
       </div>
       {recordingWarning && <p className="error-message">录音即将结束，请尽快完成！</p>}
