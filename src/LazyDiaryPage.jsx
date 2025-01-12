@@ -269,6 +269,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         }
       });
     }
+      fetchTodayRecord();
   };
 
   const handleSkipQuestion = () => {
@@ -594,7 +595,8 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
           currentRecord.answers.map((record, index) => (
             <div key={index} className="inspiration-item">
               <p><strong>问题:</strong> {record.question}</p>
-              <p><strong>回答:</strong> {record.answer}</p>
+                <p><strong>回答:</strong> {record.answer}</p>
+                <p><strong>时间:</strong> {new Date(record.created_at).toLocaleString()}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap' }}>
                 {Array.isArray(record.photos) &&
                   record.photos.map((photo, index) => (
