@@ -29,10 +29,9 @@ import React, { useState, useEffect, useRef } from 'react';
       const [audioBlob, setAudioBlob] = useState(null);
       const [mediaRecorder, setMediaRecorder] = useState(null);
       const [audioUrl, setAudioUrl] = useState(null);
-      const [inputType, setInputType] = useState('audio'); // 'audio' or 'voice'
       const timerRef = useRef(null);
       const [answeredFixedQuestion, setAnsweredFixedQuestion] = useState(false);
-      const [isCustomInputMode, setIsCustomInputMode] = useState(false);
+      const [isCustomInputMode, setIsCustomInputMode] = useState(true);
       const [customInput, setCustomInput] = useState('');
 
       useEffect(() => {
@@ -44,7 +43,7 @@ import React, { useState, useEffect, useRef } from 'react';
       }, [loggedInUser]);
 
       useEffect(() => {
-        if (questions.length > 0) {
+        if (questions.length > 0 && !isCustomInputMode) {
           const fixedQuestion = questions.find(question => question.is_fixed);
           if (fixedQuestion) {
             setCurrentQuestion(fixedQuestion.question);
@@ -52,11 +51,11 @@ import React, { useState, useEffect, useRef } from 'react';
             setCurrentQuestion(questions[0].question);
           }
         }
-      }, [questions]);
+      }, [questions, isCustomInputMode]);
 
       useEffect(() => {
         let intervalId;
-        if (isRecording && inputType === 'audio') {
+        if (isRecording) {
           intervalId = setInterval(() => {
             setRecordingTime((prevTime) => prevTime + 1);
           }, 1000);
@@ -66,7 +65,7 @@ import React, { useState, useEffect, useRef } from 'react';
           setRecordingWarning(false);
         }
         return () => clearInterval(intervalId);
-      }, [isRecording, inputType]);
+      }, [isRecording]);
 
       useEffect(() => {
         if (recordingTime >= 50 && recordingTime < 60) {
@@ -405,31 +404,28 @@ import React, { useState, useEffect, useRef } from 'react';
         if (recognitionRef.current) {
           recognitionRef.current.stop();
         }
-        if (inputType === 'audio') {
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-            setMediaRecorder(recorder);
-            recorder.start();
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+          setMediaRecorder(recorder);
+          recorder.start();
 
-            const chunks = [];
-            recorder.ondataavailable = (event) => {
-              chunks.push(event.data);
-            };
+          const chunks = [];
+          recorder.ondataavailable = (event) => {
+            chunks.push(event.data);
+          };
 
-            recorder.onstop = () => {
-              const blob = new Blob(chunks, { type: 'audio/webm' });
-              setAudioBlob(blob);
-              setAudioUrl(URL.createObjectURL(blob));
-              stream.getTracks().forEach(track => track.stop());
-            };
-          } catch (error) {
-            console.error('录音启动失败:', error);
-            setErrorMessage('录音启动失败，请检查麦克风权限。');
-            setIsRecording(false);
-          }
-        } else {
-          handleVoiceInput();
+          recorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'audio/webm' });
+            setAudioBlob(blob);
+            setAudioUrl(URL.createObjectURL(blob));
+            stream.getTracks().forEach(track => track.stop());
+            handleVoiceInput();
+          };
+        } catch (error) {
+          console.error('录音启动失败:', error);
+          setErrorMessage('录音启动失败，请检查麦克风权限。');
+          setIsRecording(false);
         }
       };
 
@@ -446,7 +442,6 @@ import React, { useState, useEffect, useRef } from 'react';
       };
 
       const handleVoiceInput = () => {
-        setIsRecording(true);
         if (!recognitionRef.current) {
           const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
           if (!SpeechRecognition) {
@@ -465,6 +460,7 @@ import React, { useState, useEffect, useRef } from 'react';
           };
           recognitionRef.current.onerror = (event) => {
             console.error('语音识别错误:', event.error);
+            setIsRecording(false);
             setIsRecording(false);
           };
         }
@@ -621,7 +617,7 @@ import React, { useState, useEffect, useRef } from 'react';
               disabled={isRecording}
               style={{ backgroundColor: '#28a745' }}
             >
-              {isRecording ? '正在录音/语音输入...' : '开始录音/语音输入'}
+              {isRecording ? '正在录音/语音输入...' : '开始语音输入'}
             </button>
             <button
               type="button"
@@ -631,13 +627,6 @@ import React, { useState, useEffect, useRef } from 'react';
             >
               停止
             </button>
-            <select
-              value={inputType}
-              onChange={(e) => setInputType(e.target.value)}
-            >
-              <option value="audio">录音</option>
-              <option value="voice">语音输入</option>
-            </select>
           </div>
           {recordingWarning && <p className="error-message">录音即将结束，请尽快完成！</p>}
           {recordingTime > 0 && <p>录音时长: {recordingTime} 秒</p>}
