@@ -36,6 +36,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
   const [customInput, setCustomInput] = useState('');
     const [audioObjectURLs, setAudioObjectURLs] = useState({});
     const [audioChunks, setAudioChunks] = useState([]); // 新增状态
+    const [testAudioUrl, setTestAudioUrl] = useState(null); // 新增状态
 
   useEffect(() => {
     if (loggedInUser) {
@@ -352,6 +353,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         } else {
           setAnswer(prevAnswer => prevAnswer + transcript); // 追加文本
         }
+        setIsRecording(false);
       };
       recognitionRef.current.onerror = (event) => {
         console.error("语音识别错误:", event.error);
@@ -383,6 +385,14 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
       const combinedBlob = new Blob(audioChunks, { type: 'audio/webm' });
       setAudioBlob(combinedBlob);
       setAudioUrl(URL.createObjectURL(combinedBlob));
+    }
+  };
+
+  const handleTestAudio = () => {
+    if (audioBlob) {
+      setTestAudioUrl(URL.createObjectURL(audioBlob));
+    } else {
+      setErrorMessage("请先录制音频");
     }
   };
 
@@ -626,6 +636,12 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
       </div>
       <button type="button" onClick={handleViewHistory} style={{ marginTop: '10px', backgroundColor: '#28a745' }}>查看历史记录</button>
       <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
+      {audioBlob && (
+        <button type="button" onClick={handleTestAudio} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>
+          测试录音
+        </button>
+      )}
+      {testAudioUrl && <audio src={testAudioUrl} controls />}
     </div>
   );
 }
