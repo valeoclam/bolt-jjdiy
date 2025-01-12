@@ -96,15 +96,11 @@ import React, { useState, useEffect, useRef } from 'react';
             .eq('user_id', loggedInUser.id)
             .gte('created_at', `${today}T00:00:00.000Z`)
             .lt('created_at', `${today}T23:59:59.999Z`)
-            .single({
-              headers: {
-                'Accept': 'application/json',
-              },
-            });
+            .limit(1);
 
           if (error) {
             if (error.code !== '404') {
-              console.error('获取今日懒人日记记录时发生错误:', error);
+              console.error('获取今日懒人日记记录时发生错误:', error, error.message);
               setErrorMessage('获取今日懒人日记记录失败，请重试。');
             } else {
                setNoRecordMessage('还没有今日的记录，请开始记录吧！');
@@ -112,14 +108,14 @@ import React, { useState, useEffect, useRef } from 'react';
                setErrorMessage('');
             }
           } else {
-            setCurrentRecord(data);
-            if (data && data.answers) {
-              setQuestionIndex(data.answers.length);
+            setCurrentRecord(data && data[0]);
+            if (data && data[0] && data[0].answers) {
+              setQuestionIndex(data[0].answers.length);
               const fixedQuestion = questions.find(question => question.is_fixed);
-              const answeredFixed = data.answers.some(answer => answer.question === fixedQuestion?.question);
+              const answeredFixed = data[0].answers.some(answer => answer.question === fixedQuestion?.question);
               setAnsweredFixedQuestion(answeredFixed);
               if (fixedQuestion && answeredFixed) {
-                const nextQuestionIndex = (data.answers.length) % questions.length;
+                const nextQuestionIndex = (data[0].answers.length) % questions.length;
                 setCurrentQuestion(questions[nextQuestionIndex]?.question || '');
                 setQuestionIndex(nextQuestionIndex);
               } else if (fixedQuestion) {
@@ -138,7 +134,7 @@ import React, { useState, useEffect, useRef } from 'react';
             setNoRecordMessage('');
           }
         } catch (error) {
-          console.error('发生意外错误:', error);
+          console.error('发生意外错误:', error, error.message);
           setErrorMessage('发生意外错误，请重试。');
           setCurrentRecord(null);
           setNoRecordMessage('');
@@ -184,7 +180,7 @@ import React, { useState, useEffect, useRef } from 'react';
                 answer: customInput,
               };
 
-              let updatedAnswers = currentRecord ? [...currentRecord.answers, newAnswer] : [newAnswer];
+              let updatedAnswers = currentRecord ? [...(currentRecord.answers || []), newAnswer] : [newAnswer];
               let audioPath = null;
 
               if (audioBlob) {
@@ -293,7 +289,7 @@ import React, { useState, useEffect, useRef } from 'react';
               answer: answer,
             };
 
-            let updatedAnswers = currentRecord ? [...currentRecord.answers, newAnswer] : [newAnswer];
+            let updatedAnswers = currentRecord ? [...(currentRecord.answers || []), newAnswer] : [newAnswer];
             let audioPath = null;
 
             if (audioBlob) {
