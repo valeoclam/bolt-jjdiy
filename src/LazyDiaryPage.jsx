@@ -188,6 +188,8 @@ import React, { useState, useEffect, useRef } from 'react';
               const newAnswer = {
                 question: '自定义内容',
                 answer: customInput,
+                photos: tempDiaryPhotos,
+                audio_path: null,
               };
 
               let updatedAnswers = currentRecord ? [...(currentRecord.answers || []), newAnswer] : [newAnswer];
@@ -207,12 +209,13 @@ import React, { useState, useEffect, useRef } from 'react';
                   return;
                 }
                 audioPath = uploadData.path;
+                newAnswer.audio_path = audioPath;
               }
 
               if (currentRecord) {
                 const { data, error } = await supabase
                   .from('lazy_diary_records')
-                  .update({ answers: updatedAnswers, updated_at: new Date().toISOString(), photos: tempDiaryPhotos, audio_path: audioPath })
+                  .update({ answers: updatedAnswers, updated_at: new Date().toISOString() })
                   .eq('id', currentRecord.id);
 
                 if (error) {
@@ -220,7 +223,7 @@ import React, { useState, useEffect, useRef } from 'react';
                   setErrorMessage('更新懒人日记记录失败，请重试。' + error.message);
                 } else {
                   console.log('懒人日记记录更新成功:', data);
-                  setCurrentRecord(prevRecord => ({ ...prevRecord, answers: updatedAnswers, updated_at: new Date().toISOString(), photos: tempDiaryPhotos, audio_path: audioPath }));
+                  setCurrentRecord(prevRecord => ({ ...prevRecord, answers: updatedAnswers, updated_at: new Date().toISOString() }));
                   setSuccessMessage('懒人日记记录更新成功!');
                   setTempDiaryPhotos([]);
                   setAudioBlob(null);
@@ -237,8 +240,6 @@ import React, { useState, useEffect, useRef } from 'react';
                 const newRecord = {
                   user_id: userData.id,
                   answers: updatedAnswers,
-                  photos: tempDiaryPhotos,
-                  audio_path: audioPath,
                 };
 
                 const { data, error } = await supabase
@@ -250,7 +251,7 @@ import React, { useState, useEffect, useRef } from 'react';
                   setErrorMessage('添加懒人日记记录失败，请重试。' + error.message);
                 } else {
                    console.log('懒人日记记录添加成功:', data);
-                  setCurrentRecord({ ...newRecord, id: data[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), photos: tempDiaryPhotos, audio_path: audioPath });
+                  setCurrentRecord({ ...newRecord, id: data[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
                   setSuccessMessage('懒人日记记录添加成功!');
                   setTempDiaryPhotos([]);
                   setAudioBlob(null);
@@ -297,6 +298,8 @@ import React, { useState, useEffect, useRef } from 'react';
             const newAnswer = {
               question: currentQuestion,
               answer: answer,
+              photos: tempDiaryPhotos,
+              audio_path: null,
             };
 
             let updatedAnswers = currentRecord ? [...(currentRecord.answers || []), newAnswer] : [newAnswer];
@@ -316,12 +319,13 @@ import React, { useState, useEffect, useRef } from 'react';
                 return;
               }
               audioPath = uploadData.path;
+              newAnswer.audio_path = audioPath;
             }
 
             if (currentRecord) {
               const { data, error } = await supabase
                 .from('lazy_diary_records')
-                .update({ answers: updatedAnswers, updated_at: new Date().toISOString(), photos: tempDiaryPhotos, audio_path: audioPath })
+                .update({ answers: updatedAnswers, updated_at: new Date().toISOString() })
                 .eq('id', currentRecord.id);
 
               if (error) {
@@ -329,7 +333,7 @@ import React, { useState, useEffect, useRef } from 'react';
                 setErrorMessage('更新懒人日记记录失败，请重试。' + error.message);
               } else {
                 console.log('懒人日记记录更新成功:', data);
-                setCurrentRecord(prevRecord => ({ ...prevRecord, answers: updatedAnswers, updated_at: new Date().toISOString(), photos: tempDiaryPhotos, audio_path: audioPath }));
+                setCurrentRecord(prevRecord => ({ ...prevRecord, answers: updatedAnswers, updated_at: new Date().toISOString() }));
                 setSuccessMessage('懒人日记记录更新成功!');
                 setTempDiaryPhotos([]);
                 setAudioBlob(null);
@@ -346,8 +350,6 @@ import React, { useState, useEffect, useRef } from 'react';
               const newRecord = {
                 user_id: userData.id,
                 answers: updatedAnswers,
-                photos: tempDiaryPhotos,
-                audio_path: audioPath,
               };
 
               const { data, error } = await supabase
@@ -359,7 +361,7 @@ import React, { useState, useEffect, useRef } from 'react';
                 setErrorMessage('添加懒人日记记录失败，请重试。' + error.message);
               } else {
                  console.log('懒人日记记录添加成功:', data);
-                setCurrentRecord({ ...newRecord, id: data[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), photos: tempDiaryPhotos, audio_path: audioPath });
+                setCurrentRecord({ ...newRecord, id: data[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
                 setSuccessMessage('懒人日记记录添加成功!');
                 setTempDiaryPhotos([]);
                 setAudioBlob(null);
@@ -650,13 +652,13 @@ import React, { useState, useEffect, useRef } from 'react';
                   <p><strong>问题:</strong> {record.question}</p>
                   <p><strong>回答:</strong> {record.answer}</p>
                   <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                    {Array.isArray(currentRecord.photos) &&
-                      currentRecord.photos.map((photo, index) => (
+                    {Array.isArray(record.photos) &&
+                      record.photos.map((photo, index) => (
                         <img key={index} src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
                       ))}
                   </div>
-                   {currentRecord.audio_path && (
-                      <audio src={`${supabaseUrl}/storage/v1/object/public/${currentRecord.audio_path}`} controls />
+                   {record.audio_path && (
+                      <audio src={`${supabaseUrl}/storage/v1/object/public/${record.audio_path}`} controls />
                     )}
                 </div>
               ))
