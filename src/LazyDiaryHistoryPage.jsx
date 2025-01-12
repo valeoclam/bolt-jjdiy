@@ -44,7 +44,25 @@ import React, { useState, useEffect, useRef } from 'react';
             console.error('获取懒人日记记录时发生错误:', error);
             setErrorMessage('获取懒人日记记录失败，请重试。');
           } else {
-            groupRecordsByDate(data || []);
+            if (data && data.length > 0) {
+              const recordsWithAnswers = await Promise.all(data.map(async (record) => {
+                const { data: answersData, error: answersError } = await supabase
+                  .from('lazy_diary_answers')
+                  .select('*')
+                  .eq('record_id', record.id)
+                  .order('created_at', { ascending: true });
+
+                if (answersError) {
+                  console.error('获取懒人日记答案时发生错误:', answersError);
+                  return { ...record, answers: [] };
+                } else {
+                  return { ...record, answers: answersData };
+                }
+              }));
+              groupRecordsByDate(recordsWithAnswers || []);
+            } else {
+              groupRecordsByDate([]);
+            }
           }
         } catch (error) {
           console.error('发生意外错误:', error);
@@ -131,17 +149,17 @@ import React, { useState, useEffect, useRef } from 'react';
                       <div key={index}>
                         <p><strong>问题:</strong> {answer.question}</p>
                         <p><strong>回答:</strong> {answer.answer}</p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                          {Array.isArray(answer.photos) &&
+                            answer.photos.map((photo, index) => (
+                              <img key={index} src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
+                            ))}
+                        </div>
+                        {answer.audio_path && (
+                          <audio src={`${supabaseUrl}/storage/v1/object/public/${answer.audio_path}`} controls />
+                        )}
                       </div>
                     ))}
-                    <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                      {Array.isArray(record.photos) &&
-                        record.photos.map((photo, index) => (
-                          <img key={index} src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
-                        ))}
-                    </div>
-                    {record.audio_path && (
-                      <audio src={`${supabaseUrl}/storage/v1/object/public/${record.audio_path}`} controls />
-                    )}
                   </div>
                 ))}
               </div>
