@@ -35,7 +35,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
   const [isCustomInputMode, setIsCustomInputMode] = useState(true);
   const [customInput, setCustomInput] = useState('');
     const [audioObjectURLs, setAudioObjectURLs] = useState({});
-
+    const [audioChunks, setAudioChunks] = useState([]); // 新增状态
 
   useEffect(() => {
     if (loggedInUser) {
@@ -299,9 +299,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     setIsRecording(true);
     setAudioBlob(null);
     setAudioUrl(null);
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
+    setAudioChunks([]); // 初始化 audioChunks
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
@@ -315,10 +313,8 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
 
       recorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'audio/webm' });
-        setAudioBlob(blob);
-        setAudioUrl(URL.createObjectURL(blob));
+        setAudioChunks(prevChunks => [...prevChunks, blob]); // 添加到 audioChunks
         stream.getTracks().forEach(track => track.stop());
-        handleVoiceInput();
       };
     } catch (error) {
       console.error('录音启动失败:', error);
@@ -352,11 +348,10 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
           .map((result) => result[0].transcript)
           .join('');
         if (isCustomInputMode) {
-          setCustomInput(transcript);
+          setCustomInput(prevInput => prevInput + transcript); // 追加文本
         } else {
-          setAnswer(transcript);
+          setAnswer(prevAnswer => prevAnswer + transcript); // 追加文本
         }
-        setIsRecording(false);
       };
       recognitionRef.current.onerror = (event) => {
         console.error("语音识别错误:", event.error);
@@ -372,7 +367,6 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
   const handleStopVoiceInput = () => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
-      setIsRecording(false);
     }
   };
 
@@ -384,6 +378,12 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
   const handleStopRecordingAndVoiceInput = () => {
     handleStopRecording();
     handleStopVoiceInput();
+    // 合并录音片段
+    if (audioChunks.length > 0) {
+      const combinedBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      setAudioBlob(combinedBlob);
+      setAudioUrl(URL.createObjectURL(combinedBlob));
+    }
   };
 
   const handleBackToModules = () => {
