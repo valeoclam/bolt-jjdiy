@@ -32,6 +32,8 @@ import React, { useState, useEffect, useRef } from 'react';
       const [inputType, setInputType] = useState('audio'); // 'audio' or 'voice'
       const timerRef = useRef(null);
       const [answeredFixedQuestion, setAnsweredFixedQuestion] = useState(false);
+      const [isCustomInputMode, setIsCustomInputMode] = useState(false);
+      const [customInput, setCustomInput] = useState('');
 
       useEffect(() => {
         if (loggedInUser) {
@@ -150,8 +152,122 @@ import React, { useState, useEffect, useRef } from 'react';
         setAnswer(e.target.value);
       };
 
+      const handleCustomInputChange = (e) => {
+        setCustomInput(e.target.value);
+      };
+
       const handleSaveAndNext = async () => {
-        if (currentQuestion && answer) {
+        if (isCustomInputMode) {
+          if (customInput) {
+            setLoading(true);
+            try {
+              const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('username', loggedInUser.username)
+                .single();
+
+              if (userError) {
+                console.error('获取用户ID时发生错误:', userError);
+                setErrorMessage('获取用户ID失败，请重试。');
+                return;
+              }
+
+              if (!userData) {
+                console.error('未找到用户');
+                setErrorMessage('未找到用户，请重试。');
+                return;
+              }
+
+              const newAnswer = {
+                question: '自定义内容',
+                answer: customInput,
+              };
+
+              let updatedAnswers = currentRecord ? [...currentRecord.answers, newAnswer] : [newAnswer];
+              let audioPath = null;
+
+              if (audioBlob) {
+                const fileName = `audio-${loggedInUser.id}-${new Date().getTime()}.webm`;
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                  .from('lazy-diary-audio')
+                  .upload(fileName, audioBlob, {
+                    contentType: 'audio/webm',
+                  });
+
+                if (uploadError) {
+                  console.error('上传录音文件失败:', uploadError, uploadError.message);
+                  setErrorMessage('上传录音文件失败，请重试。' + uploadError.message);
+                  return;
+                }
+                audioPath = uploadData.path;
+              }
+
+              if (currentRecord) {
+                const { data, error } = await supabase
+                  .from('lazy_diary_records')
+                  .update({ answers: updatedAnswers, updated_at: new Date().toISOString(), photos: tempDiaryPhotos, audio_path: audioPath })
+                  .eq('id', currentRecord.id);
+
+                if (error) {
+                  console.error('更新懒人日记记录时发生错误:', error);
+                  setErrorMessage('更新懒人日记记录失败，请重试。' + error.message);
+                } else {
+                  console.log('懒人日记记录更新成功:', data);
+                  setCurrentRecord(prevRecord => ({ ...prevRecord, answers: updatedAnswers, updated_at: new Date().toISOString(), photos: tempDiaryPhotos, audio_path: audioPath }));
+                  setSuccessMessage('懒人日记记录更新成功!');
+                  setTempDiaryPhotos([]);
+                  setAudioBlob(null);
+                  setAudioUrl(null);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                  if (successTimeoutRef.current) {
+                    clearTimeout(successTimeoutRef.current);
+                  }
+                  successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
+                }
+              } else {
+                const newRecord = {
+                  user_id: userData.id,
+                  answers: updatedAnswers,
+                  photos: tempDiaryPhotos,
+                  audio_path: audioPath,
+                };
+
+                const { data, error } = await supabase
+                  .from('lazy_diary_records')
+                  .insert([newRecord]);
+
+                if (error) {
+                  console.error('添加懒人日记记录时发生错误:', error);
+                  setErrorMessage('添加懒人日记记录失败，请重试。' + error.message);
+                } else {
+                   console.log('懒人日记记录添加成功:', data);
+                  setCurrentRecord({ ...newRecord, id: data[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), photos: tempDiaryPhotos, audio_path: audioPath });
+                  setSuccessMessage('懒人日记记录添加成功!');
+                  setTempDiaryPhotos([]);
+                  setAudioBlob(null);
+                  setAudioUrl(null);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                  if (successTimeoutRef.current) {
+                    clearTimeout(successTimeoutRef.current);
+                  }
+                  successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
+                }
+              }
+            } catch (error) {
+              console.error('发生意外错误:', error);
+              setErrorMessage('发生意外错误，请重试。' + error.message);
+            } finally {
+              setLoading(false);
+            }
+          }
+          setCustomInput('');
+          setIsCustomInputMode(false);
+        } else if (currentQuestion && answer) {
           setLoading(true);
           try {
             const { data: userData, error: userError } = await supabase
@@ -259,7 +375,7 @@ import React, { useState, useEffect, useRef } from 'react';
           }
         }
         setAnswer('');
-        if (questions && questions.length > 0) {
+        if (questions && questions.length > 0 && !isCustomInputMode) {
           setQuestionIndex((prevIndex) => {
             const nextIndex = (prevIndex + 1) % questions.length;
             const fixedQuestion = questions.find(question => question.is_fixed);
@@ -412,19 +528,36 @@ import React, { useState, useEffect, useRef } from 'react';
         );
       };
 
+      const handleToggleCustomInputMode = () => {
+        setIsCustomInputMode(!isCustomInputMode);
+        setAnswer('');
+        setCustomInput('');
+      };
+
       return (
         <div className="container">
           <h2>懒人日记</h2>
           {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
           <button type="button" onClick={onLogout} className="logout-button">退出</button>
           <div className="form-group">
-            <p><strong>问题:</strong> {currentQuestion}</p>
-            <textarea
-              value={answer}
-              onChange={handleAnswerChange}
-              placeholder="请在此输入你的答案"
-              style={{ height: '100px' }}
-            />
+            {!isCustomInputMode ? (
+              <>
+                <p><strong>问题:</strong> {currentQuestion}</p>
+                <textarea
+                  value={answer}
+                  onChange={handleAnswerChange}
+                  placeholder="请在此输入你的答案"
+                  style={{ height: '100px' }}
+                />
+              </>
+            ) : (
+              <textarea
+                value={customInput}
+                onChange={handleCustomInputChange}
+                placeholder="请在此输入你想说的话"
+                style={{ height: '100px' }}
+              />
+            )}
           </div>
           <div className="form-group">
             <div className="file-input-container">
@@ -496,9 +629,14 @@ import React, { useState, useEffect, useRef } from 'react';
           {recordingWarning && <p className="error-message">录音即将结束，请尽快完成！</p>}
           {recordingTime > 0 && <p>录音时长: {recordingTime} 秒</p>}
           {audioUrl && <audio src={audioUrl} controls />}
-          <button type="button" onClick={handleSaveAndNext} disabled={loading} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>
-            {loading ? '正在保存...' : '保存并进入下一个问题'}
-          </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <button type="button" onClick={handleSaveAndNext} disabled={loading} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>
+              {loading ? '正在保存...' : '保存并进入下一个问题'}
+            </button>
+            <button type="button" onClick={handleToggleCustomInputMode} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>
+              {isCustomInputMode ? '返回问题模式' : '自定义输入'}
+            </button>
+          </div>
           {successMessage && <p className="success-message">{successMessage}</p>}
           {errorMessage && <p className="error-message">{errorMessage}</p>}
           {noRecordMessage && <p className="error-message">{noRecordMessage}</p>}
