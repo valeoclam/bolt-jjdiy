@@ -291,41 +291,45 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
   };
 
   const handleStartRecording = async () => {
-      if (audioBlob) {
-          if (!window.confirm('您确定要删除上次的录音并开始新的录音吗？')) {
-              return;
-          }
-      }
-    setIsRecording(true);
-    setAudioBlob(null);
-    setAudioUrl(null);
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
+    if (audioBlob) {
+        if (!window.confirm('您确定要删除上次的录音并开始新的录音吗？')) {
+            return;
+        }
     }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
-      setMediaRecorder(recorder);
-      recorder.start();
+  setIsRecording(true);
+  setAudioBlob(null);
+  setAudioUrl(null);
+  if (recognitionRef.current) {
+    recognitionRef.current.stop();
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+    setMediaRecorder(recorder);
+    recorder.start();
 
-      const chunks = [];
-      recorder.ondataavailable = (event) => {
-        chunks.push(event.data);
-      };
+    const chunks = [];
+    recorder.ondataavailable = (event) => {
+      chunks.push(event.data);
+    };
 
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        setAudioBlob(blob);
-        setAudioUrl(URL.createObjectURL(blob));
-        stream.getTracks().forEach(track => track.stop());
-        handleVoiceInput();
-      };
-    } catch (error) {
-      console.error('录音启动失败:', error);
-      setErrorMessage('录音启动失败，请检查麦克风权限。');
-      setIsRecording(false);
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: 'audio/webm' });
+      setAudioBlob(blob);
+      setAudioUrl(URL.createObjectURL(blob));
+      stream.getTracks().forEach(track => track.stop());
+      handleVoiceInput();
+    };
+  } catch (error) {
+    console.error('录音启动失败:', error);
+    setErrorMessage('录音启动失败，请检查麦克风权限。');
+    setIsRecording(false);
+    if (error.name === 'NotAllowedError') {
+      setErrorMessage('请允许麦克风权限，以便使用语音输入功能。');
     }
-  };
+  }
+};
+
 
   const handleStopRecording = () => {
     if (mediaRecorder) {
@@ -339,35 +343,38 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     }
   };
 
-  const handleVoiceInput = () => {
-    if (!recognitionRef.current) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert('您的浏览器不支持语音识别，请尝试其他浏览器。');
-        setIsRecording(false);
-        return;
-      }
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.lang = 'zh-CN';
-      recognitionRef.current.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map((result) => result[0].transcript)
-          .join('');
-        if (isCustomInputMode) {
-          setCustomInput(transcript);
-        } else {
-          setAnswer(transcript);
-        }
-        setIsRecording(false);
-      };
-      recognitionRef.current.onerror = (event) => {
-        console.error("语音识别错误:", event.error);
-        setIsRecording(false);
-        setErrorMessage("语音输入失败，请检查麦克风权限或网络连接。");
-      };
+const handleVoiceInput = () => {
+  if (!recognitionRef.current) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('您的浏览器不支持语音识别，请尝试其他浏览器。');
+      setIsRecording(false);
+      return;
     }
+    recognitionRef.current = new SpeechRecognition();
+    recognitionRef.current.lang = 'zh-CN';
+    recognitionRef.current.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0].transcript)
+        .join('');
+      if (isCustomInputMode) {
+        setCustomInput(transcript);
+      } else {
+        setAnswer(transcript);
+      }
+      setIsRecording(false);
+    };
+    recognitionRef.current.onerror = (event) => {
+      console.error("语音识别错误:", event.error);
+      setIsRecording(false);
+      setErrorMessage("语音输入失败，请检查麦克风权限或网络连接。");
+    };
+  }
+  setTimeout(() => {
     recognitionRef.current.start();
-  };
+  }, 100); // 添加 100 毫秒延迟
+};
+
 
   const handleStopVoiceInput = () => {
     if (recognitionRef.current) {
