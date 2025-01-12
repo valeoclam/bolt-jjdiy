@@ -290,7 +290,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     }
   };
 
-  const handleStartRecording = async () => {
+const handleStartRecording = async () => {
     if (audioBlob) {
         if (!window.confirm('您确定要删除上次的录音并开始新的录音吗？')) {
             return;
@@ -304,7 +304,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
   }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+    const recorder = new MediaRecorder(stream, { mimeType: 'audio/wav' }); // 修改为 audio/wav
     setMediaRecorder(recorder);
     recorder.start();
 
@@ -314,7 +314,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     };
 
     recorder.onstop = () => {
-      const blob = new Blob(chunks, { type: 'audio/webm' });
+      const blob = new Blob(chunks, { type: 'audio/wav' }); // 修改为 audio/wav
       setAudioBlob(blob);
       setAudioUrl(URL.createObjectURL(blob));
       stream.getTracks().forEach(track => track.stop());
