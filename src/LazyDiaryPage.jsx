@@ -126,7 +126,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             .from('lazy_diary_answers')
             .select('*')
             .eq('record_id', data[0].id)
-            .order('created_at', { ascending: true });
+            .order('created_at', { ascending: false });
 
           if (answersError) {
             console.error('获取今日懒人日记答案时发生错误:', answersError);
@@ -592,10 +592,10 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
       <div className="inspiration-list">
         <h3>今日记录</h3>
         {currentRecord && currentRecord.answers && currentRecord.answers.length > 0 ? (
-          currentRecord.answers.map((record, index) => (
+          [...currentRecord.answers].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map((record, index) => (
             <div key={index} className="inspiration-item">
               <p><strong>问题:</strong> {record.question}</p>
-                <p><strong>回答:</strong> {record.answer}</p>
+              <p><strong>回答:</strong> {record.answer}</p>
                 <p><strong>时间:</strong> {new Date(record.created_at).toLocaleString()}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap' }}>
                 {Array.isArray(record.photos) &&

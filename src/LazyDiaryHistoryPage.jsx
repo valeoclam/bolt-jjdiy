@@ -35,7 +35,6 @@ function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
         .from('lazy_diary_records')
         .select('*')
         .eq('user_id', loggedInUser.id)
-        .order('created_at', { ascending: false });
 
       if (startDate) {
         query = query.gte('created_at', `${startDate}T00:00:00.000Z`);
@@ -56,7 +55,7 @@ function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
               .from('lazy_diary_answers')
               .select('*')
               .eq('record_id', record.id)
-              .order('created_at', { ascending: true });
+              .order('created_at', { ascending: false });
 
             if (answersError) {
               console.error('获取懒人日记答案时发生错误:', answersError);
@@ -65,7 +64,12 @@ function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
               return { ...record, answers: answersData };
             }
           }));
-          groupRecordsByDate(recordsWithAnswers || []);
+            const sortedRecordsWithAnswers = [...recordsWithAnswers].sort((a, b) => {
+                const latestA = a.answers && a.answers.length > 0 ? new Date(a.answers[0].created_at) : new Date(a.created_at);
+                const latestB = b.answers && b.answers.length > 0 ? new Date(b.answers[0].created_at) : new Date(b.created_at);
+                return latestB - latestA;
+            });
+          groupRecordsByDate(sortedRecordsWithAnswers || []);
         } else {
           groupRecordsByDate([]);
         }
