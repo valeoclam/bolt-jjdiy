@@ -50,6 +50,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const [disableCustomInput, setDisableCustomInput] = useState(false);
     const [customInputMessage, setCustomInputMessage] = useState('');
     const [problemInputMessage, setProblemInputMessage] = useState('');
+    const errorMessageTimeoutRef = useRef(null);
 
     useEffect(() => {
         if (loggedInUser) {
@@ -183,7 +184,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const handleSaveAndNext = async () => {
         if (isCustomInputMode && !customInput) {
             setErrorMessage('请先输入内容');
-            if (errorMessageTimeoutRef.current) {
+             if (errorMessageTimeoutRef.current) {
                 clearTimeout(errorMessageTimeoutRef.current);
             }
             errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
@@ -191,7 +192,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         }
         if (!isCustomInputMode && !answer) {
             setErrorMessage('请先输入答案');
-            if (errorMessageTimeoutRef.current) {
+             if (errorMessageTimeoutRef.current) {
                 clearTimeout(errorMessageTimeoutRef.current);
             }
             errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
@@ -308,7 +309,6 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         }
         fetchTodayRecord();
     };
-
 
     const handleSkipQuestion = () => {
         if (disableSkip) {
@@ -588,7 +588,6 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             fileInputRef.current.value = '';
         }
     };
-
 
     return (
         <div className="container">
