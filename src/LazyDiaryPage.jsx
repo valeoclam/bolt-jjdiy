@@ -51,7 +51,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const [customInputMessage, setCustomInputMessage] = useState('');
     const [problemInputMessage, setProblemInputMessage] = useState('');
     const errorMessageTimeoutRef = useRef(null);
-    const [selectedOption, setSelectedOption] = useState(null);
+    const [selectedOptions, setSelectedOptions] = useState([]);
     const [isOptionSelected, setIsOptionSelected] = useState(false);
     const [previousQuestions, setPreviousQuestions] = useState([]);
     const [currentQuestionType, setCurrentQuestionType] = useState('text');
@@ -104,12 +104,12 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
 
     useEffect(() => {
         if (!isCustomInputMode) {
-            setDisableSkip(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOption));
-            setDisableCustomInput(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOption));
+            setDisableSkip(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0));
+            setDisableCustomInput(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0));
         } else {
             setDisableCustomInput(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob));
         }
-    }, [isCustomInputMode, answer, tempDiaryPhotos, audioBlob, customInput, selectedOption]);
+    }, [isCustomInputMode, answer, tempDiaryPhotos, audioBlob, customInput, selectedOptions]);
 
     const fetchQuestions = async () => {
         try {
@@ -197,7 +197,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
             return;
         }
-        if (!isCustomInputMode && !answer && !selectedOption) {
+        if (!isCustomInputMode && !answer && selectedOptions.length === 0) {
             setErrorMessage('请先输入答案');
              if (errorMessageTimeoutRef.current) {
                 clearTimeout(errorMessageTimeoutRef.current);
@@ -253,7 +253,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 answer: isCustomInputMode ? customInput : answer,
                 photos: tempDiaryPhotos,
                 audio_path: audioPath,
-                selected_option: selectedOption,
+                selected_option: currentQuestionType === 'multiple' ? JSON.stringify(selectedOptions) : selectedOptions.join(''),
             };
 
             const { data, error } = await supabase
@@ -269,7 +269,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 setTempDiaryPhotos([]);
                 setAudioBlob(null);
                 setAudioUrl(null);
-                setSelectedOption(null);
+                setSelectedOptions([]);
                 setIsOptionSelected(false);
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
@@ -327,7 +327,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             return;
         }
         setAnswer('');
-        setSelectedOption(null);
+        setSelectedOptions([]);
         setIsOptionSelected(false);
         if (questions && questions.length > 0 && !isCustomInputMode) {
             setPreviousQuestions(prev => [...prev, currentQuestion]);
@@ -562,8 +562,8 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     }, [currentRecord]);
 
     const handleToggleCustomInputMode = () => {
-        if ((isCustomInputMode && (answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOption)) ||
-            (!isCustomInputMode && (customInput || tempDiaryPhotos.length > 0 || audioBlob || selectedOption))) {
+        if ((isCustomInputMode && (answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0)) ||
+            (!isCustomInputMode && (customInput || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0))) {
             setShowConfirmModal(true);
             setConfirmAction(isCustomInputMode ? 'switchToProblemMode' : 'switchToCustomMode');
         } else {
@@ -609,7 +609,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         setTempDiaryPhotos([]);
         setAudioBlob(null);
         setAudioUrl(null);
-        setSelectedOption(null);
+        setSelectedOptions([]);
         setIsOptionSelected(false);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
@@ -617,7 +617,15 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     };
 
     const handleOptionSelect = (option) => {
-        setSelectedOption(option);
+        if (currentQuestionType === 'multiple') {
+            if (selectedOptions.includes(option)) {
+                setSelectedOptions(selectedOptions.filter(opt => opt !== option));
+            } else {
+                setSelectedOptions([...selectedOptions, option]);
+            }
+        } else {
+            setSelectedOptions([option]);
+        }
         setIsOptionSelected(true);
     };
 
@@ -656,7 +664,24 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                                                         type="radio"
                                                         name="singleOption"
                                                         value={option}
-                                                        checked={selectedOption === option}
+                                                        checked={selectedOptions.includes(option)}
+                                                        onChange={() => handleOptionSelect(option)}
+                                                    />
+                                                    <span style={{ color: option === '白色' ? 'black' : option === '黑色' ? 'white' : option, backgroundColor: option === '白色' ? 'white' : option === '黑色' ? 'black' : 'transparent', padding: '5px', borderRadius: '4px', display: 'inline-block' }}>{option}</span>
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : questions.find(q => q.question === currentQuestion)?.type === 'multiple' ? (
+                                    <div>
+                                        {questions.find(q => q.question === currentQuestion)?.options?.map((option, index) => (
+                                            <div key={index}>
+                                                <label>
+                                                    <input
+                                                        type="checkbox"
+                                                        name="multipleOption"
+                                                        value={option}
+                                                        checked={selectedOptions.includes(option)}
                                                         onChange={() => handleOptionSelect(option)}
                                                     />
                                                     <span style={{ color: option === '白色' ? 'black' : option === '黑色' ? 'white' : option, backgroundColor: option === '白色' ? 'white' : option === '黑色' ? 'black' : 'transparent', padding: '5px', borderRadius: '4px', display: 'inline-block' }}>{option}</span>
@@ -684,72 +709,76 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                     />
                 )}
             </div>
-            <div className="form-group">
-                <div className="file-input-container">
-                    <input
-                        type="file"
-                        id="diaryPhotos"
-                        accept="image/*"
-                        multiple
-                        onChange={handleDiaryPhotosChange}
-                        ref={fileInputRef}
-                        style={{ display: 'none' }}
-                    />
-                    <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>选择照片</button>
-                    {Array.isArray(tempDiaryPhotos) &&
-                        tempDiaryPhotos.map((photo, index) => (
-                            <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
-                                <img src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
-                                <button
-                                    type="button"
-                                    onClick={() => handleRemoveDiaryPhoto(index)}
-                                    style={{
-                                        position: 'absolute',
-                                        top: '5px',
-                                        right: '5px',
-                                        background: 'rgba(0, 0, 0, 0.5)',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '50%',
-                                        width: '20px',
-                                        height: '20px',
-                                        fontSize: '12px',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}
-                                >
-                                    x
-                                </button>
-                            </div>
-                        ))}
+            {currentQuestionType === 'text' && !isCustomInputMode && (
+                <div className="form-group">
+                    <div className="file-input-container">
+                        <input
+                            type="file"
+                            id="diaryPhotos"
+                            accept="image/*"
+                            multiple
+                            onChange={handleDiaryPhotosChange}
+                            ref={fileInputRef}
+                            style={{ display: 'none' }}
+                        />
+                        <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>选择照片</button>
+                        {Array.isArray(tempDiaryPhotos) &&
+                            tempDiaryPhotos.map((photo, index) => (
+                                <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
+                                    <img src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveDiaryPhoto(index)}
+                                        style={{
+                                            position: 'absolute',
+                                            top: '5px',
+                                            right: '5px',
+                                            background: 'rgba(0, 0, 0, 0.5)',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '50%',
+                                            width: '20px',
+                                            height: '20px',
+                                            fontSize: '12px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }}
+                                    >
+                                        x
+                                    </button>
+                                </div>
+                            ))}
+                    </div>
                 </div>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '10px', gap: '10px' }}>
-                <button
-                    type="button"
-                    onClick={handleVoiceInput}
-                    style={{ backgroundColor: isVoiceInputActive ? '#dc3545' : '#007bff' }}
-                    disabled={false}
-                >
-                    {voiceInputButtonText}
-                </button>
-                 <button
-                    type="button"
-                    onClick={isRecording ? handleStopRecording : handleStartRecording}
-                    disabled={isVoiceInputActive}
-                    style={{ backgroundColor: isRecording ? '#dc3545' : '#28a745' }}
-                >
-                    {recordButtonText}
-                </button>
-            </div>
+            )}
+            {currentQuestionType === 'text' && !isCustomInputMode && (
+                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '10px', gap: '10px' }}>
+                    <button
+                        type="button"
+                        onClick={handleVoiceInput}
+                        style={{ backgroundColor: isVoiceInputActive ? '#dc3545' : '#007bff' }}
+                        disabled={false}
+                    >
+                        {voiceInputButtonText}
+                    </button>
+                     <button
+                        type="button"
+                        onClick={isRecording ? handleStopRecording : handleStartRecording}
+                        disabled={isVoiceInputActive}
+                        style={{ backgroundColor: isRecording ? '#dc3545' : '#28a745' }}
+                    >
+                        {recordButtonText}
+                    </button>
+                </div>
+            )}
             {recordingWarning && <p className="error-message">录音即将结束，请尽快完成！</p>}
             {recordingTime > 0 && <p>录音时长: {recordingTime} 秒</p>}
             {audioUrl && <audio src={audioUrl} controls />}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <button type="button" onClick={handleSaveAndNext} disabled={loading} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>
-                    {loading ? '正在保存...' : '保存并进入下一个问题'}
+                    {loading ? '正在保存...' : '保存&下一题'}
                 </button>
                 {!isCustomInputMode && (
                     <button type="button" onClick={handleSkipQuestion} style={{ marginTop: '10px', backgroundColor: disableSkip ? '#ddd' : '#6c757d' }} disabled={disableSkip}
@@ -761,7 +790,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 )}
                  {!isCustomInputMode && previousQuestions.length > 0 && (
                     <button type="button" onClick={handlePreviousQuestion} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>
-                        返回上一个问题
+                        上一题
                     </button>
                 )}
             </div>
