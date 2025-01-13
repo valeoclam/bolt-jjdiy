@@ -46,6 +46,10 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const [tempPhotos, setTempPhotos] = useState([]);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [confirmAction, setConfirmAction] = useState(null);
+    const [disableSkip, setDisableSkip] = useState(false);
+    const [disableCustomInput, setDisableCustomInput] = useState(false);
+    const [customInputMessage, setCustomInputMessage] = useState('');
+    const [problemInputMessage, setProblemInputMessage] = useState('');
 
     useEffect(() => {
         if (loggedInUser) {
@@ -90,6 +94,15 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             handleStopRecording();
         }
     }, [recordingTime]);
+
+    useEffect(() => {
+        if (!isCustomInputMode) {
+            setDisableSkip(!!(answer || tempDiaryPhotos.length > 0 || audioBlob));
+            setDisableCustomInput(!!(answer || tempDiaryPhotos.length > 0 || audioBlob));
+        } else {
+            setDisableCustomInput(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob));
+        }
+    }, [isCustomInputMode, answer, tempDiaryPhotos, audioBlob, customInput]);
 
     const fetchQuestions = async () => {
         try {
@@ -289,6 +302,9 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     };
 
     const handleSkipQuestion = () => {
+        if (disableSkip) {
+            return;
+        }
         setAnswer('');
         if (questions && questions.length > 0 && !isCustomInputMode) {
             setQuestionIndex((prevIndex) => {
@@ -541,6 +557,8 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         setIsCustomInputMode(!isCustomInputMode);
         setShowConfirmModal(false);
         setConfirmAction(null);
+        setCustomInputMessage('');
+        setProblemInputMessage('');
     };
 
     return (
@@ -549,10 +567,18 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
             <button type="button" onClick={onLogout} className="logout-button">退出</button>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <button type="button" onClick={handleToggleCustomInputMode} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>
-                    {isCustomInputMode ? '返回问题模式' : '自定义输入'}
+                <button
+                    type="button"
+                    onClick={handleToggleCustomInputMode}
+                    style={{ marginTop: '10px', backgroundColor: disableCustomInput ? '#ddd' : '#6c757d' }}
+                    disabled={disableCustomInput}
+                    onMouseEnter={() => setCustomInputMessage(disableCustomInput ? '请先保存当前问题内容' : '')}
+                    onMouseLeave={() => setCustomInputMessage('')}
+                >
+                    {isCustomInputMode ? '返回问题模式' : '我有话要说'}
                 </button>
             </div>
+            {customInputMessage && <p className="error-message">{customInputMessage}</p>}
             <div className="form-group">
                 {!isCustomInputMode ? (
                     <>
@@ -647,11 +673,15 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                     {loading ? '正在保存...' : '保存并进入下一个问题'}
                 </button>
                 {!isCustomInputMode && (
-                    <button type="button" onClick={handleSkipQuestion} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>
+                    <button type="button" onClick={handleSkipQuestion} style={{ marginTop: '10px', backgroundColor: disableSkip ? '#ddd' : '#6c757d' }} disabled={disableSkip}
+                    onMouseEnter={() => setProblemInputMessage(disableSkip ? '请先保存当前问题内容' : '')}
+                    onMouseLeave={() => setProblemInputMessage('')}
+                    >
                         跳过
                     </button>
                 )}
             </div>
+            {problemInputMessage && <p className="error-message">{problemInputMessage}</p>}
             {successMessage && <p className="success-message">{successMessage}</p>}
             {errorMessage && <p className="error-message">{errorMessage}</p>}
             {noRecordMessage && <p className="error-message">{noRecordMessage}</p>}
