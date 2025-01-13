@@ -559,6 +559,21 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         setConfirmAction(null);
         setCustomInputMessage('');
         setProblemInputMessage('');
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            recognitionRef.current = null;
+        }
+    };
+
+    const handleClearInput = () => {
+        setAnswer('');
+        setCustomInput('');
+        setTempDiaryPhotos([]);
+        setAudioBlob(null);
+        setAudioUrl(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
     };
 
     return (
@@ -572,7 +587,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                     onClick={handleToggleCustomInputMode}
                     style={{ marginTop: '10px', backgroundColor: disableCustomInput ? '#ddd' : '#007bff' }}
                     disabled={disableCustomInput}
-                    onMouseEnter={() => setCustomInputMessage(disableCustomInput ? '请先保存当前自定义内容' : '')}
+                    onMouseEnter={() => setCustomInputMessage(disableCustomInput ? '请先保存当前问题内容' : '')}
                     onMouseLeave={() => setCustomInputMessage('')}
                 >
                     {isCustomInputMode ? '返回问题模式' : '我有话要说'}
@@ -682,6 +697,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 )}
             </div>
             {problemInputMessage && <p className="error-message">{problemInputMessage}</p>}
+            <button type="button" onClick={handleClearInput} style={{ marginTop: '10px', backgroundColor: '#dc3545' }}>清空</button>
             {successMessage && <p className="success-message">{successMessage}</p>}
             {errorMessage && <p className="error-message">{errorMessage}</p>}
             {noRecordMessage && <p className="error-message">{noRecordMessage}</p>}
