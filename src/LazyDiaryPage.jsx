@@ -347,7 +347,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     };
 
     const handleVoiceInput = () => {
-        if (!recognitionRef.current) {
+         if (!recognitionRef.current) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
                 alert('您的浏览器不支持语音识别，请尝试其他浏览器。');
@@ -379,7 +379,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         }
         // 启动录音
         if (!isRecording) {
-            handleStartRecording();
+           handleStartRecording();
         }
         setIsVoiceInputActive(true);
         setVoiceInputButtonText('停止语音输入');
@@ -592,7 +592,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                     type="button"
                     onClick={handleVoiceInput}
                     style={{ backgroundColor: isVoiceInputActive ? '#dc3545' : '#007bff' }}
-                    disabled={isRecording}
+                    disabled={false}
                 >
                     {voiceInputButtonText}
                 </button>
