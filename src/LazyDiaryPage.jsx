@@ -372,6 +372,10 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 setVoiceInputButtonText('开始语音输入');
                 setErrorMessage("语音输入失败，请检查麦克风权限或网络连接。");
             };
+            recognitionRef.current.onend = () => {
+                setIsVoiceInputActive(false);
+                setVoiceInputButtonText('开始语音输入');
+            };
         }
         // 启动录音
         if (!isRecording) {
