@@ -37,6 +37,8 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const [audioObjectURLs, setAudioObjectURLs] = useState({});
     const [testAudioUrl, setTestAudioUrl] = useState(null); // 新增状态
     const [isVoiceInputActive, setIsVoiceInputActive] = useState(false);
+    const [voiceInputButtonText, setVoiceInputButtonText] = useState('开始语音输入');
+    const [recordButtonText, setRecordButtonText] = useState('开始录音');
 
     useEffect(() => {
         if (loggedInUser) {
@@ -158,123 +160,126 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         setCustomInput(e.target.value);
     };
 
-const handleSaveAndNext = async () => {
-    if (isCustomInputMode && !customInput) {
-        setErrorMessage('请先输入内容');
-        return;
-    }
-    if (!isCustomInputMode && !answer) {
-        setErrorMessage('请先输入答案');
-        return;
-    }
-    setLoading(true);
-    try {
-        const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('id')
-            .eq('username', loggedInUser.username)
-            .single();
-
-        if (userError) {
-            console.error('获取用户ID时发生错误:', userError);
-            setErrorMessage('获取用户ID失败，请重试。');
+    const handleSaveAndNext = async () => {
+        if (isCustomInputMode && !customInput) {
+            setErrorMessage('请先输入内容');
             return;
         }
-
-        if (!userData) {
-            console.error('未找到用户');
-            setErrorMessage('未找到用户，请重试。');
+        if (!isCustomInputMode && !answer) {
+            setErrorMessage('请先输入答案');
             return;
         }
+        // 在保存前停止录音
+        if (isRecording) {
+            handleStopRecording();
+        }
+        setLoading(true);
+        try {
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('username', loggedInUser.username)
+                .single();
 
-        let audioPath = null;
-
-        if (audioBlob) {
-            const fileName = `audio-${loggedInUser.id}-${new Date().getTime()}.webm`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('lazy-diary-audio')
-                .upload(fileName, audioBlob, {
-                    contentType: 'audio/webm',
-                });
-
-            if (uploadError) {
-                console.error('上传录音文件失败:', uploadError, uploadError.message);
-                setErrorMessage('上传录音文件失败，请重试。' + uploadError.message);
+            if (userError) {
+                console.error('获取用户ID时发生错误:', userError);
+                setErrorMessage('获取用户ID失败，请重试。');
                 return;
             }
-            audioPath = uploadData.path;
-        }
 
-        const newAnswer = {
-            record_id: currentRecord?.id,
-            question: isCustomInputMode ? '自定义内容' : currentQuestion,
-            answer: isCustomInputMode ? customInput : answer,
-            photos: tempDiaryPhotos,
-            audio_path: audioPath,
-        };
-
-        const { data, error } = await supabase
-            .from('lazy_diary_answers')
-            .insert([newAnswer]);
-
-        if (error) {
-            console.error('添加懒人日记记录时发生错误:', error);
-            setErrorMessage('添加懒人日记记录失败，请重试。' + error.message);
-        } else {
-            console.log('懒人日记记录添加成功:', data);
-            setSuccessMessage('懒人日记记录添加成功!');
-            setTempDiaryPhotos([]);
-            setAudioBlob(null);
-            setAudioUrl(null);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
+            if (!userData) {
+                console.error('未找到用户');
+                setErrorMessage('未找到用户，请重试。');
+                return;
             }
-            if (successTimeoutRef.current) {
-                clearTimeout(successTimeoutRef.current);
+
+            let audioPath = null;
+
+            if (audioBlob) {
+                const fileName = `audio-${loggedInUser.id}-${new Date().getTime()}.webm`;
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('lazy-diary-audio')
+                    .upload(fileName, audioBlob, {
+                        contentType: 'audio/webm',
+                    });
+
+                if (uploadError) {
+                    console.error('上传录音文件失败:', uploadError, uploadError.message);
+                    setErrorMessage('上传录音文件失败，请重试。' + uploadError.message);
+                    return;
+                }
+                audioPath = uploadData.path;
             }
-            successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
-            if (!currentRecord) {
-                const newRecord = {
-                    user_id: userData.id,
-                };
-                const { data: recordData, error: recordError } = await supabase
-                    .from('lazy_diary_records')
-                    .insert([newRecord]);
-                if (recordError) {
-                    console.error('添加懒人日记记录时发生错误:', recordError);
-                    setErrorMessage('添加懒人日记记录失败，请重试。' + recordError.message);
-                } else if (recordData && recordData.length > 0) { // 添加 recordData 的检查
-                    setCurrentRecord({ ...newRecord, id: recordData[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-                } else {
-                    setCurrentRecord({...newRecord, created_at: new Date().toISOString(), updated_at: new Date().toISOString()});
+
+            const newAnswer = {
+                record_id: currentRecord?.id,
+                question: isCustomInputMode ? '自定义内容' : currentQuestion,
+                answer: isCustomInputMode ? customInput : answer,
+                photos: tempDiaryPhotos,
+                audio_path: audioPath,
+            };
+
+            const { data, error } = await supabase
+                .from('lazy_diary_answers')
+                .insert([newAnswer]);
+
+            if (error) {
+                console.error('添加懒人日记记录时发生错误:', error);
+                setErrorMessage('添加懒人日记记录失败，请重试。' + error.message);
+            } else {
+                console.log('懒人日记记录添加成功:', data);
+                setSuccessMessage('懒人日记记录添加成功!');
+                setTempDiaryPhotos([]);
+                setAudioBlob(null);
+                setAudioUrl(null);
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+                if (successTimeoutRef.current) {
+                    clearTimeout(successTimeoutRef.current);
+                }
+                successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
+                if (!currentRecord) {
+                    const newRecord = {
+                        user_id: userData.id,
+                    };
+                    const { data: recordData, error: recordError } = await supabase
+                        .from('lazy_diary_records')
+                        .insert([newRecord]);
+                    if (recordError) {
+                        console.error('添加懒人日记记录时发生错误:', recordError);
+                        setErrorMessage('添加懒人日记记录失败，请重试。' + recordError.message);
+                    } else if (recordData && recordData.length > 0) { // 添加 recordData 的检查
+                        setCurrentRecord({ ...newRecord, id: recordData[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+                    } else {
+                        setCurrentRecord({...newRecord, created_at: new Date().toISOString(), updated_at: new Date().toISOString()});
+                    }
                 }
             }
+        } catch (error) {
+            console.error('发生意外错误:', error);
+            setErrorMessage('发生意外错误，请重试。' + error.message);
+        } finally {
+            setLoading(false);
         }
-    } catch (error) {
-        console.error('发生意外错误:', error);
-        setErrorMessage('发生意外错误，请重试。' + error.message);
-    } finally {
-        setLoading(false);
-    }
-    setAnswer('');
-    setCustomInput('');
-    if (questions && questions.length > 0 && !isCustomInputMode) {
-        setQuestionIndex((prevIndex) => {
-            const nextIndex = (prevIndex + 1) % questions.length;
-            const fixedQuestion = questions.find(question => question.is_fixed);
-            if (fixedQuestion && answeredFixedQuestion) {
-                const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
-                setCurrentQuestion(nextQuestion?.question || '');
-                return nextIndex;
-            } else {
-                setCurrentQuestion(questions[nextIndex].question);
-                return nextIndex;
-            }
-        });
-    }
-    fetchTodayRecord();
-};
-
+        setAnswer('');
+        setCustomInput('');
+        if (questions && questions.length > 0 && !isCustomInputMode) {
+            setQuestionIndex((prevIndex) => {
+                const nextIndex = (prevIndex + 1) % questions.length;
+                const fixedQuestion = questions.find(question => question.is_fixed);
+                if (fixedQuestion && answeredFixedQuestion) {
+                    const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
+                    setCurrentQuestion(nextQuestion?.question || '');
+                    return nextIndex;
+                } else {
+                    setCurrentQuestion(questions[nextIndex].question);
+                    return nextIndex;
+                }
+            });
+        }
+        fetchTodayRecord();
+    };
 
     const handleSkipQuestion = () => {
         setAnswer('');
@@ -303,6 +308,7 @@ const handleSaveAndNext = async () => {
         setIsRecording(true);
         setAudioBlob(null);
         setAudioUrl(null);
+        setRecordButtonText('停止录音');
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
@@ -319,11 +325,13 @@ const handleSaveAndNext = async () => {
                 setAudioBlob(blob);
                 setAudioUrl(URL.createObjectURL(blob));
                 stream.getTracks().forEach(track => track.stop());
+                setRecordButtonText('开始录音');
             };
         } catch (error) {
             console.error('录音启动失败:', error);
             setErrorMessage('录音启动失败，请检查麦克风权限。');
             setIsRecording(false);
+            setRecordButtonText('开始录音');
             if (error.name === 'NotAllowedError') {
                 setErrorMessage('请允许麦克风权限，以便使用录音功能。');
             }
@@ -360,6 +368,7 @@ const handleSaveAndNext = async () => {
             recognitionRef.current.onerror = (event) => {
                 console.error("语音识别错误:", event.error);
                 setIsVoiceInputActive(false);
+                setVoiceInputButtonText('开始语音输入');
                 setErrorMessage("语音输入失败，请检查麦克风权限或网络连接。");
             };
         }
@@ -368,6 +377,7 @@ const handleSaveAndNext = async () => {
             handleStartRecording();
         }
         setIsVoiceInputActive(true);
+        setVoiceInputButtonText('停止语音输入');
         setTimeout(() => {
             recognitionRef.current.start();
         }, 100);
@@ -377,6 +387,7 @@ const handleSaveAndNext = async () => {
         if (recognitionRef.current) {
             recognitionRef.current.stop();
             setIsVoiceInputActive(false);
+            setVoiceInputButtonText('开始语音输入');
         }
     };
 
@@ -574,38 +585,19 @@ const handleSaveAndNext = async () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <button
                     type="button"
-                    onClick={handleStartRecording}
-                    disabled={isRecording || isVoiceInputActive}
-                    style={{ backgroundColor: '#28a745' }}
-                >
-                    {isRecording ? '正在录音...' : '开始录音'}
-                </button>
-                <button
-                    type="button"
-                    onClick={handleStopRecording}
-                    disabled={!isRecording}
-                    style={{ backgroundColor: '#dc3545' }}
-                >
-                    停止录音
-                </button>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <button
-                    type="button"
-                    onClick={handleVoiceInput}
-                    style={{ backgroundColor: '#007bff' }}
+                    onClick={isRecording ? handleStopRecording : handleStartRecording}
                     disabled={isVoiceInputActive}
+                    style={{ backgroundColor: isRecording ? '#dc3545' : '#28a745' }}
                 >
-                    开始语音输入
+                    {recordButtonText}
                 </button>
-                {/* 停止语音输入按钮，实际使用中较少用到，因为语音输入会自动停止 */}
                 <button
                     type="button"
-                    onClick={handleStopVoiceInput}
-                    style={{ backgroundColor: '#dc3545' }}
-                    disabled={!isVoiceInputActive}
+                    onClick={isVoiceInputActive ? handleStopVoiceInput : handleVoiceInput}
+                    style={{ backgroundColor: isVoiceInputActive ? '#dc3545' : '#007bff' }}
+                    disabled={isRecording}
                 >
-                    停止语音输入
+                    {voiceInputButtonText}
                 </button>
             </div>
             {recordingWarning && <p className="error-message">录音即将结束，请尽快完成！</p>}
