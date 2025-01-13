@@ -39,6 +39,13 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const [isVoiceInputActive, setIsVoiceInputActive] = useState(false);
     const [voiceInputButtonText, setVoiceInputButtonText] = useState('开始语音输入');
     const [recordButtonText, setRecordButtonText] = useState('开始录音');
+    const [tempAnswer, setTempAnswer] = useState('');
+    const [tempCustomInput, setTempCustomInput] = useState('');
+    const [tempAudioBlob, setTempAudioBlob] = useState(null);
+    const [tempAudioUrl, setTempAudioUrl] = useState(null);
+    const [tempPhotos, setTempPhotos] = useState([]);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [confirmAction, setConfirmAction] = useState(null);
 
     useEffect(() => {
         if (loggedInUser) {
@@ -347,7 +354,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     };
 
     const handleVoiceInput = () => {
-         if (!recognitionRef.current) {
+        if (!recognitionRef.current) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
                 alert('您的浏览器不支持语音识别，请尝试其他浏览器。');
@@ -504,9 +511,36 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     }, [currentRecord]);
 
     const handleToggleCustomInputMode = () => {
+        if ((isCustomInputMode && (answer || tempDiaryPhotos.length > 0 || audioBlob)) ||
+            (!isCustomInputMode && (customInput || tempDiaryPhotos.length > 0 || audioBlob))) {
+            setShowConfirmModal(true);
+            setConfirmAction(isCustomInputMode ? 'switchToProblemMode' : 'switchToCustomMode');
+        } else {
+            toggleMode();
+        }
+    };
+
+    const toggleMode = (save = false) => {
+        if (isCustomInputMode) {
+            if (save) {
+                setTempAnswer(answer);
+                setTempPhotos(tempDiaryPhotos);
+                setTempAudioBlob(audioBlob);
+                setTempAudioUrl(audioUrl);
+            }
+            setAnswer(tempAnswer);
+            setTempDiaryPhotos(tempPhotos);
+            setAudioBlob(tempAudioBlob);
+            setAudioUrl(tempAudioUrl);
+        } else {
+            if (save) {
+                setTempCustomInput(customInput);
+            }
+            setCustomInput(tempCustomInput);
+        }
         setIsCustomInputMode(!isCustomInputMode);
-        setAnswer('');
-        setCustomInput('');
+        setShowConfirmModal(false);
+        setConfirmAction(null);
     };
 
     return (
@@ -650,6 +684,17 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 </button>
             )}
             {testAudioUrl && <audio src={testAudioUrl} controls />}
+            {showConfirmModal && (
+                <div className="modal">
+                    <div className="modal-content">
+                        <p>当前有未保存的内容，是否保存后再切换模式？</p>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                            <button type="button" onClick={() => toggleMode(true)} style={{ backgroundColor: '#28a745' }}>保存并切换</button>
+                            <button type="button" onClick={() => toggleMode(false)} style={{ backgroundColor: '#dc3545' }}>不保存并切换</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
