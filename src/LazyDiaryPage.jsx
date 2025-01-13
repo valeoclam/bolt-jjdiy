@@ -54,6 +54,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const [selectedOption, setSelectedOption] = useState(null);
     const [isOptionSelected, setIsOptionSelected] = useState(false);
     const [previousQuestions, setPreviousQuestions] = useState([]);
+    const [currentQuestionType, setCurrentQuestionType] = useState('text');
 
     useEffect(() => {
         if (loggedInUser) {
@@ -68,8 +69,10 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             const fixedQuestion = questions.find(question => question.is_fixed);
             if (fixedQuestion) {
                 setCurrentQuestion(fixedQuestion.question);
+                setCurrentQuestionType(fixedQuestion.type);
             } else {
                 setCurrentQuestion(questions[0].question);
+                setCurrentQuestionType(questions[0].type);
             }
         }
     }, [questions, isCustomInputMode]);
@@ -113,6 +116,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             const { data, error } = await supabase
                 .from('lazy_diary_questions')
                 .select('*')
+                .eq('is_active', true)
                 .order('created_at', { ascending: false });
 
             if (error) {
@@ -306,9 +310,11 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 if (fixedQuestion && answeredFixedQuestion) {
                   const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
                   setCurrentQuestion(nextQuestion?.question || '');
+                  setCurrentQuestionType(nextQuestion?.type || 'text');
                   return nextIndex;
                 } else {
                   setCurrentQuestion(questions[nextIndex].question);
+                  setCurrentQuestionType(questions[nextIndex].type);
                   return nextIndex;
                 }
             });
@@ -331,9 +337,11 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 if (fixedQuestion && answeredFixedQuestion) {
                   const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
                   setCurrentQuestion(nextQuestion?.question || '');
+                  setCurrentQuestionType(nextQuestion?.type || 'text');
                   return nextIndex;
                 } else {
                   setCurrentQuestion(questions[nextIndex].question);
+                  setCurrentQuestionType(questions[nextIndex].type);
                   return nextIndex;
                 }
             });
@@ -344,6 +352,8 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         if (previousQuestions.length > 0) {
             const lastQuestion = previousQuestions.pop();
             setCurrentQuestion(lastQuestion);
+            const question = questions.find(q => q.question === lastQuestion);
+            setCurrentQuestionType(question?.type || 'text');
             setPreviousQuestions([...previousQuestions]);
         }
     };
@@ -410,9 +420,9 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                     .map((result) => result[0].transcript)
                     .join('');
                 if (isCustomInputMode) {
-                    setCustomInput(prevInput => prevInput + transcript); // 追加文本
+                    setCustomInput(prevInput => prevInput + transcript);
                 } else {
-                    setAnswer(prevAnswer => prevAnswer + transcript); // 追加文本
+                    setAnswer(prevAnswer => prevAnswer + transcript);
                 }
             };
             recognitionRef.current.onerror = (event) => {
@@ -426,7 +436,6 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 setVoiceInputButtonText('开始语音输入');
             };
         }
-        // 启动录音
         if (!isRecording) {
            handleStartRecording();
         }
@@ -592,7 +601,6 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     };
 
     const handleClearInput = () => {
-        // 在清空前停止录音
         if (isRecording) {
             handleStopRecording();
         }
@@ -651,7 +659,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                                                         checked={selectedOption === option}
                                                         onChange={() => handleOptionSelect(option)}
                                                     />
-                                                    <span style={{ color: option }}>{option}</span>
+                                                    <span style={{ color: option === '白色' ? 'black' : option === '黑色' ? 'white' : option, backgroundColor: option === '白色' ? 'white' : option === '黑色' ? 'black' : 'transparent', padding: '5px', borderRadius: '4px', display: 'inline-block' }}>{option}</span>
                                                 </label>
                                             </div>
                                         ))}

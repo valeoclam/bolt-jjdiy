@@ -1,18 +1,19 @@
+// src/EditQuestionsPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY3OTY0NzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-function EditQuestionsPage({ loggedInUser, onLogout }) {
+function EditQuestionsPage({ loggedInUser, onLogout, supabase }) {
   const [questions, setQuestions] = useState([]);
   const [newQuestion, setNewQuestion] = useState('');
-  const [newQuestionType, setNewQuestionType] = useState('text'); // 新增问题类型状态，默认值为 text
+  const [newQuestionType, setNewQuestionType] = useState('text');
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [editedQuestion, setEditedQuestion] = useState('');
-  const [editedQuestionType, setEditedQuestionType] = useState('single'); // 新增编辑问题类型状态
+  const [editedQuestionType, setEditedQuestionType] = useState('single');
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -26,6 +27,8 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
   const [editedIsFixed, setEditedIsFixed] = useState(false);
   const [newOptions, setNewOptions] = useState(['']);
   const [editedOptions, setEditedOptions] = useState([]);
+  const [editedIsActive, setEditedIsActive] = useState(true);
+  const [newIsActive, setNewIsActive] = useState(true);
 
   useEffect(() => {
     if (loggedInUser) {
@@ -39,6 +42,7 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
   }, [questions, searchKeyword]);
 
   const fetchQuestions = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('lazy_diary_questions')
@@ -49,6 +53,7 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
         console.error('获取问题列表时发生错误:', error);
       } else {
         setQuestions(data || []);
+        setFilteredQuestions(data || []);
       }
     } catch (error) {
       console.error('发生意外错误:', error);
@@ -74,7 +79,7 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
       try {
         const { data, error } = await supabase
           .from('lazy_diary_questions')
-          .insert([{ question: newQuestion, is_fixed: isFixed, type: newQuestionType, options: newOptions }]);
+          .insert([{ question: newQuestion, is_fixed: isFixed, type: newQuestionType, options: newOptions, is_active: newIsActive }]);
 
         if (error) {
           console.error('添加问题时发生错误:', error);
@@ -82,8 +87,9 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
           console.log('问题添加成功:', data);
           setNewQuestion('');
           setIsFixed(false);
-          setNewQuestionType('text'); // 重置问题类型
-          setNewOptions(['']); // 重置选项
+          setNewQuestionType('text');
+          setNewOptions(['']);
+          setNewIsActive(true);
           setAddSuccessMessage('问题添加成功!');
           if (addTimeoutRef.current) {
             clearTimeout(addTimeoutRef.current);
@@ -99,12 +105,13 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
     }
   };
 
-  const handleEditQuestion = (id, question, isFixed, type, options) => {
+  const handleEditQuestion = (id, question, isFixed, type, options, is_active) => {
     setEditingQuestionId(id);
     setEditedQuestion(question);
     setEditedIsFixed(isFixed);
-    setEditedQuestionType(type); // 设置编辑问题类型
-    setEditedOptions(options || []); // 设置编辑选项
+    setEditedQuestionType(type);
+    setEditedOptions(options || []);
+    setEditedIsActive(is_active);
   };
 
   const handleUpdateQuestion = async (id) => {
@@ -113,7 +120,7 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
       try {
         const { data, error } = await supabase
           .from('lazy_diary_questions')
-          .update({ question: editedQuestion, updated_at: new Date().toISOString(), is_fixed: editedIsFixed, type: editedQuestionType, options: editedOptions })
+          .update({ question: editedQuestion, updated_at: new Date().toISOString(), is_fixed: editedIsFixed, type: editedQuestionType, options: editedOptions, is_active: editedIsActive })
           .eq('id', id);
 
         if (error) {
@@ -122,16 +129,18 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
           console.log('问题更新成功:', data);
           setQuestions((prevQuestions) =>
             prevQuestions.map((question) =>
-              question.id === id ? { ...question, question: editedQuestion, updated_at: new Date().toISOString(), is_fixed: editedIsFixed, type: editedQuestionType, options: editedOptions } : question,
+              question.id === id ? { ...question, question: editedQuestion, updated_at: new Date().toISOString(), is_fixed: editedIsFixed, type: editedQuestionType, options: editedOptions, is_active: editedIsActive } : question,
             ),
           );
           setEditingQuestionId(null);
           setEditedQuestion('');
           setEditedIsFixed(false);
-          setEditedQuestionType('single'); // 重置编辑问题类型
-          setEditedOptions([]); // 重置编辑选项
+          setEditedQuestionType('single');
+          setEditedOptions([]);
+          setEditedIsActive(true);
           setUpdateSuccessMessage('问题更新成功!');
           setTimeout(() => setUpdateSuccessMessage(''), 3000);
+          fetchQuestions();
         }
       } catch (error) {
         console.error('发生意外错误:', error);
@@ -156,6 +165,7 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
           console.log('问题删除成功:', data);
           setQuestions((prevQuestions) => prevQuestions.filter((question) => question.id !== id));
           setConfirmDeleteId(null);
+          fetchQuestions();
         }
       } catch (error) {
         console.error('发生意外错误:', error);
@@ -171,8 +181,9 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
     setEditingQuestionId(null);
     setEditedQuestion('');
     setEditedIsFixed(false);
-    setEditedQuestionType('single'); // 重置编辑问题类型
-    setEditedOptions([]); // 重置编辑选项
+    setEditedQuestionType('single');
+    setEditedOptions([]);
+    setEditedIsActive(true);
   };
 
   const handleBackToModules = () => {
@@ -256,7 +267,7 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
                     type="text"
                     value={option}
                     onChange={(e) => handleEditOption(index, e.target.value)}
-                    style={{ marginRight: '5px', color: option }}
+                    style={{ marginRight: '5px' }}
                   />
                   <button type="button" onClick={() => handleDeleteOption(index)} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', padding: '5px 10px', cursor: 'pointer' }}>删除</button>
                 </div>
@@ -271,6 +282,14 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
               onChange={() => setIsFixed(!isFixed)}
             />
             固定问题
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={newIsActive}
+              onChange={() => setNewIsActive(!newIsActive)}
+            />
+            启用
           </label>
           <button type="button" onClick={handleAddQuestion} style={{ marginTop: '10px', backgroundColor: '#28a745' }} disabled={loading}>
             {loading ? '正在保存...' : '添加'}
@@ -317,7 +336,7 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
                           type="text"
                           value={option}
                           onChange={(e) => handleEditEditedOption(index, e.target.value)}
-                          style={{ marginRight: '5px', color: option }}
+                          style={{ marginRight: '5px' }}
                         />
                         <button type="button" onClick={() => handleDeleteEditedOption(index)} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', padding: '5px 10px', cursor: 'pointer' }}>删除</button>
                       </div>
@@ -332,6 +351,14 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
                   />
                   固定问题
                 </label>
+                 <label>
+                  <input
+                    type="checkbox"
+                    checked={editedIsActive}
+                    onChange={() => setEditedIsActive(!editedIsActive)}
+                  />
+                  启用
+                </label>
                 <div className="edit-buttons">
                   <button onClick={() => handleUpdateQuestion(question.id)} disabled={loading}>
                     {loading ? '正在保存...' : '更新'}
@@ -344,6 +371,7 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
                 <p>{question.question}</p>
                 <p><strong>类型:</strong> {question.type === 'single' ? '单选题' : question.type === 'multiple' ? '多选题' : '文本题'}</p>
                 <p><strong>类型:</strong> {question.is_fixed ? '固定问题' : '随机问题'}</p>
+                 <p><strong>状态:</strong> {question.is_active ? '启用' : '禁用'}</p>
                 {question.options && question.options.length > 0 && (
                   <div>
                     <label>选项:</label>
@@ -355,7 +383,7 @@ function EditQuestionsPage({ loggedInUser, onLogout }) {
                 <div className="edit-buttons">
                   {loggedInUser && loggedInUser.role === 'admin' && (
                     <>
-                      <button onClick={() => handleEditQuestion(question.id, question.question, question.is_fixed, question.type, question.options)}>编辑</button>
+                      <button onClick={() => handleEditQuestion(question.id, question.question, question.is_fixed, question.type, question.options, question.is_active)}>编辑</button>
                       <button onClick={() => handleDeleteQuestion(question.id)} style={{ backgroundColor: '#dc3545' }}>
                         {confirmDeleteId === question.id ? '确认删除' : '删除'}
                       </button>
