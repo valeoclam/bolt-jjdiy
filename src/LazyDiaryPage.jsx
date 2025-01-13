@@ -570,9 +570,9 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 <button
                     type="button"
                     onClick={handleToggleCustomInputMode}
-                    style={{ marginTop: '10px', backgroundColor: disableCustomInput ? '#ddd' : '#6c757d' }}
+                    style={{ marginTop: '10px', backgroundColor: disableCustomInput ? '#ddd' : '#007bff' }}
                     disabled={disableCustomInput}
-                    onMouseEnter={() => setCustomInputMessage(disableCustomInput ? '请先保存当前问题内容' : '')}
+                    onMouseEnter={() => setCustomInputMessage(disableCustomInput ? '请先保存当前自定义内容' : '')}
                     onMouseLeave={() => setCustomInputMessage('')}
                 >
                     {isCustomInputMode ? '返回问题模式' : '我有话要说'}
