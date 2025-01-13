@@ -582,15 +582,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                         ))}
                 </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <button
-                    type="button"
-                    onClick={isRecording ? handleStopRecording : handleStartRecording}
-                    disabled={isVoiceInputActive}
-                    style={{ backgroundColor: isRecording ? '#dc3545' : '#28a745' }}
-                >
-                    {recordButtonText}
-                </button>
+            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '10px', gap: '10px' }}>
                 <button
                     type="button"
                     onClick={isVoiceInputActive ? handleStopVoiceInput : handleVoiceInput}
@@ -598,6 +590,14 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                     disabled={isRecording}
                 >
                     {voiceInputButtonText}
+                </button>
+                 <button
+                    type="button"
+                    onClick={isRecording ? handleStopRecording : handleStartRecording}
+                    disabled={isVoiceInputActive}
+                    style={{ backgroundColor: isRecording ? '#dc3545' : '#28a745' }}
+                >
+                    {recordButtonText}
                 </button>
             </div>
             {recordingWarning && <p className="error-message">录音即将结束，请尽快完成！</p>}
