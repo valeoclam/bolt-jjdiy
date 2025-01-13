@@ -183,10 +183,18 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const handleSaveAndNext = async () => {
         if (isCustomInputMode && !customInput) {
             setErrorMessage('请先输入内容');
+            if (errorMessageTimeoutRef.current) {
+                clearTimeout(errorMessageTimeoutRef.current);
+            }
+            errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
             return;
         }
         if (!isCustomInputMode && !answer) {
             setErrorMessage('请先输入答案');
+            if (errorMessageTimeoutRef.current) {
+                clearTimeout(errorMessageTimeoutRef.current);
+            }
+            errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
             return;
         }
         // 在保存前停止录音
@@ -300,6 +308,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         }
         fetchTodayRecord();
     };
+
 
     const handleSkipQuestion = () => {
         if (disableSkip) {
@@ -566,6 +575,10 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     };
 
     const handleClearInput = () => {
+        // 在清空前停止录音
+        if (isRecording) {
+            handleStopRecording();
+        }
         setAnswer('');
         setCustomInput('');
         setTempDiaryPhotos([]);
@@ -575,6 +588,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             fileInputRef.current.value = '';
         }
     };
+
 
     return (
         <div className="container">
