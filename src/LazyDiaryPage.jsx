@@ -342,6 +342,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         if (mediaRecorder) {
             mediaRecorder.stop();
             setIsRecording(false);
+            setRecordButtonText('开始录音');
         }
     };
 
@@ -585,7 +586,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '10px', gap: '10px' }}>
                 <button
                     type="button"
-                    onClick={isVoiceInputActive ? handleStopVoiceInput : handleVoiceInput}
+                    onClick={handleVoiceInput}
                     style={{ backgroundColor: isVoiceInputActive ? '#dc3545' : '#007bff' }}
                     disabled={isRecording}
                 >
