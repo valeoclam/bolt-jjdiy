@@ -51,6 +51,9 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const [customInputMessage, setCustomInputMessage] = useState('');
     const [problemInputMessage, setProblemInputMessage] = useState('');
     const errorMessageTimeoutRef = useRef(null);
+    const [selectedOption, setSelectedOption] = useState(null);
+    const [isOptionSelected, setIsOptionSelected] = useState(false);
+    const [previousQuestions, setPreviousQuestions] = useState([]);
 
     useEffect(() => {
         if (loggedInUser) {
@@ -98,12 +101,12 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
 
     useEffect(() => {
         if (!isCustomInputMode) {
-            setDisableSkip(!!(answer || tempDiaryPhotos.length > 0 || audioBlob));
-            setDisableCustomInput(!!(answer || tempDiaryPhotos.length > 0 || audioBlob));
+            setDisableSkip(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOption));
+            setDisableCustomInput(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOption));
         } else {
             setDisableCustomInput(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob));
         }
-    }, [isCustomInputMode, answer, tempDiaryPhotos, audioBlob, customInput]);
+    }, [isCustomInputMode, answer, tempDiaryPhotos, audioBlob, customInput, selectedOption]);
 
     const fetchQuestions = async () => {
         try {
@@ -190,7 +193,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
             return;
         }
-        if (!isCustomInputMode && !answer) {
+        if (!isCustomInputMode && !answer && !selectedOption) {
             setErrorMessage('请先输入答案');
              if (errorMessageTimeoutRef.current) {
                 clearTimeout(errorMessageTimeoutRef.current);
@@ -246,6 +249,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 answer: isCustomInputMode ? customInput : answer,
                 photos: tempDiaryPhotos,
                 audio_path: audioPath,
+                selected_option: selectedOption,
             };
 
             const { data, error } = await supabase
@@ -261,6 +265,8 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 setTempDiaryPhotos([]);
                 setAudioBlob(null);
                 setAudioUrl(null);
+                setSelectedOption(null);
+                setIsOptionSelected(false);
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
@@ -298,12 +304,12 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 const nextIndex = (prevIndex + 1) % questions.length;
                 const fixedQuestion = questions.find(question => question.is_fixed);
                 if (fixedQuestion && answeredFixedQuestion) {
-                    const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
-                    setCurrentQuestion(nextQuestion?.question || '');
-                    return nextIndex;
+                  const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
+                  setCurrentQuestion(nextQuestion?.question || '');
+                  return nextIndex;
                 } else {
-                    setCurrentQuestion(questions[nextIndex].question);
-                    return nextIndex;
+                  setCurrentQuestion(questions[nextIndex].question);
+                  return nextIndex;
                 }
             });
         }
@@ -315,19 +321,30 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             return;
         }
         setAnswer('');
+        setSelectedOption(null);
+        setIsOptionSelected(false);
         if (questions && questions.length > 0 && !isCustomInputMode) {
+            setPreviousQuestions(prev => [...prev, currentQuestion]);
             setQuestionIndex((prevIndex) => {
                 const nextIndex = (prevIndex + 1) % questions.length;
                 const fixedQuestion = questions.find(question => question.is_fixed);
                 if (fixedQuestion && answeredFixedQuestion) {
-                    const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
-                    setCurrentQuestion(nextQuestion?.question || '');
-                    return nextIndex;
+                  const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
+                  setCurrentQuestion(nextQuestion?.question || '');
+                  return nextIndex;
                 } else {
-                    setCurrentQuestion(questions[nextIndex].question);
-                    return nextIndex;
+                  setCurrentQuestion(questions[nextIndex].question);
+                  return nextIndex;
                 }
             });
+        }
+    };
+
+    const handlePreviousQuestion = () => {
+        if (previousQuestions.length > 0) {
+            const lastQuestion = previousQuestions.pop();
+            setCurrentQuestion(lastQuestion);
+            setPreviousQuestions([...previousQuestions]);
         }
     };
 
@@ -536,8 +553,8 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     }, [currentRecord]);
 
     const handleToggleCustomInputMode = () => {
-        if ((isCustomInputMode && (answer || tempDiaryPhotos.length > 0 || audioBlob)) ||
-            (!isCustomInputMode && (customInput || tempDiaryPhotos.length > 0 || audioBlob))) {
+        if ((isCustomInputMode && (answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOption)) ||
+            (!isCustomInputMode && (customInput || tempDiaryPhotos.length > 0 || audioBlob || selectedOption))) {
             setShowConfirmModal(true);
             setConfirmAction(isCustomInputMode ? 'switchToProblemMode' : 'switchToCustomMode');
         } else {
@@ -584,9 +601,16 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         setTempDiaryPhotos([]);
         setAudioBlob(null);
         setAudioUrl(null);
+        setSelectedOption(null);
+        setIsOptionSelected(false);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
+    };
+
+    const handleOptionSelect = (option) => {
+        setSelectedOption(option);
+        setIsOptionSelected(true);
     };
 
     return (
@@ -615,12 +639,31 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                         ) : (
                             <>
                                 <p><strong>问题:</strong> {currentQuestion}</p>
-                                <textarea
-                                    value={answer}
-                                    onChange={handleAnswerChange}
-                                    placeholder="请在此输入你的答案"
-                                    style={{ height: '100px' }}
-                                />
+                                {questions.find(q => q.question === currentQuestion)?.type === 'single' ? (
+                                    <div>
+                                        {questions.find(q => q.question === currentQuestion)?.options?.map((option, index) => (
+                                            <div key={index}>
+                                                <label>
+                                                    <input
+                                                        type="radio"
+                                                        name="singleOption"
+                                                        value={option}
+                                                        checked={selectedOption === option}
+                                                        onChange={() => handleOptionSelect(option)}
+                                                    />
+                                                    <span style={{ color: option }}>{option}</span>
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <textarea
+                                        value={answer}
+                                        onChange={handleAnswerChange}
+                                        placeholder="请在此输入你的答案"
+                                        style={{ height: '100px' }}
+                                    />
+                                )}
                             </>
                         )}
                     </>
@@ -706,6 +749,11 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                     onMouseLeave={() => setProblemInputMessage('')}
                     >
                         跳过
+                    </button>
+                )}
+                 {!isCustomInputMode && previousQuestions.length > 0 && (
+                    <button type="button" onClick={handlePreviousQuestion} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>
+                        返回上一个问题
                     </button>
                 )}
             </div>
