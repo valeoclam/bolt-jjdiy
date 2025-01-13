@@ -158,120 +158,123 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         setCustomInput(e.target.value);
     };
 
-    const handleSaveAndNext = async () => {
-        if (isCustomInputMode && !customInput) {
-            setErrorMessage('请先输入内容');
+const handleSaveAndNext = async () => {
+    if (isCustomInputMode && !customInput) {
+        setErrorMessage('请先输入内容');
+        return;
+    }
+    if (!isCustomInputMode && !answer) {
+        setErrorMessage('请先输入答案');
+        return;
+    }
+    setLoading(true);
+    try {
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('username', loggedInUser.username)
+            .single();
+
+        if (userError) {
+            console.error('获取用户ID时发生错误:', userError);
+            setErrorMessage('获取用户ID失败，请重试。');
             return;
         }
-        if (!isCustomInputMode && !answer) {
-            setErrorMessage('请先输入答案');
+
+        if (!userData) {
+            console.error('未找到用户');
+            setErrorMessage('未找到用户，请重试。');
             return;
         }
-        setLoading(true);
-        try {
-            const { data: userData, error: userError } = await supabase
-                .from('users')
-                .select('id')
-                .eq('username', loggedInUser.username)
-                .single();
 
-            if (userError) {
-                console.error('获取用户ID时发生错误:', userError);
-                setErrorMessage('获取用户ID失败，请重试。');
+        let audioPath = null;
+
+        if (audioBlob) {
+            const fileName = `audio-${loggedInUser.id}-${new Date().getTime()}.webm`;
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('lazy-diary-audio')
+                .upload(fileName, audioBlob, {
+                    contentType: 'audio/webm',
+                });
+
+            if (uploadError) {
+                console.error('上传录音文件失败:', uploadError, uploadError.message);
+                setErrorMessage('上传录音文件失败，请重试。' + uploadError.message);
                 return;
             }
-
-            if (!userData) {
-                console.error('未找到用户');
-                setErrorMessage('未找到用户，请重试。');
-                return;
-            }
-
-            let audioPath = null;
-
-            if (audioBlob) {
-                const fileName = `audio-${loggedInUser.id}-${new Date().getTime()}.webm`;
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('lazy-diary-audio')
-                    .upload(fileName, audioBlob, {
-                        contentType: 'audio/webm',
-                    });
-
-                if (uploadError) {
-                    console.error('上传录音文件失败:', uploadError, uploadError.message);
-                    setErrorMessage('上传录音文件失败，请重试。' + uploadError.message);
-                    return;
-                }
-                audioPath = uploadData.path;
-            }
-
-            const newAnswer = {
-                record_id: currentRecord?.id,
-                question: isCustomInputMode ? '自定义内容' : currentQuestion,
-                answer: isCustomInputMode ? customInput : answer,
-                photos: tempDiaryPhotos,
-                audio_path: audioPath,
-            };
-
-            const { data, error } = await supabase
-                .from('lazy_diary_answers')
-                .insert([newAnswer]);
-
-            if (error) {
-                console.error('添加懒人日记记录时发生错误:', error);
-                setErrorMessage('添加懒人日记记录失败，请重试。' + error.message);
-            } else {
-                console.log('懒人日记记录添加成功:', data);
-                setSuccessMessage('懒人日记记录添加成功!');
-                setTempDiaryPhotos([]);
-                setAudioBlob(null);
-                setAudioUrl(null);
-                if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
-                }
-                if (successTimeoutRef.current) {
-                    clearTimeout(successTimeoutRef.current);
-                }
-                successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
-                if (!currentRecord) {
-                    const newRecord = {
-                        user_id: userData.id,
-                    };
-                    const { data: recordData, error: recordError } = await supabase
-                        .from('lazy_diary_records')
-                        .insert([newRecord]);
-                    if (recordError) {
-                        console.error('添加懒人日记记录时发生错误:', recordError);
-                        setErrorMessage('添加懒人日记记录失败，请重试。' + recordError.message);
-                    } else {
-                        setCurrentRecord({ ...newRecord, id: recordData[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('发生意外错误:', error);
-            setErrorMessage('发生意外错误，请重试。' + error.message);
-        } finally {
-            setLoading(false);
+            audioPath = uploadData.path;
         }
-        setAnswer('');
-        setCustomInput('');
-        if (questions && questions.length > 0 && !isCustomInputMode) {
-            setQuestionIndex((prevIndex) => {
-                const nextIndex = (prevIndex + 1) % questions.length;
-                const fixedQuestion = questions.find(question => question.is_fixed);
-                if (fixedQuestion && answeredFixedQuestion) {
-                    const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
-                    setCurrentQuestion(nextQuestion?.question || '');
-                    return nextIndex;
+
+        const newAnswer = {
+            record_id: currentRecord?.id,
+            question: isCustomInputMode ? '自定义内容' : currentQuestion,
+            answer: isCustomInputMode ? customInput : answer,
+            photos: tempDiaryPhotos,
+            audio_path: audioPath,
+        };
+
+        const { data, error } = await supabase
+            .from('lazy_diary_answers')
+            .insert([newAnswer]);
+
+        if (error) {
+            console.error('添加懒人日记记录时发生错误:', error);
+            setErrorMessage('添加懒人日记记录失败，请重试。' + error.message);
+        } else {
+            console.log('懒人日记记录添加成功:', data);
+            setSuccessMessage('懒人日记记录添加成功!');
+            setTempDiaryPhotos([]);
+            setAudioBlob(null);
+            setAudioUrl(null);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+            if (successTimeoutRef.current) {
+                clearTimeout(successTimeoutRef.current);
+            }
+            successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
+            if (!currentRecord) {
+                const newRecord = {
+                    user_id: userData.id,
+                };
+                const { data: recordData, error: recordError } = await supabase
+                    .from('lazy_diary_records')
+                    .insert([newRecord]);
+                if (recordError) {
+                    console.error('添加懒人日记记录时发生错误:', recordError);
+                    setErrorMessage('添加懒人日记记录失败，请重试。' + recordError.message);
+                } else if (recordData && recordData.length > 0) { // 添加 recordData 的检查
+                    setCurrentRecord({ ...newRecord, id: recordData[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
                 } else {
-                    setCurrentQuestion(questions[nextIndex].question);
-                    return nextIndex;
+                    setCurrentRecord({...newRecord, created_at: new Date().toISOString(), updated_at: new Date().toISOString()});
                 }
-            });
+            }
         }
-        fetchTodayRecord();
-    };
+    } catch (error) {
+        console.error('发生意外错误:', error);
+        setErrorMessage('发生意外错误，请重试。' + error.message);
+    } finally {
+        setLoading(false);
+    }
+    setAnswer('');
+    setCustomInput('');
+    if (questions && questions.length > 0 && !isCustomInputMode) {
+        setQuestionIndex((prevIndex) => {
+            const nextIndex = (prevIndex + 1) % questions.length;
+            const fixedQuestion = questions.find(question => question.is_fixed);
+            if (fixedQuestion && answeredFixedQuestion) {
+                const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
+                setCurrentQuestion(nextQuestion?.question || '');
+                return nextIndex;
+            } else {
+                setCurrentQuestion(questions[nextIndex].question);
+                return nextIndex;
+            }
+        });
+    }
+    fetchTodayRecord();
+};
+
 
     const handleSkipQuestion = () => {
         setAnswer('');
