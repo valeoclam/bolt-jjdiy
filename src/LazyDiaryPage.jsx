@@ -32,7 +32,7 @@
         const [audioUrl, setAudioUrl] = useState(null);
         const timerRef = useRef(null);
         const [answeredFixedQuestion, setAnsweredFixedQuestion] = useState(false);
-        const [isCustomInputMode, setIsCustomInputMode] = useState(false);
+        const [isCustomInputMode, setIsCustomInputMode] = useState(true);
         const [customInput, setCustomInput] = useState('');
         const [audioObjectURLs, setAudioObjectURLs] = useState({});
         const [testAudioUrl, setTestAudioUrl] = useState(null);
@@ -49,7 +49,7 @@
         const [disableSkip, setDisableSkip] = useState(false);
         const [visitedQuestions, setVisitedQuestions] = useState([]);
         const [disablePrevious, setDisablePrevious] = useState(true);
-        const [disableCustomInput, setDisableCustomInput] = useState(true);
+        const [disableCustomInput, setDisableCustomInput] = useState(false);
         const [customInputMessage, setCustomInputMessage] = useState('');
         const [problemInputMessage, setProblemInputMessage] = useState('');
         const errorMessageTimeoutRef = useRef(null);
@@ -825,7 +825,7 @@
                     </div>
                 )}
                 {currentQuestionType === 'text' && !isCustomInputMode && questions.length > 0 && (
-                          <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '10px', gap: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '10px', gap: '10px' }}>
                         <button
                             type="button"
                             onClick={handleVoiceInput}
@@ -848,25 +848,29 @@
                 {recordingTime > 0 && <p>录音时长: {recordingTime} 秒</p>}
                 {audioUrl && <audio src={audioUrl} controls />}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <button type="button" onClick={handleSaveAndNext} disabled={loading || questions.length === 0} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>
-                        {loading ? '正在保存...' : '保存&下一题'}
-                    </button>
-                    {!isCustomInputMode && (
-                        <button type="button" onClick={handleSkipQuestion} style={{ marginTop: '10px', backgroundColor: disableSkip ? '#ddd' : '#6c757d' }} disabled={disableSkip || questions.length === 0}
+                    {questions.length > 0 && (
+                        <button type="button" onClick={handleSaveAndNext} disabled={loading} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>
+                            {loading ? '正在保存...' : '保存&下一题'}
+                        </button>
+                    )}
+                    {!isCustomInputMode && questions.length > 0 && (
+                        <button type="button" onClick={handleSkipQuestion} style={{ marginTop: '10px', backgroundColor: disableSkip ? '#ddd' : '#6c757d' }} disabled={disableSkip}
                         onMouseEnter={() => setProblemInputMessage(disableSkip ? '请先保存当前问题内容' : '')}
                         onMouseLeave={() => setProblemInputMessage('')}
                         >
                             跳过
                         </button>
                     )}
-                     {!isCustomInputMode && previousQuestions.length > 0 && (
-                        <button type="button" onClick={handlePreviousQuestion} style={{ marginTop: '10px', backgroundColor: disablePrevious ? '#ddd' : '#6c757d' }} disabled={disablePrevious || questions.length === 0}>
+                     {!isCustomInputMode && previousQuestions.length > 0 && questions.length > 0 && (
+                        <button type="button" onClick={handlePreviousQuestion} style={{ marginTop: '10px', backgroundColor: disablePrevious ? '#ddd' : '#6c757d' }} disabled={disablePrevious}>
                             上一题
                         </button>
                     )}
                 </div>
                 {problemInputMessage && <p className="error-message">{problemInputMessage}</p>}
-                <button type="button" onClick={handleClearInput} style={{ marginTop: '10px', backgroundColor: '#dc3545' }}>清空</button>
+                {(questions.length > 0 || isCustomInputMode) && (
+                    <button type="button" onClick={handleClearInput} style={{ marginTop: '10px', backgroundColor: '#dc3545' }}>清空</button>
+                )}
                 {successMessage && <p className="success-message">{successMessage}</p>}
                 {errorMessage && <p className="error-message">{errorMessage}</p>}
                 {noRecordMessage && <p className="error-message">{noRecordMessage}</p>}
@@ -915,4 +919,4 @@
     }
 
     export default LazyDiaryPage;
-              
+                    
