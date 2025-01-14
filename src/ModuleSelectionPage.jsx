@@ -62,19 +62,16 @@ import React, { useState, useEffect } from 'react';
               {allowedModules.includes('inspiration') && (
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                   <button type="button" onClick={handleInspirationClick} className="module-button inspiration-button" style={{ flex: 1, padding: '20px', fontSize: '20px', backgroundColor: '#28a745' }}>灵感随记</button>
-                  <button type="button" className="module-button" style={{ flex: 1, padding: '20px', fontSize: '20px', backgroundColor: '#ddd', color: '#555' }} disabled>敬请期待</button>
                 </div>
               )}
               {allowedModules.includes('tiger-game') && (
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                   <button type="button" onClick={handleTigerGameClick} className="module-button tiger-game-button" style={{ flex: 1, padding: '20px', fontSize: '20px' }}>打虎日记</button>
-                  <button type="button" className="module-button" style={{ flex: 1, padding: '20px', fontSize: '20px', backgroundColor: '#ddd', color: '#555' }} disabled>敬请期待</button>
                 </div>
               )}
               {allowedModules.includes('lazy-diary') && (
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                   <button type="button" onClick={handleLazyDiaryClick} className="module-button lazy-diary-button" style={{ flex: 1, padding: '20px', fontSize: '20px', backgroundColor: '#800080' }}>懒人日记</button>
-                  <button type="button" className="module-button" style={{ flex: 1, padding: '20px', fontSize: '20px', backgroundColor: '#ddd', color: '#555' }} disabled>敬请期待</button>
                 </div>
               )}
             </div>
