@@ -1,4 +1,3 @@
-// src/LazyDiaryPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
@@ -35,7 +34,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const [isCustomInputMode, setIsCustomInputMode] = useState(true);
     const [customInput, setCustomInput] = useState('');
     const [audioObjectURLs, setAudioObjectURLs] = useState({});
-    const [testAudioUrl, setTestAudioUrl] = useState(null); // 新增状态
+    const [testAudioUrl, setTestAudioUrl] = useState(null);
     const [isVoiceInputActive, setIsVoiceInputActive] = useState(false);
     const [voiceInputButtonText, setVoiceInputButtonText] = useState('开始语音输入');
     const [recordButtonText, setRecordButtonText] = useState('开始录音');
@@ -55,6 +54,8 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const [isOptionSelected, setIsOptionSelected] = useState(false);
     const [previousQuestions, setPreviousQuestions] = useState([]);
     const [currentQuestionType, setCurrentQuestionType] = useState('text');
+    const [initialQuestionLoaded, setInitialQuestionLoaded] = useState(false);
+    const [firstSkip, setFirstSkip] = useState(true);
 
     useEffect(() => {
         if (loggedInUser) {
@@ -65,7 +66,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     }, [loggedInUser]);
 
     useEffect(() => {
-        if (questions.length > 0 && !isCustomInputMode) {
+        if (questions.length > 0 && !isCustomInputMode && !initialQuestionLoaded) {
             const fixedQuestion = questions.find(question => question.is_fixed);
             if (fixedQuestion) {
                 setCurrentQuestion(fixedQuestion.question);
@@ -74,8 +75,9 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 setCurrentQuestion(questions[0].question);
                 setCurrentQuestionType(questions[0].type);
             }
+            setInitialQuestionLoaded(true);
         }
-    }, [questions, isCustomInputMode]);
+    }, [questions, isCustomInputMode, initialQuestionLoaded]);
 
     useEffect(() => {
         let intervalId;
@@ -205,7 +207,6 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
             return;
         }
-        // 在保存前停止录音
         if (isRecording) {
             handleStopRecording();
         }
@@ -288,7 +289,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                     if (recordError) {
                         console.error('添加懒人日记记录时发生错误:', recordError);
                         setErrorMessage('添加懒人日记记录失败，请重试。' + recordError.message);
-                    } else if (recordData && recordData.length > 0) { // 添加 recordData 的检查
+                    } else if (recordData && recordData.length > 0) {
                         setCurrentRecord({ ...newRecord, id: recordData[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
                     } else {
                         setCurrentRecord({...newRecord, created_at: new Date().toISOString(), updated_at: new Date().toISOString()});
@@ -303,15 +304,29 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         }
         setAnswer('');
         setCustomInput('');
-        if (questions && questions.length > 0 && !isCustomInputMode) {
+         if (questions && questions.length > 0 && !isCustomInputMode) {
             setQuestionIndex((prevIndex) => {
                 const nextIndex = (prevIndex + 1) % questions.length;
                 const fixedQuestion = questions.find(question => question.is_fixed);
-                if (fixedQuestion && answeredFixedQuestion) {
+                if (fixedQuestion && !answeredFixedQuestion) {
+                  setAnsweredFixedQuestion(true);
                   const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
-                  setCurrentQuestion(nextQuestion?.question || '');
-                  setCurrentQuestionType(nextQuestion?.type || 'text');
-                  return nextIndex;
+                  if (nextQuestion) {
+                      setCurrentQuestion(nextQuestion.question);
+                      setCurrentQuestionType(nextQuestion.type);
+                      return nextIndex;
+                  } else {
+                      const firstNonFixed = questions.find(question => !question.is_fixed);
+                       if (firstNonFixed) {
+                          setCurrentQuestion(firstNonFixed.question);
+                          setCurrentQuestionType(firstNonFixed.type);
+                          return questions.findIndex(q => q.id === firstNonFixed?.id);
+                       } else {
+                          setCurrentQuestion('');
+                          setCurrentQuestionType('text');
+                          return 0;
+                       }
+                  }
                 } else {
                   setCurrentQuestion(questions[nextIndex].question);
                   setCurrentQuestionType(questions[nextIndex].type);
@@ -334,27 +349,50 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             setQuestionIndex((prevIndex) => {
                 const nextIndex = (prevIndex + 1) % questions.length;
                 const fixedQuestion = questions.find(question => question.is_fixed);
-                if (fixedQuestion && answeredFixedQuestion) {
-                  const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
-                  setCurrentQuestion(nextQuestion?.question || '');
-                  setCurrentQuestionType(nextQuestion?.type || 'text');
-                  return nextIndex;
+                if (fixedQuestion && !answeredFixedQuestion) {
+                    setAnsweredFixedQuestion(true);
+                    const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
+                    if (nextQuestion) {
+                        setCurrentQuestion(nextQuestion.question);
+                        setCurrentQuestionType(nextQuestion.type);
+                        console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
+                        return nextIndex;
+                    } else {
+                        const firstNonFixed = questions.find(question => !question.is_fixed);
+                         if (firstNonFixed) {
+                            setCurrentQuestion(firstNonFixed.question);
+                            setCurrentQuestionType(firstNonFixed.type);
+                            console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', questions.findIndex(q => q.id === firstNonFixed?.id));
+                            return questions.findIndex(q => q.id === firstNonFixed?.id);
+                         } else {
+                            setCurrentQuestion('');
+                            setCurrentQuestionType('text');
+                            console.log('Skip - no question');
+                            return 0;
+                         }
+                    }
                 } else {
-                  setCurrentQuestion(questions[nextIndex].question);
-                  setCurrentQuestionType(questions[nextIndex].type);
-                  return nextIndex;
+                    setCurrentQuestion(questions[nextIndex].question);
+                    setCurrentQuestionType(questions[nextIndex].type);
+                    console.log('Skip - next question:', questions[nextIndex].question, 'index:', nextIndex);
+                    return nextIndex;
                 }
             });
         }
     };
 
     const handlePreviousQuestion = () => {
-        if (previousQuestions.length > 0) {
+         if (previousQuestions.length > 0) {
             const lastQuestion = previousQuestions.pop();
             setCurrentQuestion(lastQuestion);
             const question = questions.find(q => q.question === lastQuestion);
             setCurrentQuestionType(question?.type || 'text');
             setPreviousQuestions([...previousQuestions]);
+             setQuestionIndex((prevIndex) => {
+                const currentIndex = questions.findIndex(q => q.question === lastQuestion);
+                console.log('Previous - question:', lastQuestion, 'index:', currentIndex);
+                return currentIndex;
+            });
         }
     };
 
