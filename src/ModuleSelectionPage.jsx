@@ -37,6 +37,19 @@ import React, { useState, useEffect } from 'react';
         }
       };
 
+      useEffect(() => {
+        if (allowedModules.length === 1) {
+          const module = allowedModules[0];
+          if (module === 'inspiration') {
+            navigate('/inspiration');
+          } else if (module === 'tiger-game') {
+            navigate('/tiger-game');
+          } else if (module === 'lazy-diary') {
+            navigate('/lazy-diary');
+          }
+        }
+      }, [allowedModules, navigate]);
+
       const handleInspirationClick = () => {
         navigate('/inspiration');
       };
