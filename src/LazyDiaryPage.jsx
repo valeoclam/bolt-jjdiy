@@ -46,6 +46,8 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [confirmAction, setConfirmAction] = useState(null);
     const [disableSkip, setDisableSkip] = useState(false);
+    const [visitedQuestions, setVisitedQuestions] = useState([]);
+    const [disablePrevious, setDisablePrevious] = useState(true);
     const [disableCustomInput, setDisableCustomInput] = useState(false);
     const [customInputMessage, setCustomInputMessage] = useState('');
     const [problemInputMessage, setProblemInputMessage] = useState('');
@@ -111,6 +113,13 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         } else {
             setDisableCustomInput(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob));
         }
+        if (!isCustomInputMode) {
+            setDisablePrevious(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0));
+        }  else {
+            setDisablePrevious(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob));
+        }
+
+
     }, [isCustomInputMode, answer, tempDiaryPhotos, audioBlob, customInput, selectedOptions]);
 
     const fetchQuestions = async () => {
@@ -306,31 +315,40 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         setCustomInput('');
          if (questions && questions.length > 0 && !isCustomInputMode) {
             setQuestionIndex((prevIndex) => {
-                const nextIndex = (prevIndex + 1) % questions.length;
+                console.log('Skip - before setVisitedQuestions:', visitedQuestions);
+                setVisitedQuestions(prev => [...prev, prevIndex]);
+                console.log('Skip - after setVisitedQuestions:', visitedQuestions);
+                let nextIndex = (prevIndex + 1) % questions.length;
                 const fixedQuestion = questions.find(question => question.is_fixed);
-                if (fixedQuestion && !answeredFixedQuestion) {
-                  setAnsweredFixedQuestion(true);
-                  const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
-                  if (nextQuestion) {
-                      setCurrentQuestion(nextQuestion.question);
-                      setCurrentQuestionType(nextQuestion.type);
-                      return nextIndex;
-                  } else {
-                      const firstNonFixed = questions.find(question => !question.is_fixed);
-                       if (firstNonFixed) {
-                          setCurrentQuestion(firstNonFixed.question);
-                          setCurrentQuestionType(firstNonFixed.type);
-                          return questions.findIndex(q => q.id === firstNonFixed?.id);
-                       } else {
-                          setCurrentQuestion('');
-                          setCurrentQuestionType('text');
-                          return 0;
-                       }
-                  }
+                 if (fixedQuestion && !answeredFixedQuestion) {
+                    setAnsweredFixedQuestion(true);
+
+                    const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
+                    if (nextQuestion) {
+                        setCurrentQuestion(nextQuestion.question);
+                        setCurrentQuestionType(nextQuestion.type);
+                        console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
+                        return nextIndex
+                    } else {
+                        const firstNonFixed = questions.find(question => !question.is_fixed);
+                         if (firstNonFixed) {
+                            setCurrentQuestion(firstNonFixed.question);
+                            setCurrentQuestionType(firstNonFixed.type);
+                            console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', questions.findIndex(q => q.id === firstNonFixed?.id));
+                            return questions.findIndex(q => q.id === firstNonFixed?.id)
+                         } else {
+                            setCurrentQuestion('');
+                            setCurrentQuestionType('text');
+                            return 0;
+                         }
+                    }
                 } else {
-                  setCurrentQuestion(questions[nextIndex].question);
-                  setCurrentQuestionType(questions[nextIndex].type);
-                  return nextIndex;
+                    const nextQuestion = questions[nextIndex];
+                    setCurrentQuestion(nextQuestion.question);
+                    setCurrentQuestionType(nextQuestion.type);
+                    console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
+                    return nextIndex
+
                 }
             });
         }
@@ -347,23 +365,26 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         if (questions && questions.length > 0 && !isCustomInputMode) {
             setPreviousQuestions(prev => [...prev, currentQuestion]);
             setQuestionIndex((prevIndex) => {
-                const nextIndex = (prevIndex + 1) % questions.length;
+                console.log('Skip - before setVisitedQuestions:', visitedQuestions);
+                setVisitedQuestions(prev => [...prev, prevIndex]);
+                console.log('Skip - after setVisitedQuestions:', visitedQuestions);
+                let nextIndex = (prevIndex + 1) % questions.length;
                 const fixedQuestion = questions.find(question => question.is_fixed);
-                if (fixedQuestion && !answeredFixedQuestion) {
+                 if (fixedQuestion && !answeredFixedQuestion) {
                     setAnsweredFixedQuestion(true);
                     const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
                     if (nextQuestion) {
                         setCurrentQuestion(nextQuestion.question);
                         setCurrentQuestionType(nextQuestion.type);
                         console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
-                        return nextIndex;
+                        return nextIndex
                     } else {
                         const firstNonFixed = questions.find(question => !question.is_fixed);
                          if (firstNonFixed) {
                             setCurrentQuestion(firstNonFixed.question);
                             setCurrentQuestionType(firstNonFixed.type);
                             console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', questions.findIndex(q => q.id === firstNonFixed?.id));
-                            return questions.findIndex(q => q.id === firstNonFixed?.id);
+                            return questions.findIndex(q => q.id === firstNonFixed?.id)
                          } else {
                             setCurrentQuestion('');
                             setCurrentQuestionType('text');
@@ -372,26 +393,35 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                          }
                     }
                 } else {
-                    setCurrentQuestion(questions[nextIndex].question);
-                    setCurrentQuestionType(questions[nextIndex].type);
-                    console.log('Skip - next question:', questions[nextIndex].question, 'index:', nextIndex);
-                    return nextIndex;
+                    const nextQuestion = questions[nextIndex];
+                    setCurrentQuestion(nextQuestion.question);
+                    setCurrentQuestionType(nextQuestion.type);
+                    console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
+                    return nextIndex
+
                 }
             });
         }
     };
 
     const handlePreviousQuestion = () => {
-         if (previousQuestions.length > 0) {
-            const lastQuestion = previousQuestions.pop();
-            setCurrentQuestion(lastQuestion);
-            const question = questions.find(q => q.question === lastQuestion);
+        console.log('Previous - before visitedQuestions:', visitedQuestions);
+         if (visitedQuestions.length > 1) {
+            const lastQuestion = visitedQuestions.pop();
+            const secondLastQuestion = visitedQuestions[visitedQuestions.length - 1];
+
+            console.log('Previous - lastQuestion:', questions[lastQuestion]?.question);
+            console.log('Previous - secondLastQuestion:', secondLastQuestion);
+            setCurrentQuestion(questions[secondLastQuestion]?.question);
+            const question = questions[secondLastQuestion];
             setCurrentQuestionType(question?.type || 'text');
-            setPreviousQuestions([...previousQuestions]);
+            setVisitedQuestions([...visitedQuestions]);
              setQuestionIndex((prevIndex) => {
-                const currentIndex = questions.findIndex(q => q.question === lastQuestion);
-                console.log('Previous - question:', lastQuestion, 'index:', currentIndex);
+                const currentIndex = secondLastQuestion;
+                console.log('Previous - question:', questions[lastQuestion]?.question, 'index:', currentIndex);
                 return currentIndex;
+
+
             });
         }
     };
