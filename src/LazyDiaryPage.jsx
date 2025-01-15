@@ -230,6 +230,7 @@ const handleSaveAndNext = async () => {
     errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
     return;
   }
+  // Check if recording is in progress and stop it
   if (isRecording) {
     handleStopRecording();
   }
@@ -381,7 +382,6 @@ const handleSaveAndNext = async () => {
   }
   fetchTodayRecord();
 };
-
 
     const handleSkipQuestion = () => {
         if (disableSkip) {
