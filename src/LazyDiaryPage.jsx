@@ -434,6 +434,8 @@ const handleSaveAndNext = async () => {
         }
     };
 
+let chunks = []; // Move chunks array to a higher scope
+
 const handleStartRecording = async () => {
   if (audioBlob) {
     if (!window.confirm('您确定要删除上次的录音并开始新的录音吗？')) {
@@ -450,7 +452,6 @@ const handleStartRecording = async () => {
     setMediaRecorder(recorder);
     recorder.start();
 
-    const chunks = [];
     recorder.ondataavailable = (event) => {
       console.log("handleStartRecording - ondataavailable - event.data:", event.data);
       chunks.push(event.data);
@@ -491,23 +492,24 @@ const handleStopRecording = () => {
     if (mediaRecorder) {
       console.log("handleStopRecording - mediaRecorder state:", mediaRecorder.state);
       mediaRecorder.onstop = () => {
-        console.log("handleStopRecording - onstop - mediaRecorder.chunks:", mediaRecorder.chunks);
-        const blob = new Blob(mediaRecorder.chunks, { type: 'audio/mp4' });
+        const blob = new Blob(chunks, { type: 'audio/mp4' });
         console.log("handleStopRecording - onstop - blob:", blob);
-        console.log("handleStopRecording - onstop - blob.size:", blob.size);
-        console.log("handleStopRecording - onstop - blob.type:", blob.type);
+        const url = URL.createObjectURL(blob);
+        console.log("handleStopRecording - onstop - url:", url);
         setAudioBlob(blob);
-        setAudioUrl(URL.createObjectURL(blob));
+        setAudioUrl(url);
         setTempAudioBlob(blob);
-        setTempAudioUrl(URL.createObjectURL(blob));
-        mediaRecorder.chunks = []; // Clear chunks after creating blob
+        setTempAudioUrl(url);
+        chunks = []; // Clear chunks after creating blob
         resolve();
       };
       try {
         setTimeout(() => {
-          mediaRecorder.stop();
-          setIsRecording(false);
-          setRecordButtonText('开始录音');
+          if (mediaRecorder) {
+            mediaRecorder.stop();
+            setIsRecording(false);
+            setRecordButtonText('开始录音');
+          }
         }, 100); // Add a 100ms delay
       } catch (error) {
         console.error("handleStopRecording - mediaRecorder.stop() error:", error);
@@ -520,6 +522,7 @@ const handleStopRecording = () => {
     }
   });
 };
+
 
         const handleVoiceInput = () => {
             if (!recognitionRef.current) {
