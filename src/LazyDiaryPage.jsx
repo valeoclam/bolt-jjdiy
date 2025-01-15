@@ -421,14 +421,13 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             const previousQuestionIndex = visitedQuestions[visitedQuestions.length - 2];
             if (previousQuestionIndex !== undefined) {
                 setCurrentQuestion(questions[previousQuestionIndex]?.question);
-                setCurrentQuestion
-Type(questions[previousQuestionIndex]?.type || 'text');
-                    setQuestionIndex(previousQuestionIndex);
-                    setVisitedQuestions(prev => prev.slice(0, -1));
-                    console.log('Previous - question:', questions[previousQuestionIndex]?.question, 'index:', previousQuestionIndex);
-                }
+                setCurrentQuestionType(questions[previousQuestionIndex]?.type || 'text');
+                setQuestionIndex(previousQuestionIndex);
+                setVisitedQuestions(prev => prev.slice(0, -1));
+                console.log('Previous - question:', questions[previousQuestionIndex]?.question, 'index:', previousQuestionIndex);
             }
-        };
+        }
+    };
 
     const handleStartRecording = async () => {
         if (audioBlob) {
@@ -793,35 +792,8 @@ Type(questions[previousQuestionIndex]?.type || 'text');
                             ref={fileInputRef}
                             style={{ display: 'none' }}
                         />
-                        <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>选择照片</button>
-                        {Array.isArray(tempDiaryPhotos) &&
-                            tempDiaryPhotos.map((photo, index) => (
-                                <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
-                                    <img src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveDiaryPhoto(index)}
-                                        style={{
-                                            position: 'absolute',
-                                            top: '5px',
-                                            right: '5px',
-                                            background: 'rgba(0, 0, 0, 0.5)',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '50%',
-                                            width: '20px',
-                                            height: '20px',
-                                            fontSize: '12px',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}
-                                    >
-                                        x
-                                    </button>
-                                </div>
-                            ))}
+                        <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px' }}>选择照片</button>
+                        {mainPhoto && <img src={mainPhoto} alt="Main" style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
                     </div>
                 </div>
             )}
@@ -845,78 +817,142 @@ Type(questions[previousQuestionIndex]?.type || 'text');
                     </button>
                 </div>
             )}
-            {recordingWarning && <p className="error-message">录音即将结束，请尽快完成！</p>}
-            {recordingTime > 0 && <p>录音时长: {recordingTime} 秒</p>}
-            {audioUrl && <audio src={audioUrl} controls />}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                {questions.length > 0 && (
-                    <button type="button" onClick={handleSaveAndNext} disabled={loading} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>
-                        {loading ? '正在保存...' : '保存&下一题'}
-                    </button>
-                )}
-                {!isCustomInputMode && questions.length > 0 && (
-                    <button type="button" onClick={handleSkipQuestion} style={{ marginTop: '10px', backgroundColor: disableSkip ? '#ddd' : '#6c757d' }} disabled={disableSkip}
-                    onMouseEnter={() => setProblemInputMessage(disableSkip ? '请先保存当前问题内容' : '')}
-                    onMouseLeave={() => setProblemInputMessage('')}
-                    >
-                        跳过
-                    </button>
-                )}
-                 {!isCustomInputMode && previousQuestions.length > 0 && questions.length > 0 && (
-                    <button type="button" onClick={handlePreviousQuestion} style={{ marginTop: '10px', backgroundColor: disablePrevious ? '#ddd' : '#6c757d' }} disabled={disablePrevious}>
-                        上一题
-                    </button>
-                )}
-            </div>
-            {problemInputMessage && <p className="error-message">{problemInputMessage}</p>}
-            {(questions.length > 0 || isCustomInputMode) && (
-                <button type="button" onClick={handleClearInput} style={{ marginTop: '10px', backgroundColor: '#dc3545' }}>清空</button>
-            )}
-            {successMessage && <p className="success-message">{successMessage}</p>}
-            {errorMessage && <p className="error-message">{errorMessage}</p>}
-            {noRecordMessage && <p className="error-message">{noRecordMessage}</p>}
-            <div className="inspiration-list">
-                <h3>今日记录</h3>
-                {currentRecord && currentRecord.answers && currentRecord.answers.length > 0 ? (
-                    [...currentRecord.answers].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map((record, index) => (
-                        <div key={index} className="inspiration-item">
-                            <p><strong>问题:</strong> {record.question}</p>
-                            <p><strong>回答:</strong> {record.answer}</p>
-                            <p><strong>时间:</strong> {new Date(record.created_at).toLocaleString()}</p>
-                            <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                                {Array.isArray(record.photos) &&
-                                    record.photos.map((photo, index) => (
-                                        <img key={index} src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
-                                    ))}
-                            </div>
-                            {record.audio_path && (
-                                <audio src={audioObjectURLs[record.audio_path] || ''} controls />
-                            )}
-                        </div>
-                    ))
-                ) : null}
-            </div>
-            <button type="button" onClick={handleViewHistory} style={{ marginTop: '10px', backgroundColor: '#28a745' }}>查看历史记录</button>
-            <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
-            {audioBlob && (
-                <button type="button" onClick={handleTestAudio} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>
-                    测试录音
-                </button>
-            )}
-            {testAudioUrl && <audio src={testAudioUrl} controls />}
-            {showConfirmModal && (
-                <div className="modal">
-                    <div className="modal-content">
-                        <p>当前有未保存的内容，是否保存后再切换模式？</p>
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                            <button type="button" onClick={() => toggleMode(true)} style={{ backgroundColor: '#28a745' }}>保存并切换</button>
-                            <button type="button" onClick={() => toggleMode(false)} style={{ backgroundColor: '#dc3545' }}>不保存并切换</button>
+            {isCustomInputMode && (
+                <div className="form-group">
+                    <div className="file-input-container">
+                        <input
+                            type="file"
+                            id="diaryPhotos"
+                                accept="image/*"
+                                multiple
+                                onChange={handleDiaryPhotosChange}
+                                ref={fileInputRef}
+                                style={{ display: 'none' }}
+                            />
+                            <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>选择照片</button>
+                            {Array.isArray(tempDiaryPhotos) &&
+                                tempDiaryPhotos.map((photo, index) => (
+                                    <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
+                                        <img src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveDiaryPhoto(index)}
+                                            style={{
+                                                position: 'absolute',
+                                                top: '5px',
+                                                right: '5px',
+                                                background: 'rgba(0, 0, 0, 0.5)',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '50%',
+                                                width: '20px',
+                                                height: '20px',
+                                                fontSize: '12px',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}
+                                        >
+                                            x
+                                        </button>
+                                    </div>
+                                ))}
                         </div>
                     </div>
+                )}
+                {isCustomInputMode && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '10px', gap: '10px' }}>
+                        <button
+                            type="button"
+                            onClick={handleVoiceInput}
+                            style={{ backgroundColor: isVoiceInputActive ? '#dc3545' : '#007bff' }}
+                            disabled={false}
+                        >
+                            {voiceInputButtonText}
+                        </button>
+                         <button
+                            type="button"
+                            onClick={isRecording ? handleStopRecording : handleStartRecording}
+                            disabled={isVoiceInputActive}
+                            style={{ backgroundColor: isRecording ? '#dc3545' : '#28a745' }}
+                        >
+                            {recordButtonText}
+                        </button>
+                    </div>
+                )}
+                {recordingWarning && <p className="error-message">录音即将结束，请尽快完成！</p>}
+                {recordingTime > 0 && <p>录音时长: {recordingTime} 秒</p>}
+                {audioUrl && <audio src={audioUrl} controls />}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    {questions.length > 0 && (
+                        <button type="button" onClick={handleSaveAndNext} disabled={loading} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>
+                            {loading ? '正在保存...' : '保存&下一题'}
+                        </button>
+                    )}
+                    {!isCustomInputMode && questions.length > 0 && (
+                        <button type="button" onClick={handleSkipQuestion} style={{ marginTop: '10px', backgroundColor: disableSkip ? '#ddd' : '#6c757d' }} disabled={disableSkip}
+                        onMouseEnter={() => setProblemInputMessage(disableSkip ? '请先保存当前问题内容' : '')}
+                        onMouseLeave={() => setProblemInputMessage('')}
+                        >
+                            跳过
+                        </button>
+                    )}
+                     {!isCustomInputMode && previousQuestions.length > 0 && questions.length > 0 && (
+                        <button type="button" onClick={handlePreviousQuestion} style={{ marginTop: '10px', backgroundColor: disablePrevious ? '#ddd' : '#6c757d' }} disabled={disablePrevious}>
+                            上一题
+                        </button>
+                    )}
                 </div>
-            )}
-        </div>
-    );
-}
+                {problemInputMessage && <p className="error-message">{problemInputMessage}</p>}
+                {(questions.length > 0 || isCustomInputMode) && (
+                    <button type="button" onClick={handleClearInput} style={{ marginTop: '10px', backgroundColor: '#dc3545' }}>清空</button>
+                )}
+                {successMessage && <p className="success-message">{successMessage}</p>}
+                {errorMessage && <p className="error-message">{errorMessage}</p>}
+                {noRecordMessage && <p className="error-message">{noRecordMessage}</p>}
+                <div className="inspiration-list">
+                    <h3>今日记录</h3>
+                    {currentRecord && currentRecord.answers && currentRecord.answers.length > 0 ? (
+                        [...currentRecord.answers].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map((record, index) => (
+                            <div key={index} className="inspiration-item">
+                                <p><strong>问题:</strong> {record.question}</p>
+                                <p><strong>回答:</strong> {record.answer}</p>
+                                <p><strong>时间:</strong> {new Date(record.created_at).toLocaleString()}</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                                    {Array.isArray(record.photos) &&
+                                        record.photos.map((photo, index) => (
+                                            <img key={index} src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
+                                        ))}
+                                </div>
+                                {record.audio_path && (
+                                    <audio src={audioObjectURLs[record.audio_path] || ''} controls />
+                                )}
+                            </div>
+                        ))
+                    ) : null}
+                </div>
+                <button type="button" onClick={handleViewHistory} style={{ marginTop: '10px', backgroundColor: '#28a745' }}>查看历史记录</button>
+                <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
+                {audioBlob && (
+                    <button type="button" onClick={handleTestAudio} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>
+                        测试录音
+                    </button>
+                )}
+                {testAudioUrl && <audio src={testAudioUrl} controls />}
+                {showConfirmModal && (
+                    <div className="modal">
+                        <div className="modal-content">
+                            <p>当前有未保存的内容，是否保存后再切换模式？</p>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                                <button type="button" onClick={() => toggleMode(true)} style={{ backgroundColor: '#28a745' }}>保存并切换</button>
+                                <button type="button" onClick={() => toggleMode(false)} style={{ backgroundColor: '#dc3545' }}>不保存并切换</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
 
-export default LazyDiaryPage;
+    export default LazyDiaryPage;
