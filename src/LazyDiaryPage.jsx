@@ -781,21 +781,20 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 )}
             </div>
             {currentQuestionType === 'text' && !isCustomInputMode && questions.length > 0 && (
-                <div className="form-group">
-                    <div className="file-input-container">
-                        <input
-                            type="file"
-                            id="diaryPhotos"
-                            accept="image/*"
-                            multiple
-                            onChange={handleDiaryPhotosChange}
-                            ref={fileInputRef}
-                            style={{ display: 'none' }}
-                        />
-                        <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px' }}>选择照片</button>
-                        {mainPhoto && <img src={mainPhoto} alt="Main" style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
-                    </div>
-                </div>
+<div className="form-group">
+            <div className="file-input-container">
+                <input
+                    type="file"
+                    id="diaryPhotos"
+                    accept="image/*"
+                    multiple
+                    onChange={handleDiaryPhotosChange}
+                    ref={fileInputRef}
+                    style={{ display: 'none' }}
+                />
+                <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px' }}>选择照片</button>
+            </div>
+        </div>
             )}
             {currentQuestionType === 'text' && !isCustomInputMode && questions.length > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '10px', gap: '10px' }}>
