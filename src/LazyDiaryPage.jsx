@@ -452,8 +452,8 @@ const handleStartRecording = async () => {
 
     const chunks = [];
     recorder.ondataavailable = (event) => {
-			console.log("handleStartRecording - ondataavailable - event.data:", event.data);
-			chunks.push(event.data);
+      console.log("handleStartRecording - ondataavailable - event.data:", event.data);
+      chunks.push(event.data);
     };
 
     recorder.onstop = () => {
@@ -486,23 +486,21 @@ const handleStartRecording = async () => {
   }
 };
 
-
 const handleStopRecording = () => {
   return new Promise((resolve) => {
     if (mediaRecorder) {
       console.log("handleStopRecording - mediaRecorder state:", mediaRecorder.state);
       mediaRecorder.onstop = () => {
-				console.log("handleStopRecording - onstop - mediaRecorder.chunks:", mediaRecorder.chunks);
+        console.log("handleStopRecording - onstop - mediaRecorder.chunks:", mediaRecorder.chunks);
         const blob = new Blob(mediaRecorder.chunks, { type: 'audio/mp4' });
         console.log("handleStopRecording - onstop - blob:", blob);
-  			console.log("handleStopRecording - onstop - blob.size:", blob.size);
- 				console.log("handleStopRecording - onstop - blob.type:", blob.type);
-        const url = URL.createObjectURL(blob);
-        console.log("handleStopRecording - onstop - url:", url);
+        console.log("handleStopRecording - onstop - blob.size:", blob.size);
+        console.log("handleStopRecording - onstop - blob.type:", blob.type);
         setAudioBlob(blob);
-        setAudioUrl(url);
+        setAudioUrl(URL.createObjectURL(blob));
         setTempAudioBlob(blob);
-        setTempAudioUrl(url);
+        setTempAudioUrl(URL.createObjectURL(blob));
+        mediaRecorder.chunks = []; // Clear chunks after creating blob
         resolve();
       };
       try {
@@ -522,9 +520,6 @@ const handleStopRecording = () => {
     }
   });
 };
-
-
-
 
         const handleVoiceInput = () => {
             if (!recognitionRef.current) {
