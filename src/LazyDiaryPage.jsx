@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+		import React, { useState, useEffect, useRef } from 'react';
     import { useNavigate } from 'react-router-dom';
     import { createClient } from '@supabase/supabase-js';
     import imageCompression from 'browser-image-compression';
@@ -894,9 +894,9 @@ const handleStopRecording = () => {
                     {audioUrl && <audio src={audioUrl} controls />}
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                         {questions.length > 0 && (
-                            <button type="button" onClick={handleSaveAndNext} disabled={loading} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>
-                                {loading ? '正在保存...' : '保存&下一题'}
-                            </button>
+   													 <button type="button" onClick={handleSaveAndNext} disabled={loading || isRecording} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>
+    													  {loading ? '正在保存...' : '保存&下一题'}
+   													 </button>
                         )}
                         {!isCustomInputMode && questions.length > 0 && (
                             <button type="button" onClick={handleSkipQuestion} style={{ marginTop: '10px', backgroundColor: disableSkip ? '#ddd' : '#6c757d' }} disabled={disableSkip}
