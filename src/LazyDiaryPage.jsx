@@ -474,13 +474,44 @@ const handleStartRecording = async () => {
 };
 
 
+
 const handleStopRecording = () => {
-  if (mediaRecorder) {
-    mediaRecorder.stop();
-    setIsRecording(false);
-    setRecordButtonText('开始录音');
-  }
+  return new Promise((resolve) => {
+    if (mediaRecorder) {
+      console.log("handleStopRecording - mediaRecorder state:", mediaRecorder.state);
+      mediaRecorder.onstop = () => {
+        console.log("handleStopRecording - onstop - mediaRecorder.chunks:", mediaRecorder.chunks);
+        const blob = new Blob(chunks, { type: 'audio/mp4' });
+        console.log("handleStopRecording - onstop - blob:", blob);
+        console.log("handleStopRecording - onstop - blob.size:", blob.size);
+        console.log("handleStopRecording - onstop - blob.type:", blob.type);
+        setAudioBlob(blob);
+        setAudioUrl(URL.createObjectURL(blob));
+        setTempAudioBlob(blob);
+        setTempAudioUrl(URL.createObjectURL(blob));
+        chunks = []; // Clear chunks after creating blob
+        resolve();
+      };
+      try {
+        setTimeout(() => {
+          if (mediaRecorder) {
+            mediaRecorder.stop();
+            setIsRecording(false);
+            setRecordButtonText('开始录音');
+          }
+        }, 100); // Add a 100ms delay
+      } catch (error) {
+        console.error("handleStopRecording - mediaRecorder.stop() error:", error);
+        setIsRecording(false);
+        setRecordButtonText('开始录音');
+        resolve();
+      }
+    } else {
+      resolve();
+    }
+  });
 };
+
 
 
 
