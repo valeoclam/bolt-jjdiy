@@ -471,6 +471,9 @@ const handleStartRecording = async () => {
       setRecordingError(`录音启动失败: ${event.error.message} (mimeType: audio/mp4)`);
       console.error('Error object:', event.error);
     };
+    recorder.onpause = () => {
+      console.log("MediaRecorder paused");
+    };
   } catch (error) {
     console.error('录音启动失败:', error);
     setErrorMessage('录音启动失败，请检查麦克风权限。');
@@ -498,14 +501,24 @@ const handleStopRecording = () => {
         setTempAudioUrl(url);
         resolve();
       };
-      mediaRecorder.stop();
-      setIsRecording(false);
-      setRecordButtonText('开始录音');
+      try {
+        setTimeout(() => {
+          mediaRecorder.stop();
+          setIsRecording(false);
+          setRecordButtonText('开始录音');
+        }, 100); // Add a 100ms delay
+      } catch (error) {
+        console.error("handleStopRecording - mediaRecorder.stop() error:", error);
+        setIsRecording(false);
+        setRecordButtonText('开始录音');
+        resolve();
+      }
     } else {
       resolve();
     }
   });
 };
+
 
 
 
