@@ -230,11 +230,38 @@ const handleSaveAndNext = async () => {
     errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
     return;
   }
+
+  setLoading(true);
+  let audioPath = null;
+
   // Check if recording is in progress and stop it
   if (isRecording) {
-    handleStopRecording();
+    await new Promise((resolve) => {
+      const stopRecordingAndResolve = () => {
+        if (mediaRecorder) {
+          mediaRecorder.stop();
+          setIsRecording(false);
+          setRecordButtonText('开始录音');
+          resolve();
+        }
+      };
+
+      if (mediaRecorder) {
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(mediaRecorder.chunks, { type: 'audio/mp4' });
+          setAudioBlob(blob);
+          setAudioUrl(URL.createObjectURL(blob));
+          setTempAudioBlob(blob);
+          setTempAudioUrl(URL.createObjectURL(blob));
+          stopRecordingAndResolve();
+        };
+        handleStopRecording();
+      } else {
+        resolve();
+      }
+    });
   }
-  setLoading(true);
+
   try {
     const { data: userData, error: userError } = await supabase
       .from('users')
@@ -253,8 +280,6 @@ const handleSaveAndNext = async () => {
       setErrorMessage('未找到用户，请重试。');
       return;
     }
-
-    let audioPath = null;
 
     if (audioBlob) {
       const fileName = `audio-${loggedInUser.id}-${new Date().getTime()}.mp4`;
@@ -382,6 +407,7 @@ const handleSaveAndNext = async () => {
   }
   fetchTodayRecord();
 };
+
 
     const handleSkipQuestion = () => {
         if (disableSkip) {
