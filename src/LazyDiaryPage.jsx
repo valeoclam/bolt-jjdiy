@@ -449,7 +449,6 @@ const handleStartRecording = async () => {
       setAudioUrl(URL.createObjectURL(blob));
       stream.getTracks().forEach(track => track.stop());
       setRecordButtonText('开始录音');
-      setRecordingError(''); // Remove this line
     };
     recorder.onerror = (event) => {
       console.error("MediaRecorder error:", event.error);
