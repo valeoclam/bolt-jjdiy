@@ -25,6 +25,7 @@ import React, { useState, useEffect, useRef } from 'react';
       const [audioUrl, setAudioUrl] = useState(null);
       const [recordButtonText, setRecordButtonText] = useState('开始录音');
       const [recordingError, setRecordingError] = useState('');
+      const [attemptedMimeType, setAttemptedMimeType] = useState('');
 
       useEffect(() => {
         if (loggedInUser) {
@@ -134,13 +135,15 @@ import React, { useState, useEffect, useRef } from 'react';
         setAudioBlob(null);
         setAudioUrl(null);
         setRecordButtonText('停止录音');
+        let recorder;
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            let recorder;
             try {
+                setAttemptedMimeType('audio/webm;codecs=opus');
                 recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
             } catch (e) {
                 console.warn('audio/webm;codecs=opus not supported, falling back to audio/webm', e);
+                setAttemptedMimeType('audio/webm');
                 recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
             }
             setMediaRecorder(recorder);
@@ -163,7 +166,7 @@ import React, { useState, useEffect, useRef } from 'react';
             console.error('录音启动失败:', error);
             setIsRecording(false);
             setRecordButtonText('开始录音');
-            setRecordingError(`录音启动失败: ${error.message}`);
+            setRecordingError(`录音启动失败: ${error.message} (mimeType: ${attemptedMimeType})`);
             if (error.name === 'NotAllowedError') {
                 setRecordingError('请允许麦克风权限，以便使用录音功能。');
             }
