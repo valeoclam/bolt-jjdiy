@@ -452,6 +452,7 @@ const handleStartRecording = async () => {
     setMediaRecorder(recorder);
     recorder.start();
 
+    const chunks = [];
     recorder.ondataavailable = (event) => {
       console.log("handleStartRecording - ondataavailable - event.data:", event.data);
       chunks.push(event.data);
@@ -487,30 +488,36 @@ const handleStartRecording = async () => {
   }
 };
 
+
 const handleStopRecording = () => {
   return new Promise((resolve) => {
     if (mediaRecorder) {
       console.log("handleStopRecording - mediaRecorder state:", mediaRecorder.state);
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/mp4' });
+        console.log("handleStopRecording - onstop - mediaRecorder.chunks:", mediaRecorder.chunks);
+        const blob = new Blob(mediaRecorder.chunks, { type: 'audio/mp4' });
         console.log("handleStopRecording - onstop - blob:", blob);
-        const url = URL.createObjectURL(blob);
-        console.log("handleStopRecording - onstop - url:", url);
+        console.log("handleStopRecording - onstop - blob.size:", blob.size);
+        console.log("handleStopRecording - onstop - blob.type:", blob.type);
         setAudioBlob(blob);
-        setAudioUrl(url);
+        setAudioUrl(URL.createObjectURL(blob));
         setTempAudioBlob(blob);
-        setTempAudioUrl(url);
+        setTempAudioUrl(URL.createObjectURL(blob));
         chunks = []; // Clear chunks after creating blob
         resolve();
       };
       try {
-        setTimeout(() => {
-          if (mediaRecorder) {
+        if (mediaRecorder.state !== 'inactive') {
+          setTimeout(() => {
             mediaRecorder.stop();
             setIsRecording(false);
             setRecordButtonText('开始录音');
-          }
-        }, 100); // Add a 100ms delay
+          }, 100); // Add a 100ms delay
+        } else {
+          setIsRecording(false);
+          setRecordButtonText('开始录音');
+          resolve();
+        }
       } catch (error) {
         console.error("handleStopRecording - mediaRecorder.stop() error:", error);
         setIsRecording(false);
@@ -522,6 +529,7 @@ const handleStopRecording = () => {
     }
   });
 };
+
 
 
         const handleVoiceInput = () => {
