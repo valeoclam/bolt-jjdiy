@@ -167,4 +167,3 @@ const handlePreviousQuestion = () => {
 }
 
 export default TestNavigationPage;
-

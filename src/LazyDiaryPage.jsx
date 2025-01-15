@@ -44,7 +44,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const [tempAudioUrl, setTempAudioUrl] = useState(null);
     const [tempPhotos, setTempPhotos] = useState([]);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [confirmAction, setConfirmAction] = useState(null);
+    const [confirmAction, setConfirmAction] = useState('');
     const [disableSkip, setDisableSkip] = useState(false);
     const [visitedQuestions, setVisitedQuestions] = useState([]);
     const [disablePrevious, setDisablePrevious] = useState(true);
@@ -125,11 +125,11 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         }
         if (!isCustomInputMode) {
             setDisablePrevious(!!(tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0) || visitedQuestionsRef.current.length <= 1);
-        } else {
+        }  else {
             setDisablePrevious(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob) || visitedQuestionsRef.current.length <= 1);
         }
 
-    }, [isCustomInputMode, answer, tempDiaryPhotos, audioBlob, customInput, selectedOptions, visitedQuestionsRef.current]);
+    }, [isCustomInputMode, answer, tempDiaryPhotos, audioBlob, customInput, selectedOptions]);
 
     useEffect(() => {
         setVisitedQuestions([...new Set(visitedQuestionsRef.current)]);
@@ -376,6 +376,9 @@ const handleSkipQuestion = () => {
     setAnswer('');
     setSelectedOptions([]);
     setIsOptionSelected(false);
+    setTempDiaryPhotos([]);
+    setAudioBlob(null);
+    setAudioUrl(null);
     if (questions && questions.length > 0 && !isCustomInputMode) {
         setPreviousQuestions(prev => [...prev, currentQuestion]);
          setQuestionIndex((prevIndex) => {
@@ -409,6 +412,8 @@ const handleSkipQuestion = () => {
                 setCurrentQuestion(nextQuestion.question);
                 setCurrentQuestionType(nextQuestion.type);
             }
+            visitedQuestionsRef.current = [...visitedQuestionsRef.current, nextIndex];
+            setVisitedQuestions(() => [...new Set(visitedQuestionsRef.current)]);
             return nextIndex;
         });
     }
@@ -427,6 +432,7 @@ const handleSkipQuestion = () => {
                 setCurrentQuestionType(questions[previousQuestionIndex]?.type || 'text');
                 setQuestionIndex(previousQuestionIndex);
                 setVisitedQuestions(prev => prev.slice(0, -1));
+                visitedQuestionsRef.current = visitedQuestionsRef.current.slice(0, -1);
                 console.log('Previous - question:', questions[previousQuestionIndex]?.question, 'index:', previousQuestionIndex);
             }
         }
@@ -665,7 +671,7 @@ const handleSkipQuestion = () => {
         }
         setIsCustomInputMode(!isCustomInputMode);
         setShowConfirmModal(false);
-        setConfirmAction(null);
+        setConfirmAction('');
         setCustomInputMessage('');
         setProblemInputMessage('');
         if (recognitionRef.current) {
