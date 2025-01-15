@@ -13,6 +13,7 @@
     import EditQuestionsPage from './EditQuestionsPage';
     import AdminPage from './AdminPage';
     import LazyDiaryHistoryPage from './LazyDiaryHistoryPage';
+    import TestNavigationPage from './TestNavigationPage';
 
     const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co'; // Replace with your Supabase URL
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8'; // Replace with your Supabase anon API key
@@ -109,6 +110,7 @@
           {loggedInUser && loggedInUser.role === 'admin' && (
             <Route path="/admin" element={<AdminPage loggedInUser={loggedInUser} onLogout={handleLogout} />} />
           )}
+          <Route path="/test-navigation" element={<TestNavigationPage loggedInUser={loggedInUser} onLogout={handleLogout} />} />
         </Routes>
       );
     }
