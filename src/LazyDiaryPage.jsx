@@ -482,7 +482,16 @@ const handleSaveAndNext = async () => {
                     setAudioUrl(URL.createObjectURL(blob));
                     stream.getTracks().forEach(track => track.stop());
                     setRecordButtonText('开始录音');
-                };
+									
+ recorder.onerror = (event) => {
+    console.error("MediaRecorder error:", event.error);
+    setIsRecording(false);
+    setRecordButtonText('开始录音');
+    setErrorMessage("录音失败，请重试。");
+  };
+
+									};
+							
             } catch (error) {
                 console.error('录音启动失败:', error);
                 setErrorMessage('录音启动失败，请检查麦克风权限。');
