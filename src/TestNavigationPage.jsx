@@ -136,7 +136,13 @@ import React, { useState, useEffect, useRef } from 'react';
         setRecordButtonText('停止录音');
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+            let recorder;
+            try {
+                recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+            } catch (e) {
+                console.warn('audio/webm;codecs=opus not supported, falling back to audio/webm', e);
+                recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            }
             setMediaRecorder(recorder);
             recorder.start();
 
