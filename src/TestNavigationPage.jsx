@@ -32,7 +32,6 @@ import React, { useState, useEffect, useRef } from 'react';
         if (loggedInUser) {
           setLoading(true);
           fetchQuestions();
-          detectSupportedMimeTypes();
         }
       }, [loggedInUser]);
 
@@ -85,18 +84,6 @@ import React, { useState, useEffect, useRef } from 'react';
         } finally {
           setLoading(false);
         }
-      };
-
-      const detectSupportedMimeTypes = () => {
-        const mimeTypes = [
-          'audio/webm;codecs=opus',
-          'audio/webm',
-          'audio/mp4',
-          'audio/mpeg',
-          'audio/ogg',
-        ];
-        const supported = mimeTypes.filter(mimeType => MediaRecorder.isTypeSupported(mimeType));
-        setSupportedMimeTypes(supported);
       };
 
       const handleSkipQuestion = () => {
@@ -152,21 +139,8 @@ import React, { useState, useEffect, useRef } from 'react';
         let recorder;
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            let mimeTypeToUse = 'audio/webm;codecs=opus';
-            if (!MediaRecorder.isTypeSupported(mimeTypeToUse)) {
-                console.warn('audio/webm;codecs=opus not supported, trying audio/webm');
-                mimeTypeToUse = 'audio/webm';
-                if (!MediaRecorder.isTypeSupported(mimeTypeToUse)) {
-                     console.warn('audio/webm not supported either');
-                    setAttemptedMimeType('not supported');
-                    setRecordingError('audio/webm and audio/webm;codecs=opus are not supported');
-                    setIsRecording(false);
-                    setRecordButtonText('开始录音');
-                    return;
-                }
-            }
-            setAttemptedMimeType(mimeTypeToUse);
-            recorder = new MediaRecorder(stream, { mimeType: mimeTypeToUse });
+            setAttemptedMimeType('audio/mp4');
+            recorder = new MediaRecorder(stream, { mimeType: 'audio/mp4' });
             setMediaRecorder(recorder);
             recorder.start();
 
@@ -176,7 +150,7 @@ import React, { useState, useEffect, useRef } from 'react';
             };
 
             recorder.onstop = () => {
-                const blob = new Blob(chunks, { type: 'audio/webm' });
+                const blob = new Blob(chunks, { type: 'audio/mp4' });
                 setAudioBlob(blob);
                 setAudioUrl(URL.createObjectURL(blob));
                 stream.getTracks().forEach(track => track.stop());
@@ -187,8 +161,8 @@ import React, { useState, useEffect, useRef } from 'react';
             console.error('录音启动失败:', error);
             setIsRecording(false);
             setRecordButtonText('开始录音');
-            setAttemptedMimeType(attemptedMimeType);
-            setRecordingError(`录音启动失败: ${error.message} (mimeType: ${attemptedMimeType})`);
+            setAttemptedMimeType('audio/mp4');
+            setRecordingError(`录音启动失败: ${error.message} (mimeType: audio/mp4)`);
             console.error('Error object:', error);
         }
     };
@@ -236,14 +210,6 @@ import React, { useState, useEffect, useRef } from 'react';
                 </div>
                 {audioUrl && <audio src={audioUrl} controls />}
                  {recordingError && <p className="error-message">{recordingError}</p>}
-                 <div>
-                    <h3>Supported Mime Types:</h3>
-                    <ul>
-                        {supportedMimeTypes.map(mimeType => (
-                            <li key={mimeType}>{mimeType}</li>
-                        ))}
-                    </ul>
-                </div>
             </>
           )}
         </div>
