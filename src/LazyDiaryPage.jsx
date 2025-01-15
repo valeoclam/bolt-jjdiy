@@ -213,183 +213,175 @@ import React, { useState, useEffect, useRef } from 'react';
             setCustomInput(e.target.value);
         };
 
-        const handleSaveAndNext = async () => {
-            if (isCustomInputMode && !customInput) {
-                setErrorMessage('请先输入内容');
-                 if (errorMessageTimeoutRef.current) {
-                    clearTimeout(errorMessageTimeoutRef.current);
-                }
-                errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
-                return;
-            }
-            if (!isCustomInputMode && !answer && selectedOptions.length === 0) {
-                setErrorMessage('请先输入答案');
-                 if (errorMessageTimeoutRef.current) {
-                    clearTimeout(errorMessageTimeoutRef.current);
-                }
-                errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
-                return;
-            }
-            if (isRecording) {
-                handleStopRecording();
-            }
-            setLoading(true);
-            try {
-                const { data: userData, error: userError } = await supabase
-                    .from('users')
-                    .select('id')
-                    .eq('username', loggedInUser.username)
-                    .single();
+const handleSaveAndNext = async () => {
+  if (isCustomInputMode && !customInput) {
+    setErrorMessage('请先输入内容');
+    if (errorMessageTimeoutRef.current) {
+      clearTimeout(errorMessageTimeoutRef.current);
+    }
+    errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
+    return;
+  }
+  if (!isCustomInputMode && !answer && selectedOptions.length === 0) {
+    setErrorMessage('请先输入答案');
+    if (errorMessageTimeoutRef.current) {
+      clearTimeout(errorMessageTimeoutRef.current);
+    }
+    errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
+    return;
+  }
+  if (isRecording) {
+    handleStopRecording();
+  }
+  setLoading(true);
+  try {
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('username', loggedInUser.username)
+      .single();
 
-                if (userError) {
-                    console.error('获取用户ID时发生错误:', userError);
-                    setErrorMessage('获取用户ID失败，请重试。');
-                    return;
-                }
+    if (userError) {
+      console.error('获取用户ID时发生错误:', userError);
+      setErrorMessage('获取用户ID失败，请重试。');
+      return;
+    }
 
-                if (!userData) {
-                    console.error('未找到用户');
-                    setErrorMessage('未找到用户，请重试。');
-                    return;
-                }
+    if (!userData) {
+      console.error('未找到用户');
+      setErrorMessage('未找到用户，请重试。');
+      return;
+    }
 
-                let audioPath = null;
+    let audioPath = null;
 
-                if (audioBlob) {
-                    const fileName = `audio-${loggedInUser.id}-${new Date().getTime()}.mp4`;
-                    const { data: uploadData, error: uploadError } = await supabase.storage
-                        .from('lazy-diary-audio')
-                        .upload(fileName, audioBlob, {
-                            contentType: 'audio/mp4',
-                        });
+    if (audioBlob) {
+      const fileName = `audio-${loggedInUser.id}-${new Date().getTime()}.mp4`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('lazy-diary-audio')
+        .upload(fileName, audioBlob, {
+          contentType: 'audio/mp4',
+        });
 
-                    if (uploadError) {
-                        console.error('上传录音文件失败:', uploadError, uploadError.message);
-                        setErrorMessage('上传录音文件失败，请重试。' + uploadError.message);
-                        return;
-                    }
-                    audioPath = uploadData.path;
-                }
-     // Create a new record if currentRecord is null
-      let recordId = currentRecord?.id;
-      if (!recordId) {
-        const newRecord = {
-          user_id: userData.id,
-        };
-        const { data: recordData, error: recordError } = await supabase
-          .from('lazy_diary_records')
-          .insert([newRecord])
-          .select('id'); // Select the id of the newly created record
-
-        if (recordError) {
-          console.error('添加懒人日记记录时发生错误:', recordError);
-          setErrorMessage('添加懒人日记记录失败，请重试。' + recordError.message);
-          return;
-        } else if (recordData && recordData.length > 0) {
-          recordId = recordData[0].id;
-          setCurrentRecord({ ...newRecord, id: recordId, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-        } else {
-          setCurrentRecord({...newRecord, created_at: new Date().toISOString(), updated_at: new Date().toISOString()});
-        }
+      if (uploadError) {
+        console.error('上传录音文件失败:', uploadError, uploadError.message);
+        setErrorMessage('上传录音文件失败，请重试。' + uploadError.message);
+        return;
       }
-                const newAnswer = {
-                    record_id: recordId, // Use the recordId
-                    question: isCustomInputMode ? '自定义内容' : currentQuestion,
-                    answer: isCustomInputMode ? customInput : answer,
-                    photos: tempDiaryPhotos,
-                    audio_path: audioPath,
-                    selected_option: currentQuestionType === 'multiple' ? JSON.stringify(selectedOptions) : selectedOptions.join(''),
-                };
-								console.log("handleSaveAndNext - Inserting new answer:", newAnswer);
-							
-                const { data, error } = await supabase
-                    .from('lazy_diary_answers')
-                    .insert([newAnswer]);
+      audioPath = uploadData.path;
+    }
 
-                if (error) {
-                    console.error('添加懒人日记记录时发生错误:', error);
-                    setErrorMessage('添加懒人日记记录失败，请重试。' + error.message);
-                } else {
-                    console.log('懒人日记记录添加成功:', data);
-                    setSuccessMessage('懒人日记记录添加成功!');
-                    setTempDiaryPhotos([]);
-                    setAudioBlob(null);
-                    setAudioUrl(null);
-                    setSelectedOptions([]);
-                    setIsOptionSelected(false);
-                    if (fileInputRef.current) {
-                        fileInputRef.current.value = '';
-                    }
-                    if (successTimeoutRef.current) {
-                        clearTimeout(successTimeoutRef.current);
-                    }
-                    successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
-                    if (!currentRecord) {
-                        const newRecord = {
-                            user_id: userData.id,
-                        };
-                        const { data: recordData, error: recordError } = await supabase
-                            .from('lazy_diary_records')
-                            .insert([newRecord]);
-                        if (recordError) {
-                            console.error('添加懒人日记记录时发生错误:', recordError);
-                            setErrorMessage('添加懒人日记记录失败，请重试。' + recordError.message);
-                        } else if (recordData && recordData.length > 0) {
-                            setCurrentRecord({ ...newRecord, id: recordData[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-                        } else {
-                            setCurrentRecord({...newRecord, created_at: new Date().toISOString(), updated_at: new Date().toISOString()});
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('发生意外错误:', error);
-                setErrorMessage('发生意外错误，请重试。' + error.message);
-            } finally {
-                setLoading(false);
-            }
-            setAnswer('');
-            setCustomInput('');
-             if (questions && questions.length > 0 && !isCustomInputMode) {
-                setQuestionIndex((prevIndex) => {
-                    let nextIndex;
-                    let nextQuestion;
-                    const fixedQuestion = questions.find(question => question.is_fixed);
-                     if (fixedQuestion && !answeredFixedQuestion) {
-                        setAnsweredFixedQuestion(true);
-                        nextQuestion = questions.find((question, index) => index === (prevIndex + 1) % questions.length && !question.is_fixed);
-                        if (nextQuestion) {
-                            nextIndex = questions.findIndex(q => q.id === nextQuestion?.id);
-                            setCurrentQuestion(nextQuestion.question);
-                            setCurrentQuestionType(nextQuestion.type);
-                            console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
-                            return nextIndex
-                        } else {
-                            const firstNonFixed = questions.find(question => !question.is_fixed);
-                             if (firstNonFixed) {
-                                nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
-                                setCurrentQuestion(firstNonFixed.question);
-                                setCurrentQuestionType(firstNonFixed.type);
-                                console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
-                                return nextIndex
-                             } else {
-                                setCurrentQuestion('');
-                                setCurrentQuestionType('text');
-                                console.log('Skip - no question');
-                                return 0;
-                             }
-                        }
-                    } else {
-                        nextIndex = (prevIndex + 1) % questions.length;
-                        nextQuestion = questions[nextIndex];
-                         console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
-                         setCurrentQuestion(nextQuestion.question);
-                         setCurrentQuestionType(nextQuestion.type);
-                         return nextIndex
-                    }
-                });
-            }
-            fetchTodayRecord();
-        };
+    // Create a new record if currentRecord is null
+    let recordId = currentRecord?.id;
+    console.log("handleSaveAndNext - currentRecord:", currentRecord);
+    if (!recordId) {
+      const newRecord = {
+        user_id: userData.id,
+      };
+      console.log("handleSaveAndNext - Creating new record:", newRecord);
+      const { data: recordData, error: recordError } = await supabase
+        .from('lazy_diary_records')
+        .insert([newRecord])
+        .select('id'); // Select the id of the newly created record
+
+      if (recordError) {
+        console.error('添加懒人日记记录时发生错误:', recordError);
+        setErrorMessage('添加懒人日记记录失败，请重试。' + recordError.message);
+        return;
+      } else if (recordData && recordData.length > 0) {
+        recordId = recordData[0].id;
+        console.log("handleSaveAndNext - New record created, recordId:", recordId);
+        setCurrentRecord({ ...newRecord, id: recordId, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+      } else {
+        console.log("handleSaveAndNext - New record created, but no id returned");
+        setCurrentRecord({...newRecord, created_at: new Date().toISOString(), updated_at: new Date().toISOString()});
+        throw new Error("Failed to create new record or retrieve record ID.");
+      }
+    }
+
+    const newAnswer = {
+      record_id: recordId, // Use the recordId
+      question: isCustomInputMode ? '自定义内容' : currentQuestion,
+      answer: isCustomInputMode ? customInput : answer,
+      photos: tempDiaryPhotos,
+      audio_path: audioPath,
+      selected_option: currentQuestionType === 'multiple' ? JSON.stringify(selectedOptions) : selectedOptions.join(''),
+    };
+    console.log("handleSaveAndNext - Inserting new answer:", newAnswer);
+
+    const { data, error } = await supabase
+      .from('lazy_diary_answers')
+      .insert([newAnswer]);
+
+    if (error) {
+      console.error('添加懒人日记记录时发生错误:', error);
+      setErrorMessage('添加懒人日记记录失败，请重试。' + error.message);
+    } else {
+      console.log('懒人日记记录添加成功:', data);
+      setSuccessMessage('懒人日记记录添加成功!');
+      setTempDiaryPhotos([]);
+      setAudioBlob(null);
+      setAudioUrl(null);
+      setSelectedOptions([]);
+      setIsOptionSelected(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+      successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
+    }
+  } catch (error) {
+    console.error('发生意外错误:', error);
+    setErrorMessage('发生意外错误，请重试。' + error.message);
+  } finally {
+    setLoading(false);
+  }
+  setAnswer('');
+  setCustomInput('');
+  if (questions && questions.length > 0 && !isCustomInputMode) {
+    setQuestionIndex((prevIndex) => {
+      let nextIndex;
+      let nextQuestion;
+      const fixedQuestion = questions.find(question => question.is_fixed);
+      if (fixedQuestion && !answeredFixedQuestion) {
+        setAnsweredFixedQuestion(true);
+        nextQuestion = questions.find((question, index) => index === (prevIndex + 1) % questions.length && !question.is_fixed);
+        if (nextQuestion) {
+          nextIndex = questions.findIndex(q => q.id === nextQuestion?.id);
+          setCurrentQuestion(nextQuestion.question);
+          setCurrentQuestionType(nextQuestion.type);
+          console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
+          return nextIndex
+        } else {
+          const firstNonFixed = questions.find(question => !question.is_fixed);
+          if (firstNonFixed) {
+            nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
+            setCurrentQuestion(firstNonFixed.question);
+            setCurrentQuestionType(firstNonFixed.type);
+            console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
+            return nextIndex
+          } else {
+            setCurrentQuestion('');
+            setCurrentQuestionType('text');
+            console.log('Skip - no question');
+            return 0;
+          }
+        }
+      } else {
+        nextIndex = (prevIndex + 1) % questions.length;
+        nextQuestion = questions[nextIndex];
+        console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
+        setCurrentQuestion(nextQuestion.question);
+        setCurrentQuestionType(nextQuestion.type);
+        return nextIndex
+      }
+    });
+  }
+  fetchTodayRecord();
+};
+
 
     const handleSkipQuestion = () => {
         if (disableSkip) {
