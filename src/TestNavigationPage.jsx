@@ -26,11 +26,13 @@ import React, { useState, useEffect, useRef } from 'react';
       const [recordButtonText, setRecordButtonText] = useState('开始录音');
       const [recordingError, setRecordingError] = useState('');
       const [attemptedMimeType, setAttemptedMimeType] = useState('');
+      const [supportedMimeTypes, setSupportedMimeTypes] = useState([]);
 
       useEffect(() => {
         if (loggedInUser) {
           setLoading(true);
           fetchQuestions();
+          detectSupportedMimeTypes();
         }
       }, [loggedInUser]);
 
@@ -83,6 +85,18 @@ import React, { useState, useEffect, useRef } from 'react';
         } finally {
           setLoading(false);
         }
+      };
+
+      const detectSupportedMimeTypes = () => {
+        const mimeTypes = [
+          'audio/webm;codecs=opus',
+          'audio/webm',
+          'audio/mp4',
+          'audio/mpeg',
+          'audio/ogg',
+        ];
+        const supported = mimeTypes.filter(mimeType => MediaRecorder.isTypeSupported(mimeType));
+        setSupportedMimeTypes(supported);
       };
 
       const handleSkipQuestion = () => {
@@ -143,7 +157,7 @@ import React, { useState, useEffect, useRef } from 'react';
                 console.warn('audio/webm;codecs=opus not supported, trying audio/webm');
                 mimeTypeToUse = 'audio/webm';
                 if (!MediaRecorder.isTypeSupported(mimeTypeToUse)) {
-                    console.warn('audio/webm not supported either');
+                     console.warn('audio/webm not supported either');
                     setAttemptedMimeType('not supported');
                     setRecordingError('audio/webm and audio/webm;codecs=opus are not supported');
                     setIsRecording(false);
@@ -222,6 +236,14 @@ import React, { useState, useEffect, useRef } from 'react';
                 </div>
                 {audioUrl && <audio src={audioUrl} controls />}
                  {recordingError && <p className="error-message">{recordingError}</p>}
+                 <div>
+                    <h3>Supported Mime Types:</h3>
+                    <ul>
+                        {supportedMimeTypes.map(mimeType => (
+                            <li key={mimeType}>{mimeType}</li>
+                        ))}
+                    </ul>
+                </div>
             </>
           )}
         </div>
