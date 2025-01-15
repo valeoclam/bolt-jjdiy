@@ -894,7 +894,13 @@ const handleStopRecording = () => {
                     {audioUrl && <audio src={audioUrl} controls />}
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                         {questions.length > 0 && (
-   													 <button type="button" onClick={handleSaveAndNext} disabled={loading || isRecording} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>
+   													 <button type="button" onClick={handleSaveAndNext} disabled={loading || isRecording} style={{
+															 marginTop: '10px', 
+															 backgroundColor: loading || isRecording ? '#ddd' : '#007bff',
+        										   cursor: loading || isRecording ? 'not-allowed' : 'pointer', 
+														 }}
+															 title={isRecording ? '请先停止录音' : loading ? '正在保存...' : ''}
+															 >
     													  {loading ? '正在保存...' : '保存&下一题'}
    													 </button>
                         )}
