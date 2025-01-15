@@ -230,15 +230,11 @@ const handleSaveAndNext = async () => {
     errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
     return;
   }
-
-  setLoading(true);
-  let audioPath = null;
-
   // Check if recording is in progress and stop it
   if (isRecording) {
-    await handleStopRecording();
+    handleStopRecording();
   }
-
+  setLoading(true);
   try {
     const { data: userData, error: userError } = await supabase
       .from('users')
@@ -257,6 +253,8 @@ const handleSaveAndNext = async () => {
       setErrorMessage('未找到用户，请重试。');
       return;
     }
+
+    let audioPath = null;
 
     if (audioBlob) {
       const fileName = `audio-${loggedInUser.id}-${new Date().getTime()}.mp4`;
@@ -384,6 +382,7 @@ const handleSaveAndNext = async () => {
   }
   fetchTodayRecord();
 };
+
 
 
 
