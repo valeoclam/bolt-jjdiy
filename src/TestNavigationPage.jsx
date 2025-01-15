@@ -166,6 +166,7 @@ import React, { useState, useEffect, useRef } from 'react';
             console.error('录音启动失败:', error);
             setIsRecording(false);
             setRecordButtonText('开始录音');
+            setAttemptedMimeType(attemptedMimeType);
             setRecordingError(`录音启动失败: ${error.message} (mimeType: ${attemptedMimeType})`);
             if (error.name === 'NotAllowedError') {
                 setRecordingError('请允许麦克风权限，以便使用录音功能。');
