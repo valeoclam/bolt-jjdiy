@@ -550,6 +550,7 @@ import React, { useState, useEffect, useRef } from 'react';
         };
 
         const handleViewHistory = () => {
+					 console.log("LazyDiaryPage - handleViewHistory clicked, navigating to:", '/lazy-diary/history');
             navigate('/lazy-diary/history');
         };
 

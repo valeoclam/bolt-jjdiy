@@ -276,80 +276,87 @@ function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
       {errorMessage && <p className="error-message">{errorMessage}</p>}
       <div className="inspiration-list">
         <h3>历史记录</h3>
-        {groupedRecords.map((groupedRecord) => (
-          <div key={groupedRecord.date} className="inspiration-item">
-            <h4>{groupedRecord.date}</h4>
-            {groupedRecord.records &&
-              groupedRecord.records.map((record) => (
-                <div key={record.id}>
-                  {record.answers &&
-                    record.answers.map((answer, index) => (
-                      <div key={index}>
-                        <p>
-                          <strong>问题:</strong> {answer.question}
-                        </p>
-                        {editingAnswerId === answer.id ? (
-                          <>
-                            <textarea
-                              value={editedAnswer}
-                              onChange={(e) => setEditedAnswer(e.target.value)}
-                              style={{ height: '80px' }}
-                            />
-                            <div className="edit-buttons">
-                              <button onClick={() => handleUpdateAnswer(answer.id)} disabled={loading}>
-                                {loading ? '正在保存...' : '更新'}
-                              </button>
-                              <button onClick={handleCancelEdit} style={{ backgroundColor: '#6c757d' }}>取消</button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <p>
-                              <strong>回答:</strong> {answer.answer}
-                            </p>
-                            <p>
-                              <strong>时间:</strong> {new Date(answer.created_at).toLocaleString()}
-                            </p>
-                            <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                              {Array.isArray(answer.photos) &&
-                                answer.photos.map((photo, index) => (
-                                  <img
-                                    key={index}
-                                    src={photo}
-                                    alt={`Diary ${index + 1}`}
-                                    style={{
-                                      maxWidth: '100%',
-                                      maxHeight: '150px',
-                                      display: 'block',
-                                      objectFit: 'contain',
-                                      marginRight: '5px',
-                                      marginBottom: '5px',
-                                    }}
-                                  />
-                                ))}
-                            </div>
-                            {answer.audio_path && (
-                              <audio src={audioObjectURLs[answer.audio_path] || ''} controls />
-                            )}
-                            <div className="edit-buttons">
-                              {!answer.audio_path && (
-                                <button onClick={() => handleEditAnswer(answer.id, answer.answer)}>编辑</button>
+        {groupedRecords.length === 0 ? (
+          <p>没有历史记录</p>
+        ) : (
+          groupedRecords.map((groupedRecord) => (
+            <div key={groupedRecord.date} className="inspiration-item">
+              <h4>{groupedRecord.date}</h4>
+              {groupedRecord.records &&
+                groupedRecord.records.map((record) => (
+                  <div key={record.id}>
+                    {record.answers && record.answers.length > 0 ? (
+                      record.answers.map((answer, index) => (
+                        <div key={index}>
+                          <p>
+                            <strong>问题:</strong> {answer.question}
+                          </p>
+                          {editingAnswerId === answer.id ? (
+                            <>
+                              <textarea
+                                value={editedAnswer}
+                                onChange={(e) => setEditedAnswer(e.target.value)}
+                                style={{ height: '80px' }}
+                              />
+                              <div className="edit-buttons">
+                                <button onClick={() => handleUpdateAnswer(answer.id)} disabled={loading}>
+                                  {loading ? '正在保存...' : '更新'}
+                                </button>
+                                <button onClick={handleCancelEdit} style={{ backgroundColor: '#6c757d' }}>取消</button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <p>
+                                <strong>回答:</strong> {answer.answer}
+                              </p>
+                              <p>
+                                <strong>时间:</strong> {new Date(answer.created_at).toLocaleString()}
+                              </p>
+                              <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                                {Array.isArray(answer.photos) &&
+                                  answer.photos.map((photo, index) => (
+                                    <img
+                                      key={index}
+                                      src={photo}
+                                      alt={`Diary ${index + 1}`}
+                                      style={{
+                                        maxWidth: '100%',
+                                        maxHeight: '150px',
+                                        display: 'block',
+                                        objectFit: 'contain',
+                                        marginRight: '5px',
+                                        marginBottom: '5px',
+                                      }}
+                                    />
+                                  ))}
+                              </div>
+                              {answer.audio_path && (
+                                <audio src={audioObjectURLs[answer.audio_path] || ''} controls />
                               )}
-                              <button
-                                className="delete-button"
-                                onClick={() => handleDeleteAnswer(answer.id)}
-                              >
-                                {confirmDeleteId === answer.id ? '确认删除' : '删除'}
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    ))}
-                </div>
-              ))}
-          </div>
-        ))}
+                              <div className="edit-buttons">
+                                {!answer.audio_path && (
+                                  <button onClick={() => handleEditAnswer(answer.id, answer.answer)}>编辑</button>
+                                )}
+                                <button
+                                  className="delete-button"
+                                  onClick={() => handleDeleteAnswer(answer.id)}
+                                >
+                                  {confirmDeleteId === answer.id ? '确认删除' : '删除'}
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p>没有回答</p>
+                    )}
+                  </div>
+                ))}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
