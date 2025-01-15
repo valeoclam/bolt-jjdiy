@@ -47,7 +47,6 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const [confirmAction, setConfirmAction] = useState('');
     const [disableSkip, setDisableSkip] = useState(false);
     const [visitedQuestions, setVisitedQuestions] = useState([]);
-    const [disablePrevious, setDisablePrevious] = useState(true);
     const [disableCustomInput, setDisableCustomInput] = useState(false);
     const [customInputMessage, setCustomInputMessage] = useState('');
     const [problemInputMessage, setProblemInputMessage] = useState('');
@@ -124,9 +123,9 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             setDisableCustomInput(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob));
         }
         if (!isCustomInputMode) {
-            setDisablePrevious(!!(tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0) || visitedQuestionsRef.current.length <= 1);
+            // setDisablePrevious(!!(tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0) || visitedQuestionsRef.current.length <= 1);
         }  else {
-            setDisablePrevious(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob) || visitedQuestionsRef.current.length <= 1);
+            // setDisablePrevious(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob) || visitedQuestionsRef.current.length <= 1);
         }
 
     }, [isCustomInputMode, answer, tempDiaryPhotos, audioBlob, customInput, selectedOptions]);
@@ -418,25 +417,6 @@ const handleSkipQuestion = () => {
         });
     }
 };
-
-    const handlePreviousQuestion = () => {
-        if (disablePrevious) {
-            return;
-        }
-        console.log('Previous - before visitedQuestions:', [...visitedQuestions]);
-         if (visitedQuestionsRef.current.length > 1) {
-            const lastQuestionIndex = visitedQuestionsRef.current[visitedQuestionsRef.current.length - 1];
-            const previousQuestionIndex = visitedQuestionsRef.current[visitedQuestionsRef.current.length - 2];
-            if (previousQuestionIndex !== undefined) {
-                setCurrentQuestion(questions[previousQuestionIndex]?.question);
-                setCurrentQuestionType(questions[previousQuestionIndex]?.type || 'text');
-                setQuestionIndex(previousQuestionIndex);
-                setVisitedQuestions(prev => prev.slice(0, -1));
-                visitedQuestionsRef.current = visitedQuestionsRef.current.slice(0, -1);
-                console.log('Previous - question:', questions[previousQuestionIndex]?.question, 'index:', previousQuestionIndex);
-            }
-        }
-    };
 
     const handleStartRecording = async () => {
         if (audioBlob) {
@@ -904,11 +884,6 @@ const handleSkipQuestion = () => {
                         onMouseLeave={() => setProblemInputMessage('')}
                         >
                             跳过
-                        </button>
-                    )}
-                     {!isCustomInputMode && previousQuestions.length > 0 && questions.length > 0 && (
-                        <button type="button" onClick={handlePreviousQuestion} style={{ marginTop: '10px', backgroundColor: disablePrevious ? '#ddd' : '#6c757d' }} disabled={disablePrevious}>
-                            上一题
                         </button>
                     )}
                 </div>
