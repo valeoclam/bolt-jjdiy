@@ -138,14 +138,21 @@ import React, { useState, useEffect, useRef } from 'react';
         let recorder;
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            try {
-                setAttemptedMimeType('audio/webm;codecs=opus');
-                recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
-            } catch (e) {
-                console.warn('audio/webm;codecs=opus not supported, falling back to audio/webm', e);
-                setAttemptedMimeType('audio/webm');
-                recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            let mimeTypeToUse = 'audio/webm;codecs=opus';
+            if (!MediaRecorder.isTypeSupported(mimeTypeToUse)) {
+                console.warn('audio/webm;codecs=opus not supported, trying audio/webm');
+                mimeTypeToUse = 'audio/webm';
+                if (!MediaRecorder.isTypeSupported(mimeTypeToUse)) {
+                    console.warn('audio/webm not supported either');
+                    setAttemptedMimeType('not supported');
+                    setRecordingError('audio/webm and audio/webm;codecs=opus are not supported');
+                    setIsRecording(false);
+                    setRecordButtonText('开始录音');
+                    return;
+                }
             }
+            setAttemptedMimeType(mimeTypeToUse);
+            recorder = new MediaRecorder(stream, { mimeType: mimeTypeToUse });
             setMediaRecorder(recorder);
             recorder.start();
 
@@ -168,9 +175,7 @@ import React, { useState, useEffect, useRef } from 'react';
             setRecordButtonText('开始录音');
             setAttemptedMimeType(attemptedMimeType);
             setRecordingError(`录音启动失败: ${error.message} (mimeType: ${attemptedMimeType})`);
-            if (error.name === 'NotAllowedError') {
-                setRecordingError('请允许麦克风权限，以便使用录音功能。');
-            }
+            console.error('Error object:', error);
         }
     };
 
@@ -216,7 +221,7 @@ import React, { useState, useEffect, useRef } from 'react';
                     )}
                 </div>
                 {audioUrl && <audio src={audioUrl} controls />}
-                {recordingError && <p className="error-message">{recordingError}</p>}
+                 {recordingError && <p className="error-message">{recordingError}</p>}
             </>
           )}
         </div>
