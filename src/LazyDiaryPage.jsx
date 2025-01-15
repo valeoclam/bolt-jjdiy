@@ -1,756 +1,754 @@
-import React, { useState, useEffect, useRef } from 'react';
- import { useNavigate } from 'react-router-dom';
- import { createClient } from '@supabase/supabase-js';
- import imageCompression from 'browser-image-compression';
 
- const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co';
- const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8';
- const supabase = createClient(supabaseUrl, supabaseKey);
+    import React, { useState, useEffect, useRef } from 'react';
+    import { useNavigate } from 'react-router-dom';
+    import { createClient } from '@supabase/supabase-js';
+    import imageCompression from 'browser-image-compression';
 
- function LazyDiaryPage({ loggedInUser, onLogout }) {
-     const [currentQuestion, setCurrentQuestion] = useState('');
-     const [answer, setAnswer] = useState('');
-     const [isRecording, setIsRecording] = useState(false);
-     const navigate = useNavigate();
-     const recognitionRef = useRef(null);
-     const [loading, setLoading] = useState(false);
-     const [currentRecord, setCurrentRecord] = useState(null);
-     const [questions, setQuestions] = useState([]);
-     const [questionIndex, setQuestionIndex] = useState(0);
-     const [successMessage, setSuccessMessage] = useState('');
-     const [errorMessage, setErrorMessage] = useState('');
-     const successTimeoutRef = useRef(null);
-     const fileInputRef = useRef(null);
-     const [tempDiaryPhotos, setTempDiaryPhotos] = useState([]);
-     const MAX_PHOTOS = 6;
-     const [noRecordMessage, setNoRecordMessage] = useState('');
-     const [recordingTime, setRecordingTime] = useState(0);
-     const [recordingWarning, setRecordingWarning] = useState(false);
-     const [audioBlob, setAudioBlob] = useState(null);
-     const [mediaRecorder, setMediaRecorder] = useState(null);
-     const [audioUrl, setAudioUrl] = useState(null);
-     const timerRef = useRef(null);
-     const [answeredFixedQuestion, setAnsweredFixedQuestion] = useState(false);
-     const [isCustomInputMode, setIsCustomInputMode] = useState(true);
-     const [customInput, setCustomInput] = useState('');
-     const [audioObjectURLs, setAudioObjectURLs] = useState({});
-     const [testAudioUrl, setTestAudioUrl] = useState(null);
-     const [isVoiceInputActive, setIsVoiceInputActive] = useState(false);
-     const [voiceInputButtonText, setVoiceInputButtonText] = useState('开始语音输入');
-     const [recordButtonText, setRecordButtonText] = useState('开始录音');
-     const [tempAnswer, setTempAnswer] = useState('');
-     const [tempCustomInput, setTempCustomInput] = useState('');
-     const [tempAudioBlob, setTempAudioBlob] = useState(null);
-     const [tempAudioUrl, setTempAudioUrl] = useState(null);
-     const [tempPhotos, setTempPhotos] = useState([]);
-     const [showConfirmModal, setShowConfirmModal] = useState(false);
-     const [confirmAction, setConfirmAction] = useState('');
-     const [disableSkip, setDisableSkip] = useState(false);
-     const [visitedQuestions, setVisitedQuestions] = useState([]);
-     const [disableCustomInput, setDisableCustomInput] = useState(false);
-     const [customInputMessage, setCustomInputMessage] = useState('');
-     const [problemInputMessage, setProblemInputMessage] = useState('');
-     const errorMessageTimeoutRef = useRef(null);
-     const [selectedOptions, setSelectedOptions] = useState([]);
-     const [isOptionSelected, setIsOptionSelected] = useState(false);
-     const [previousQuestions, setPreviousQuestions] = useState([]);
-     const [currentQuestionType, setCurrentQuestionType] = useState('text');
-     const [initialQuestionLoaded, setInitialQuestionLoaded] = useState(false);
-     const [firstSkip, setFirstSkip] = useState(true);
-     const visitedQuestionsRef = useRef([]);
-     const questionIndexRef = useRef(0);
+    const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8';
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-     useEffect(() => {
-         if (loggedInUser) {
-             setLoading(true);
-             fetchQuestions();
-             fetchTodayRecord();
-         }
-     }, [loggedInUser]);
+    function LazyDiaryPage({ loggedInUser, onLogout }) {
+        const [currentQuestion, setCurrentQuestion] = useState('');
+        const [answer, setAnswer] = useState('');
+        const [isRecording, setIsRecording] = useState(false);
+        const navigate = useNavigate();
+        const recognitionRef = useRef(null);
+        const [loading, setLoading] = useState(false);
+        const [currentRecord, setCurrentRecord] = useState(null);
+        const [questions, setQuestions] = useState([]);
+        const [questionIndex, setQuestionIndex] = useState(0);
+        const [successMessage, setSuccessMessage] = useState('');
+        const [errorMessage, setErrorMessage] = useState('');
+        const successTimeoutRef = useRef(null);
+        const fileInputRef = useRef(null);
+        const [tempDiaryPhotos, setTempDiaryPhotos] = useState([]);
+        const MAX_PHOTOS = 6;
+        const [noRecordMessage, setNoRecordMessage] = useState('');
+        const [recordingTime, setRecordingTime] = useState(0);
+        const [recordingWarning, setRecordingWarning] = useState(false);
+        const [audioBlob, setAudioBlob] = useState(null);
+        const [mediaRecorder, setMediaRecorder] = useState(null);
+        const [audioUrl, setAudioUrl] = useState(null);
+        const timerRef = useRef(null);
+        const [answeredFixedQuestion, setAnsweredFixedQuestion] = useState(false);
+        const [isCustomInputMode, setIsCustomInputMode] = useState(true);
+        const [customInput, setCustomInput] = useState('');
+        const [audioObjectURLs, setAudioObjectURLs] = useState({});
+        const [testAudioUrl, setTestAudioUrl] = useState(null);
+        const [isVoiceInputActive, setIsVoiceInputActive] = useState(false);
+        const [voiceInputButtonText, setVoiceInputButtonText] = useState('开始语音输入');
+        const [recordButtonText, setRecordButtonText] = useState('开始录音');
+        const [tempAnswer, setTempAnswer] = useState('');
+        const [tempCustomInput, setTempCustomInput] = useState('');
+        const [tempAudioBlob, setTempAudioBlob] = useState(null);
+        const [tempAudioUrl, setTempAudioUrl] = useState(null);
+        const [tempPhotos, setTempPhotos] = useState([]);
+        const [showConfirmModal, setShowConfirmModal] = useState(false);
+        const [confirmAction, setConfirmAction] = useState('');
+        const [disableSkip, setDisableSkip] = useState(false);
+        const [visitedQuestions, setVisitedQuestions] = useState([]);
+        const [disableCustomInput, setDisableCustomInput] = useState(false);
+        const [customInputMessage, setCustomInputMessage] = useState('');
+        const [problemInputMessage, setProblemInputMessage] = useState('');
+        const errorMessageTimeoutRef = useRef(null);
+        const [selectedOptions, setSelectedOptions] = useState([]);
+        const [isOptionSelected, setIsOptionSelected] = useState(false);
+        const [previousQuestions, setPreviousQuestions] = useState([]);
+        const [currentQuestionType, setCurrentQuestionType] = useState('text');
+        const [initialQuestionLoaded, setInitialQuestionLoaded] = useState(false);
+        const [firstSkip, setFirstSkip] = useState(true);
+        const visitedQuestionsRef = useRef([]);
+        const questionIndexRef = useRef(0);
 
-     useEffect(() => {
-         if (questions && questions.length > 0) {
-             if (!isCustomInputMode && !initialQuestionLoaded) {
-                 const fixedQuestion = questions.find(question => question.is_fixed);
-                 if (fixedQuestion) {
-                     setCurrentQuestion(fixedQuestion.question);
-                     setCurrentQuestionType(fixedQuestion.type);
-                      visitedQuestionsRef.current = [questions.findIndex(q => q.id === fixedQuestion?.id)];
-                      setVisitedQuestions([questions.findIndex(q => q.id === fixedQuestion?.id)]);
-                      questionIndexRef.current = questions.findIndex(q => q.id === fixedQuestion?.id);
-                 } else {
-                     setCurrentQuestion(questions[0].question);
-                     setCurrentQuestionType(questions[0].type);
-                      visitedQuestionsRef.current = [0];
-                      setVisitedQuestions([0]);
-                      questionIndexRef.current = 0;
-                 }
-                 setInitialQuestionLoaded(true);
-             }
-         }
-     }, [questions, isCustomInputMode, initialQuestionLoaded]);
+        useEffect(() => {
+            if (loggedInUser) {
+                setLoading(true);
+                fetchQuestions();
+                fetchTodayRecord();
+            }
+        }, [loggedInUser]);
 
-     useEffect(() => {
-         let intervalId;
-         if (isRecording) {
-             intervalId = setInterval(() => {
-                 setRecordingTime((prevTime) => prevTime + 1);
-             }, 1000);
-         } else {
-             clearInterval(intervalId);
-             setRecordingTime(0);
-             setRecordingWarning(false);
-         }
-         return () => clearInterval(intervalId);
-     }, [isRecording]);
+        useEffect(() => {
+            if (questions && questions.length > 0) {
+                if (!isCustomInputMode && !initialQuestionLoaded) {
+                    const fixedQuestion = questions.find(question => question.is_fixed);
+                    if (fixedQuestion) {
+                        setCurrentQuestion(fixedQuestion.question);
+                        setCurrentQuestionType(fixedQuestion.type);
+                         visitedQuestionsRef.current = [questions.findIndex(q => q.id === fixedQuestion?.id)];
+                         setVisitedQuestions([questions.findIndex(q => q.id === fixedQuestion?.id)]);
+                         questionIndexRef.current = questions.findIndex(q => q.id === fixedQuestion?.id);
+                    } else {
+                        setCurrentQuestion(questions[0].question);
+                        setCurrentQuestionType(questions[0].type);
+                         visitedQuestionsRef.current = [0];
+                         setVisitedQuestions([0]);
+                         questionIndexRef.current = 0;
+                    }
+                    setInitialQuestionLoaded(true);
+                }
+            }
+        }, [questions, isCustomInputMode, initialQuestionLoaded]);
 
-     useEffect(() => {
-         if (recordingTime >= 50 && recordingTime < 60) {
-             setRecordingWarning(true);
-         } else {
-             setRecordingWarning(false);
-         }
-         if (recordingTime >= 60) {
-             handleStopRecording();
-         }
-     }, [recordingTime]);
+        useEffect(() => {
+            let intervalId;
+            if (isRecording) {
+                intervalId = setInterval(() => {
+                    setRecordingTime((prevTime) => prevTime + 1);
+                }, 1000);
+            } else {
+                clearInterval(intervalId);
+                setRecordingTime(0);
+                setRecordingWarning(false);
+            }
+            return () => clearInterval(intervalId);
+        }, [isRecording]);
 
-     useEffect(() => {
-         if (!isCustomInputMode) {
-             setDisableSkip(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0));
-             setDisableCustomInput(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0));
-         } else {
-             setDisableCustomInput(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob));
-         }
-         if (!isCustomInputMode) {
-             // setDisablePrevious(!!(tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0) || visitedQuestionsRef.current.length <= 1);
-         }  else {
-             // setDisablePrevious(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob) || visitedQuestionsRef.current.length <= 1);
-         }
+        useEffect(() => {
+            if (recordingTime >= 50 && recordingTime < 60) {
+                setRecordingWarning(true);
+            } else {
+                setRecordingWarning(false);
+            }
+            if (recordingTime >= 60) {
+                handleStopRecording();
+            }
+        }, [recordingTime]);
 
-     }, [isCustomInputMode, answer, tempDiaryPhotos, audioBlob, customInput, selectedOptions]);
+        useEffect(() => {
+            if (!isCustomInputMode) {
+                setDisableSkip(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0));
+                setDisableCustomInput(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0));
+            } else {
+                setDisableCustomInput(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob));
+            }
+            if (!isCustomInputMode) {
+                // setDisablePrevious(!!(tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0) || visitedQuestionsRef.current.length <= 1);
+            }  else {
+                // setDisablePrevious(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob) || visitedQuestionsRef.current.length <= 1);
+            }
 
-     useEffect(() => {
-         setVisitedQuestions([...new Set(visitedQuestionsRef.current)]);
-     }, [visitedQuestionsRef.current]);
+        }, [isCustomInputMode, answer, tempDiaryPhotos, audioBlob, customInput, selectedOptions]);
 
-     const fetchQuestions = async () => {
-         try {
-             const { data, error } = await supabase
-                 .from('lazy_diary_questions')
-                 .select('*')
-                 .eq('is_active', true)
-                 .order('created_at', { ascending: false });
+        useEffect(() => {
+            setVisitedQuestions([...new Set(visitedQuestionsRef.current)]);
+        }, [visitedQuestionsRef.current]);
 
-             if (error) {
-                 console.error('获取问题列表时发生错误:', error);
-             } else {
-                 console.log('Fetched questions:', data);
-                 setQuestions(data);
-             }
-         } catch (error) {
-             console.error('发生意外错误:', error);
-         } finally {
-             console.log('questions.length in finally:', questions.length);
-             setLoading(false);
-         }
-     };
+        const fetchQuestions = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('lazy_diary_questions')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('created_at', { ascending: false });
 
-     const fetchTodayRecord = async () => {
-         try {
-             const today = new Date().toISOString().split('T')[0];
-             const { data, error } = await supabase
-                 .from('lazy_diary_records')
-                 .select('*')
-                 .eq('user_id', loggedInUser.id)
-                 .gte('created_at', `${today}T00:00:00.000Z`)
-                 .lt('created_at', `${today}T23:59:59.999Z`)
-                 .limit(1);
+                if (error) {
+                    console.error('获取问题列表时发生错误:', error);
+                } else {
+                    console.log('Fetched questions:', data);
+                    setQuestions(data);
+                }
+            } catch (error) {
+                console.error('发生意外错误:', error);
+            } finally {
+                console.log('questions.length in finally:', questions.length);
+                setLoading(false);
+            }
+        };
 
-             if (error) {
-                 if (error.code !== '404') {
-                     console.error('获取今日懒人日记记录时发生错误:', error, error.message);
-                     setErrorMessage('获取今日懒人日记记录失败，请重试。');
-                 } else {
-                     setNoRecordMessage('还没有今日的记录，请开始记录吧！');
-                     setCurrentRecord(null);
-                     setErrorMessage('');
-                 }
-             } else {
-                 if (data && data[0]) {
-                     const { data: answersData, error: answersError } = await supabase
-                         .from('lazy_diary_answers')
-                         .select('*')
-                         .eq('record_id', data[0].id)
-                         .order('created_at', { ascending: false });
+        const fetchTodayRecord = async () => {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const { data, error } = await supabase
+                    .from('lazy_diary_records')
+                    .select('*')
+                    .eq('user_id', loggedInUser.id)
+                    .gte('created_at', `${today}T00:00:00.000Z`)
+                    .lt('created_at', `${today}T23:59:59.999Z`)
+                    .limit(1);
 
-                     if (answersError) {
-                         console.error('获取今日懒人日记答案时发生错误:', answersError);
-                         setCurrentRecord({ ...data[0], answers: [] });
-                     } else {
-                         setCurrentRecord({ ...data[0], answers: answersData });
-                     }
-                 } else {
-                     setCurrentRecord(null);
-                 }
-                 setNoRecordMessage('');
-             }
-         } catch (error) {
-             console.error('发生意外错误:', error, error.message);
-             setErrorMessage('发生意外错误，请重试。');
-             setCurrentRecord(null);
-             setNoRecordMessage('');
-         } finally {
-             setLoading(false);
-         }
-     };
+                if (error) {
+                    if (error.code !== '404') {
+                        console.error('获取今日懒人日记记录时发生错误:', error, error.message);
+                        setErrorMessage('获取今日懒人日记记录失败，请重试。');
+                    } else {
+                        setNoRecordMessage('还没有今日的记录，请开始记录吧！');
+                        setCurrentRecord(null);
+                        setErrorMessage('');
+                    }
+                } else {
+                    if (data && data[0]) {
+                        const { data: answersData, error: answersError } = await supabase
+                            .from('lazy_diary_answers')
+                            .select('*')
+                            .eq('record_id', data[0].id)
+                            .order('created_at', { ascending: false });
 
-     const handleAnswerChange = (e) => {
-         setAnswer(e.target.value);
-     };
+                        if (answersError) {
+                            console.error('获取今日懒人日记答案时发生错误:', answersError);
+                            setCurrentRecord({ ...data[0], answers: [] });
+                        } else {
+                            setCurrentRecord({ ...data[0], answers: answersData });
+                        }
+                    } else {
+                        setCurrentRecord(null);
+                    }
+                    setNoRecordMessage('');
+                }
+            } catch (error) {
+                console.error('发生意外错误:', error, error.message);
+                setErrorMessage('发生意外错误，请重试。');
+                setCurrentRecord(null);
+                setNoRecordMessage('');
+            } finally {
+                setLoading(false);
+            }
+        };
 
-     const handleCustomInputChange = (e) => {
-         setCustomInput(e.target.value);
-     };
+        const handleAnswerChange = (e) => {
+            setAnswer(e.target.value);
+        };
 
-     const handleSaveAndNext = async () => {
-         if (isCustomInputMode && !customInput) {
-             setErrorMessage('请先输入内容');
-              if (errorMessageTimeoutRef.current) {
-                 clearTimeout(errorMessageTimeoutRef.current);
-             }
-             errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
-             return;
-         }
-         if (!isCustomInputMode && !answer && selectedOptions.length === 0) {
-             setErrorMessage('请先输入答案');
-              if (errorMessageTimeoutRef.current) {
-                 clearTimeout(errorMessageTimeoutRef.current);
-             }
-             errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
-             return;
-         }
-         if (isRecording) {
-             handleStopRecording();
-         }
-         setLoading(true);
-         try {
-             const { data: userData, error: userError } = await supabase
-                 .from('users')
-                 .select('id')
-                 .eq('username', loggedInUser.username)
-                 .single();
+        const handleCustomInputChange = (e) => {
+            setCustomInput(e.target.value);
+        };
 
-             if (userError) {
-                 console.error('获取用户ID时发生错误:', userError);
-                 setErrorMessage('获取用户ID失败，请重试。');
-                 return;
-             }
+        const handleSaveAndNext = async () => {
+            if (isCustomInputMode && !customInput) {
+                setErrorMessage('请先输入内容');
+                 if (errorMessageTimeoutRef.current) {
+                    clearTimeout(errorMessageTimeoutRef.current);
+                }
+                errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
+                return;
+            }
+            if (!isCustomInputMode && !answer && selectedOptions.length === 0) {
+                setErrorMessage('请先输入答案');
+                 if (errorMessageTimeoutRef.current) {
+                    clearTimeout(errorMessageTimeoutRef.current);
+                }
+                errorMessageTimeoutRef.current = setTimeout(() => setErrorMessage(''), 3000);
+                return;
+            }
+            if (isRecording) {
+                handleStopRecording();
+            }
+            setLoading(true);
+            try {
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('username', loggedInUser.username)
+                    .single();
 
-             if (!userData) {
-                 console.error('未找到用户');
-                 setErrorMessage('未找到用户，请重试。');
-                 return;
-             }
+                if (userError) {
+                    console.error('获取用户ID时发生错误:', userError);
+                    setErrorMessage('获取用户ID失败，请重试。');
+                    return;
+                }
 
-             let audioPath = null;
+                if (!userData) {
+                    console.error('未找到用户');
+                    setErrorMessage('未找到用户，请重试。');
+                    return;
+                }
 
-             if (audioBlob) {
-                 const fileName = `audio-${loggedInUser.id}-${new Date().getTime()}.mp4`;
-                 const { data: uploadData, error: uploadError } = await supabase.storage
-                     .from('lazy-diary-audio')
-                     .upload(fileName, audioBlob, {
-                         contentType: 'audio/mp4',
-                     });
+                let audioPath = null;
 
-                 if (uploadError) {
-                     console.error('上传录音文件失败:', uploadError, uploadError.message);
-                     setErrorMessage('上传录音文件失败，请重试。' + uploadError.message);
-                     return;
-                 }
-                 audioPath = uploadData.path;
-             }
+                if (audioBlob) {
+                    const fileName = `audio-${loggedInUser.id}-${new Date().getTime()}.mp4`;
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                        .from('lazy-diary-audio')
+                        .upload(fileName, audioBlob, {
+                            contentType: 'audio/mp4',
+                        });
 
-             const newAnswer = {
-                 record_id: currentRecord?.id,
-                 question: isCustomInputMode ? '自定义内容' : currentQuestion,
-                 answer: isCustomInputMode ? customInput : answer,
-                 photos: tempDiaryPhotos,
-                 audio_path: audioPath,
-                 selected_option: currentQuestionType === 'multiple' ? JSON.stringify(selectedOptions) : selectedOptions.join(''),
-             };
+                    if (uploadError) {
+                        console.error('上传录音文件失败:', uploadError, uploadError.message);
+                        setErrorMessage('上传录音文件失败，请重试。' + uploadError.message);
+                        return;
+                    }
+                    audioPath = uploadData.path;
+                }
 
-             const { data, error } = await supabase
-                 .from('lazy_diary_answers')
-                 .insert([newAnswer]);
+                const newAnswer = {
+                    record_id: currentRecord?.id,
+                    question: isCustomInputMode ? '自定义内容' : currentQuestion,
+                    answer: isCustomInputMode ? customInput : answer,
+                    photos: tempDiaryPhotos,
+                    audio_path: audioPath,
+                    selected_option: currentQuestionType === 'multiple' ? JSON.stringify(selectedOptions) : selectedOptions.join(''),
+                };
 
-             if (error) {
-                 console.error('添加懒人日记记录时发生错误:', error);
-                 setErrorMessage('添加懒人日记记录失败，请重试。' + error.message);
-             } else {
-                 console.log('懒人日记记录添加成功:', data);
-                 setSuccessMessage('懒人日记记录添加成功!');
-                 setTempDiaryPhotos([]);
-                 setAudioBlob(null);
-                 setAudioUrl(null);
-                 setSelectedOptions([]);
-                 setIsOptionSelected(false);
-                 if (fileInputRef.current) {
-                     fileInputRef.current.value = '';
-                 }
-                 if (successTimeoutRef.current) {
-                     clearTimeout(successTimeoutRef.current);
-                 }
-                 successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
-                 if (!currentRecord) {
-                     const newRecord = {
-                         user_id: userData.id,
-                     };
-                     const { data: recordData, error: recordError } = await supabase
-                         .from('lazy_diary_records')
-                         .insert([newRecord]);
-                     if (recordError) {
-                         console.error('添加懒人日记记录时发生错误:', recordError);
-                         setErrorMessage('添加懒人日记记录失败，请重试。' + recordError.message);
-                     } else if (recordData && recordData.length > 0) {
-                         setCurrentRecord({ ...newRecord, id: recordData[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-                     } else {
-                         setCurrentRecord({...newRecord, created_at: new Date().toISOString(), updated_at: new Date().toISOString()});
-                     }
-                 }
-             }
-         } catch (error) {
-             console.error('发生意外错误:', error);
-             setErrorMessage('发生意外错误，请重试。' + error.message);
-         } finally {
-             setLoading(false);
-         }
-         setAnswer('');
-         setCustomInput('');
-          if (questions && questions.length > 0 && !isCustomInputMode) {
-             setQuestionIndex((prevIndex) => {
-                 let nextIndex;
-                 const fixedQuestion = questions.find(question => question.is_fixed);
-                  if (fixedQuestion && !answeredFixedQuestion) {
-                     setAnsweredFixedQuestion(true);
-                     const nextQuestion = questions.find((question, index) => index === (prevIndex + 1) % questions.length && !question.is_fixed);
-                     if (nextQuestion) {
-                         nextIndex = questions.findIndex(q => q.id === nextQuestion?.id);
+                const { data, error } = await supabase
+                    .from('lazy_diary_answers')
+                    .insert([newAnswer]);
+
+                if (error) {
+                    console.error('添加懒人日记记录时发生错误:', error);
+                    setErrorMessage('添加懒人日记记录失败，请重试。' + error.message);
+                } else {
+                    console.log('懒人日记记录添加成功:', data);
+                    setSuccessMessage('懒人日记记录添加成功!');
+                    setTempDiaryPhotos([]);
+                    setAudioBlob(null);
+                    setAudioUrl(null);
+                    setSelectedOptions([]);
+                    setIsOptionSelected(false);
+                    if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                    }
+                    if (successTimeoutRef.current) {
+                        clearTimeout(successTimeoutRef.current);
+                    }
+                    successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
+                    if (!currentRecord) {
+                        const newRecord = {
+                            user_id: userData.id,
+                        };
+                        const { data: recordData, error: recordError } = await supabase
+                            .from('lazy_diary_records')
+                            .insert([newRecord]);
+                        if (recordError) {
+                            console.error('添加懒人日记记录时发生错误:', recordError);
+                            setErrorMessage('添加懒人日记记录失败，请重试。' + recordError.message);
+                        } else if (recordData && recordData.length > 0) {
+                            setCurrentRecord({ ...newRecord, id: recordData[0].id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+                        } else {
+                            setCurrentRecord({...newRecord, created_at: new Date().toISOString(), updated_at: new Date().toISOString()});
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('发生意外错误:', error);
+                setErrorMessage('发生意外错误，请重试。' + error.message);
+            } finally {
+                setLoading(false);
+            }
+            setAnswer('');
+            setCustomInput('');
+             if (questions && questions.length > 0 && !isCustomInputMode) {
+                setQuestionIndex((prevIndex) => {
+                    let nextIndex;
+                    let nextQuestion;
+                    const fixedQuestion = questions.find(question => question.is_fixed);
+                     if (fixedQuestion && !answeredFixedQuestion) {
+                        setAnsweredFixedQuestion(true);
+                        nextQuestion = questions.find((question, index) => index === (prevIndex + 1) % questions.length && !question.is_fixed);
+                        if (nextQuestion) {
+                            nextIndex = questions.findIndex(q => q.id === nextQuestion?.id);
+                            setCurrentQuestion(nextQuestion.question);
+                            setCurrentQuestionType(nextQuestion.type);
+                            console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
+                            return nextIndex
+                        } else {
+                            const firstNonFixed = questions.find(question => !question.is_fixed);
+                             if (firstNonFixed) {
+                                nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
+                                setCurrentQuestion(firstNonFixed.question);
+                                setCurrentQuestionType(firstNonFixed.type);
+                                console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
+                                return nextIndex
+                             } else {
+                                setCurrentQuestion('');
+                                setCurrentQuestionType('text');
+                                console.log('Skip - no question');
+                                return 0;
+                             }
+                        }
+                    } else {
+                        nextIndex = (prevIndex + 1) % questions.length;
+                        nextQuestion = questions[nextIndex];
+                         console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
                          setCurrentQuestion(nextQuestion.question);
                          setCurrentQuestionType(nextQuestion.type);
-                         console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
                          return nextIndex
-                     } else {
-                         const firstNonFixed = questions.find(question => !question.is_fixed);
-                          if (firstNonFixed) {
-                             nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
-                             setCurrentQuestion(firstNonFixed.question);
-                             setCurrentQuestionType(firstNonFixed.type);
-                             console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
-                             return nextIndex
-                          } else {
-                             setCurrentQuestion('');
-                             setCurrentQuestionType('text');
-                             console.log('Skip - no question');
-                             return 0;
-                          }
-                     }
-                 } else {
-                     nextIndex = (prevIndex + 1) % questions.length;
-                     setCurrentQuestion(questions[nextIndex].question);
-                     setCurrentQuestionType(nextQuestion.type);
-                     console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
-                     return nextIndex
+                    }
+                });
+            }
+            fetchTodayRecord();
+        };
 
-                 }
-             });
-         }
-         fetchTodayRecord();
-     };
-
- const handleSkipQuestion = () => {
-     if (disableSkip) {
-         return;
-     }
-     setAnswer('');
-     setSelectedOptions([]);
-     setIsOptionSelected(false);
-     setTempDiaryPhotos([]);
-     setAudioBlob(null);
-     setAudioUrl(null);
-     if (questions && questions.length > 0 && !isCustomInputMode) {
-         setPreviousQuestions(prev => [...prev, currentQuestion]);
-          setQuestionIndex((prevIndex) => {
-             let nextIndex = 0;
-             let nextQuestion;
-             const fixedQuestion = questions.find(question => question.is_fixed);
-              if (fixedQuestion && !answeredFixedQuestion) {
-                 setAnsweredFixedQuestion(true);
-                 nextQuestion = questions.find((question, index) => index === (prevIndex + 1) % questions.length && !question.is_fixed);
-                 if (nextQuestion) {
-                     nextIndex = questions.findIndex(q => q.id === nextQuestion?.id);
-                     console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
-                 } else {
-                     const firstNonFixed = questions.find(question => !question.is_fixed);
-                      if (firstNonFixed) {
-                         nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
-                         console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
-                      } else {
-                         setCurrentQuestion('');
-                         setCurrentQuestionType('text');
-                         console.log('Skip - no question');
-                         return 0;
-                      }
-                 }
-             } else {
-                 nextIndex = (prevIndex + 1) % questions.length;
-                 nextQuestion = questions[nextIndex];
-                  console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
-             }
-             if (nextQuestion) {
-                 setCurrentQuestion(nextQuestion.question);
-                 setCurrentQuestionType(nextQuestion.type);
-             }
-             visitedQuestionsRef.current = [...visitedQuestionsRef.current, nextIndex];
-             setVisitedQuestions(() => [...new Set(visitedQuestionsRef.current)]);
-             return nextIndex;
-         });
-     }
- };
-
-     const handleStartRecording = async () => {
-         if (audioBlob) {
-             if (!window.confirm('您确定要删除上次的录音并开始新的录音吗？')) {
-                 return;
-             }
-         }
-         setIsRecording(true);
-         setAudioBlob(null);
-         setAudioUrl(null);
-         setRecordButtonText('停止录音');
-         try {
-             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-             const recorder = new MediaRecorder(stream, { mimeType: 'audio/mp4' });
-             setMediaRecorder(recorder);
-             recorder.start();
-
-             const chunks = [];
-             recorder.ondataavailable = (event) => {
-                 chunks.push(event.data);
-             };
-
-             recorder.onstop = () => {
-                 const blob = new Blob(chunks, { type: 'audio/mp4' });
-                 setAudioBlob(blob);
-                 setAudioUrl(URL.createObjectURL(blob));
-                 stream.getTracks().forEach(track => track.stop());
-                 setRecordButtonText('开始录音');
-             };
-         } catch (error) {
-             console.error('录音启动失败:', error);
-             setErrorMessage('录音启动失败，请检查麦克风权限。');
-             setIsRecording(false);
-             setRecordButtonText('开始录音');
-             if (error.name === 'NotAllowedError') {
-                 setErrorMessage('请允许麦克风权限，以便使用录音功能。');
-             }
-         }
-     };
-
-     const handleStopRecording = () => {
-         if (mediaRecorder) {
-             mediaRecorder.stop();
-             setIsRecording(false);
-             setRecordButtonText('开始录音');
-         }
-     };
-
-     const handleVoiceInput = () => {
-         if (!recognitionRef.current) {
-             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-             if (!SpeechRecognition) {
-                 alert('您的浏览器不支持语音识别，请尝试其他浏览器。');
-                 setIsRecording(false);
-                 return;
-             }
-             recognitionRef.current = new SpeechRecognition();
-             recognitionRef.current.lang = 'zh-CN';
-             recognitionRef.current.onresult = (event) => {
-                 const transcript = Array.from(event.results)
-                     .map((result) => result[0].transcript)
-                     .join('');
-                 if (isCustomInputMode) {
-                     setCustomInput(prevInput => prevInput + transcript);
-                 } else {
-                     setAnswer(prevAnswer => prevAnswer + transcript);
-                 }
-             };
-             recognitionRef.current.onerror = (event) => {
-                 console.error("语音识别错误:", event.error);
-                 setIsVoiceInputActive(false);
-                 setVoiceInputButtonText('开始语音输入');
-                 setErrorMessage("语音输入失败，请检查麦克风权限或网络连接。");
-             };
-             recognitionRef.current.onend = () => {
-                 setIsVoiceInputActive(false);
-                 setVoiceInputButtonText('开始语音输入');
-             };
-         }
-         if (!isRecording) {
-            handleStartRecording();
-         }
-         setIsVoiceInputActive(true);
-         setVoiceInputButtonText('停止语音输入');
-         setTimeout(() => {
-             recognitionRef.current.start();
-         }, 100);
-     };
-
-     const handleStopVoiceInput = () => {
-         if (recognitionRef.current) {
-             recognitionRef.current.stop();
-             setIsVoiceInputActive(false);
-             setVoiceInputButtonText('开始语音输入');
-         }
-     };
-
-     const handleTestAudio = () => {
-         if (audioBlob) {
-             setTestAudioUrl(URL.createObjectURL(audioBlob));
-         } else {
-             setErrorMessage("请先录制音频");
-         }
-     };
-
-     const handleBackToModules = () => {
-         navigate('/modules');
-     };
-
-     const handleEditQuestionsClick = () => {
-         navigate('/edit-questions');
-     };
-
-     const handleViewHistory = () => {
-         navigate('/lazy-diary/history');
-     };
-
-     const handleDiaryPhotosChange = async (e) => {
-         setErrorMessage('');
-         const files = Array.from(e.target.files);
-         if (!files || files.length === 0) return;
-         if (tempDiaryPhotos.length + files.length > MAX_PHOTOS) {
-             setErrorMessage(`最多只能添加 ${MAX_PHOTOS} 张照片。`);
-             return;
-         }
-
-         try {
-             const compressedFiles = await Promise.all(
-                 files.map(async (file) => {
-                     return await imageCompression(file, {
-                         maxSizeMB: 1,
-                         maxWidthOrHeight: 1920,
-                         useWebWorker: true,
-                     });
-                 }),
-             );
-
-             const readers = compressedFiles.map((file) => {
-                 return new Promise((resolve) => {
-                     const reader = new FileReader();
-                     reader.onloadend = () => {
-                         resolve(reader.result);
-                     };
-                     reader.readAsDataURL(file);
-                 });
-             });
-
-             const results = await Promise.all(readers);
-             setTempDiaryPhotos((prevPhotos) => [...prevPhotos, ...results]);
-         } catch (error) {
-             console.error('图片压缩失败:', error);
-             setErrorMessage('图片压缩失败，请重试。');
-         }
-     };
-
-     const handleRemoveDiaryPhoto = (indexToRemove) => {
-         setTempDiaryPhotos((prevPhotos) =>
-             prevPhotos.filter((_, index) => index !== indexToRemove),
-         );
-     };
-
-     const createAudioObjectURL = async (audioPath) => {
-         if (!audioPath) return null;
-         try {
-             const { data, error } = await supabase.storage
-                 .from('lazy-diary-audio')
-                 .download(audioPath);
-
-             if (error) {
-                 console.error('下载录音文件失败:', error);
-                 return null;
-             }
-             const url = URL.createObjectURL(data);
-             return url;
-         } catch (error) {
-             console.error('创建音频 URL 失败:', error);
-             return null;
-         }
-     };
-
-     useEffect(() => {
-         const fetchAudioURLs = async () => {
-             if (currentRecord && currentRecord.answers) {
-                 const newAudioObjectURLs = {};
-                 for (const answer of currentRecord.answers) {
-                     if (answer.audio_path) {
-                         const url = await createAudioObjectURL(answer.audio_path);
-                         if (url) {
-                             newAudioObjectURLs[answer.audio_path] = url;
+    const handleSkipQuestion = () => {
+        if (disableSkip) {
+            return;
+        }
+        setAnswer('');
+        setSelectedOptions([]);
+        setIsOptionSelected(false);
+        setTempDiaryPhotos([]);
+        setAudioBlob(null);
+        setAudioUrl(null);
+        if (questions && questions.length > 0 && !isCustomInputMode) {
+            setPreviousQuestions(prev => [...prev, currentQuestion]);
+             setQuestionIndex((prevIndex) => {
+                let nextIndex = 0;
+                let nextQuestion;
+                const fixedQuestion = questions.find(question => question.is_fixed);
+                 if (fixedQuestion && !answeredFixedQuestion) {
+                    setAnsweredFixedQuestion(true);
+                    nextQuestion = questions.find((question, index) => index === (prevIndex + 1) % questions.length && !question.is_fixed);
+                    if (nextQuestion) {
+                        nextIndex = questions.findIndex(q => q.id === nextQuestion?.id);
+                        console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
+                    } else {
+                        const firstNonFixed = questions.find(question => !question.is_fixed);
+                         if (firstNonFixed) {
+                            nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
+                            console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
+                         } else {
+                            setCurrentQuestion('');
+                            setCurrentQuestionType('text');
+                            console.log('Skip - no question');
+                            return 0;
                          }
-                     }
-                 }
-                 setAudioObjectURLs(newAudioObjectURLs);
-             }
-         };
+                    }
+                } else {
+                    nextIndex = (prevIndex + 1) % questions.length;
+                    nextQuestion = questions[nextIndex];
+                     console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
+                     setCurrentQuestion(nextQuestion.question);
+                     setCurrentQuestionType(nextQuestion.type);
+                     return nextIndex
+                }
+            });
+        }
+    };
 
-         fetchAudioURLs();
-         return () => {
-             for (const url of Object.values(audioObjectURLs)) {
-                 URL.revokeObjectURL(url);
-             }
-         };
-     }, [currentRecord]);
+        const handleStartRecording = async () => {
+            if (audioBlob) {
+                if (!window.confirm('您确定要删除上次的录音并开始新的录音吗？')) {
+                    return;
+                }
+            }
+            setIsRecording(true);
+            setAudioBlob(null);
+            setAudioUrl(null);
+            setRecordButtonText('停止录音');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const recorder = new MediaRecorder(stream, { mimeType: 'audio/mp4' });
+                setMediaRecorder(recorder);
+                recorder.start();
 
-     const handleToggleCustomInputMode = () => {
-         if ((isCustomInputMode && (answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0)) ||
-             (!isCustomInputMode && (customInput || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0))) {
-             setShowConfirmModal(true);
-             setConfirmAction(isCustomInputMode ? 'switchToProblemMode' : 'switchToCustomMode');
-         } else {
-             toggleMode();
-         }
-     };
+                const chunks = [];
+                recorder.ondataavailable = (event) => {
+                    chunks.push(event.data);
+                };
 
-     const toggleMode = (save = false) => {
-        if (isCustomInputMode) {
-             if (save) {
-                 setTempAnswer(answer);
-                 setTempPhotos(tempDiaryPhotos);
-                 setTempAudioBlob(audioBlob);
-                 setTempAudioUrl(audioUrl);
-             }
-             setAnswer(tempAnswer);
-             setTempDiaryPhotos(tempPhotos);
-             setAudioBlob(tempAudioBlob);
-             setAudioUrl(tempAudioUrl);
-         } else {
-             if (save) {
-                 setTempCustomInput(customInput);
-             }
-             setCustomInput(tempCustomInput);
-         }
-         setIsCustomInputMode(!isCustomInputMode);
-         setShowConfirmModal(false);
-         setConfirmAction('');
-         setCustomInputMessage('');
-         setProblemInputMessage('');
-         if (recognitionRef.current) {
-             recognitionRef.current.stop();
-             recognitionRef.current = null;
-         }
-     };
+                recorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'audio/mp4' });
+                    setAudioBlob(blob);
+                    setAudioUrl(URL.createObjectURL(blob));
+                    stream.getTracks().forEach(track => track.stop());
+                    setRecordButtonText('开始录音');
+                };
+            } catch (error) {
+                console.error('录音启动失败:', error);
+                setErrorMessage('录音启动失败，请检查麦克风权限。');
+                setIsRecording(false);
+                setRecordButtonText('开始录音');
+                if (error.name === 'NotAllowedError') {
+                    setErrorMessage('请允许麦克风权限，以便使用录音功能。');
+                }
+            }
+        };
 
-     const handleClearInput = () => {
-         if (isRecording) {
-             handleStopRecording();
-         }
-         setAnswer('');
-         setCustomInput('');
-         setTempDiaryPhotos([]);
-         setAudioBlob(null);
-         setAudioUrl(null);
-         setSelectedOptions([]);
-         setIsOptionSelected(false);
-         if (fileInputRef.current) {
-             fileInputRef.current.value = '';
-         }
-     };
+        const handleStopRecording = () => {
+            if (mediaRecorder) {
+                mediaRecorder.stop();
+                setIsRecording(false);
+                setRecordButtonText('开始录音');
+            }
+        };
 
-     const handleOptionSelect = (option) => {
-         if (currentQuestionType === 'multiple') {
-             if (selectedOptions.includes(option)) {
-                 setSelectedOptions(selectedOptions.filter(opt => opt !== option));
-             } else {
-                 setSelectedOptions([...selectedOptions, option]);
-             }
-         } else {
-             setSelectedOptions([option]);
-         }
-         setIsOptionSelected(true);
-     };
+        const handleVoiceInput = () => {
+            if (!recognitionRef.current) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    alert('您的浏览器不支持语音识别，请尝试其他浏览器。');
+                    setIsRecording(false);
+                    return;
+                }
+                recognitionRef.current = new SpeechRecognition();
+                recognitionRef.current.lang = 'zh-CN';
+                recognitionRef.current.onresult = (event) => {
+                    const transcript = Array.from(event.results)
+                        .map((result) => result[0].transcript)
+                        .join('');
+                    if (isCustomInputMode) {
+                        setCustomInput(prevInput => prevInput + transcript);
+                    } else {
+                        setAnswer(prevAnswer => prevAnswer + transcript);
+                    }
+                };
+                recognitionRef.current.onerror = (event) => {
+                    console.error("语音识别错误:", event.error);
+                    setIsVoiceInputActive(false);
+                    setVoiceInputButtonText('开始语音输入');
+                    setErrorMessage("语音输入失败，请检查麦克风权限或网络连接。");
+                };
+                recognitionRef.current.onend = () => {
+                    setIsVoiceInputActive(false);
+                    setVoiceInputButtonText('开始语音输入');
+                };
+            }
+            if (!isRecording) {
+               handleStartRecording();
+            }
+            setIsVoiceInputActive(true);
+            setVoiceInputButtonText('停止语音输入');
+            setTimeout(() => {
+                recognitionRef.current.start();
+            }, 100);
+        };
 
-     return (
-         <div className="container">
-             <h2>懒人日记</h2>
-             {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
-             <button type="button" onClick={onLogout} className="logout-button">退出</button>
-             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                 <button
-                     type="button"
-                     onClick={disableCustomInput ? null : handleToggleCustomInputMode}
-                     style={{ marginTop: '10px', backgroundColor: !disableCustomInput ? '#007bff' : '#ddd', cursor: disableCustomInput ? 'not-allowed' : 'pointer' }}
-                     onMouseEnter={() => setCustomInputMessage((!isCustomInputMode && (answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0)) ? '请先保存当前问题内容' : '')}
-                     onMouseLeave={() => setCustomInputMessage('')}
-                     disabled={disableCustomInput}
-                 >
-                     {isCustomInputMode ? '返回问题模式' : '我有话要说'}
-                 </button>
-             </div>
-             {customInputMessage && <p className="error-message">{customInputMessage}</p>}
-             <div className="form-group">
-                 {!isCustomInputMode ? (
-                     <>
-                         {questions.length === 0 ? (
-                             <p>问题库为空，请联系管理员添加问题</p>
-                         ) : (
-                             <>
-                                 <p><strong>问题:</strong> {currentQuestion}</p>
-                                 {questions.find(q => q.question === currentQuestion)?.type === 'single' ? (
-                                     <div>
-                                         {questions.find(q => q.question === currentQuestion)?.options?.map((option, index) => (
-                                             <div key={index}>
-                                                 <label>
-                                                     <input
-                                                         type="radio"
-                                                         name="singleOption"
-                                                         value={option}
-                                                         checked={selectedOptions.includes(option)}
-                                                         onChange={() => handleOptionSelect(option)}
-                                                     />
-                                                     <span style={{ color: option === '白色' ? 'black' : option === '黑色' ? 'white' : option, backgroundColor: option === '白色' ? 'white' : option === '黑色' ? 'black' : 'transparent', padding: '5px', borderRadius: '4px', display: 'inline-block' }}>{option}</span>
-                                                 </label>
-                                             </div>
-                                         ))}
-                                     </div>
-                                 ) : questions.find(q => q.question === currentQuestion)?.type === 'multiple' ? (
-                                     <div>
-                                         {questions.find(q => q.question === currentQuestion)?.options?.map((option, index) => (
-                                             <div key={index}>
-                                                 <label>
-                                                     <input
-                                                         type="checkbox"
-                                                         name="multipleOption"
-                                                         value={option}
-                                                         checked={selectedOptions.includes(option)}
-                                                         onChange={() => handleOptionSelect(option)}
-                                                     />
-                                                     <span style={{ color: option === '白色' ? 'black' : option === '黑色' ? 'white' : option, backgroundColor: option === '白色' ? 'white' : option === '黑色' ? 'black' : 'transparent', padding: '5px', borderRadius: '4px', display: 'inline-block' }}>{option}</span>
-                                                 </label>
-                                             </div>
-                                         ))}
-                                     </div>
-                                 ) : (
-                                     <textarea
+        const handleStopVoiceInput = () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+                setIsVoiceInputActive(false);
+                setVoiceInputButtonText('开始语音输入');
+            }
+        };
+
+        const handleTestAudio = () => {
+            if (audioBlob) {
+                setTestAudioUrl(URL.createObjectURL(audioBlob));
+            } else {
+                setErrorMessage("请先录制音频");
+            }
+        };
+
+        const handleBackToModules = () => {
+            navigate('/modules');
+        };
+
+        const handleEditQuestionsClick = () => {
+            navigate('/edit-questions');
+        };
+
+        const handleViewHistory = () => {
+            navigate('/lazy-diary/history');
+        };
+
+        const handleDiaryPhotosChange = async (e) => {
+            setErrorMessage('');
+            const files = Array.from(e.target.files);
+            if (!files || files.length === 0) return;
+            if (tempDiaryPhotos.length + files.length > MAX_PHOTOS) {
+                setErrorMessage(`最多只能添加 ${MAX_PHOTOS} 张照片。`);
+                return;
+            }
+
+            try {
+                const compressedFiles = await Promise.all(
+                    files.map(async (file) => {
+                        return await imageCompression(file, {
+                            maxSizeMB: 1,
+                            maxWidthOrHeight: 1920,
+                            useWebWorker: true,
+                        });
+                    }),
+                );
+
+                const readers = compressedFiles.map((file) => {
+                    return new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            resolve(reader.result);
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                });
+
+                const results = await Promise.all(readers);
+                setTempDiaryPhotos((prevPhotos) => [...prevPhotos, ...results]);
+            } catch (error) {
+                console.error('图片压缩失败:', error);
+                setErrorMessage('图片压缩失败，请重试。');
+            }
+        };
+
+        const handleRemoveDiaryPhoto = (indexToRemove) => {
+            setTempDiaryPhotos((prevPhotos) =>
+                prevPhotos.filter((_, index) => index !== indexToRemove),
+            );
+        };
+
+        const createAudioObjectURL = async (audioPath) => {
+            if (!audioPath) return null;
+            try {
+                const { data, error } = await supabase.storage
+                    .from('lazy-diary-audio')
+                    .download(audioPath);
+
+                if (error) {
+                    console.error('下载录音文件失败:', error);
+                    return null;
+                }
+                const url = URL.createObjectURL(data);
+                return url;
+            } catch (error) {
+                console.error('创建音频 URL 失败:', error);
+                return null;
+            }
+        };
+
+        useEffect(() => {
+            const fetchAudioURLs = async () => {
+                if (currentRecord && currentRecord.answers) {
+                    const newAudioObjectURLs = {};
+                    for (const answer of currentRecord.answers) {
+                        if (answer.audio_path) {
+                            const url = await createAudioObjectURL(answer.audio_path);
+                            if (url) {
+                                newAudioObjectURLs[answer.audio_path] = url;
+                            }
+                        }
+                    }
+                    setAudioObjectURLs(newAudioObjectURLs);
+                }
+            };
+
+            fetchAudioURLs();
+            return () => {
+                for (const url of Object.values(audioObjectURLs)) {
+                    URL.revokeObjectURL(url);
+                }
+            };
+        }, [currentRecord]);
+
+        const handleToggleCustomInputMode = () => {
+            if ((isCustomInputMode && (answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0)) ||
+                (!isCustomInputMode && (customInput || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0))) {
+                setShowConfirmModal(true);
+                setConfirmAction(isCustomInputMode ? 'switchToProblemMode' : 'switchToCustomMode');
+            } else {
+                toggleMode();
+            }
+        };
+
+        const toggleMode = (save = false) => {
+           if (isCustomInputMode) {
+                if (save) {
+                    setTempAnswer(answer);
+                    setTempPhotos(tempDiaryPhotos);
+                    setTempAudioBlob(audioBlob);
+                    setTempAudioUrl(audioUrl);
+                }
+                setAnswer(tempAnswer);
+                setTempDiaryPhotos(tempPhotos);
+                setAudioBlob(tempAudioBlob);
+                setAudioUrl(tempAudioUrl);
+            } else {
+                if (save) {
+                    setTempCustomInput(customInput);
+                }
+                setCustomInput(tempCustomInput);
+            }
+            setIsCustomInputMode(!isCustomInputMode);
+            setShowConfirmModal(false);
+            setConfirmAction('');
+            setCustomInputMessage('');
+            setProblemInputMessage('');
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+                recognitionRef.current = null;
+            }
+        };
+
+        const handleClearInput = () => {
+            if (isRecording) {
+                handleStopRecording();
+            }
+            setAnswer('');
+            setCustomInput('');
+            setTempDiaryPhotos([]);
+            setAudioBlob(null);
+            setAudioUrl(null);
+            setSelectedOptions([]);
+            setIsOptionSelected(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        };
+
+        const handleOptionSelect = (option) => {
+            if (currentQuestionType === 'multiple') {
+                if (selectedOptions.includes(option)) {
+                    setSelectedOptions(selectedOptions.filter(opt => opt !== option));
+                } else {
+                    setSelectedOptions([...selectedOptions, option]);
+                }
+            } else {
+                setSelectedOptions([option]);
+            }
+            setIsOptionSelected(true);
+        };
+
+        return (
+            <div className="container">
+                <h2>懒人日记</h2>
+                {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
+                <button type="button" onClick={onLogout} className="logout-button">退出</button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <button
+                        type="button"
+                        onClick={disableCustomInput ? null : handleToggleCustomInputMode}
+                        style={{ marginTop: '10px', backgroundColor: !disableCustomInput ? '#007bff' : '#ddd', cursor: disableCustomInput ? 'not-allowed' : 'pointer' }}
+                        onMouseEnter={() => setCustomInputMessage((!isCustomInputMode && (answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0)) ? '请先保存当前问题内容' : '')}
+                        onMouseLeave={() => setCustomInputMessage('')}
+                        disabled={disableCustomInput}
+                    >
+                        {isCustomInputMode ? '返回问题模式' : '我有话要说'}
+                    </button>
+                </div>
+                {customInputMessage && <p className="error-message">{customInputMessage}</p>}
+                <div className="form-group">
+                    {!isCustomInputMode ? (
+                        <>
+                            {questions.length === 0 ? (
+                                <p>问题库为空，请联系管理员添加问题</p>
+                            ) : (
+                                <>
+                                    <p><strong>问题:</strong> {currentQuestion}</p>
+                                    {questions.find(q => q.question === currentQuestion)?.type === 'single' ? (
+                                        <div>
+                                            {questions.find(q => q.question === currentQuestion)?.options?.map((option, index) => (
+                                                <div key={index}>
+                                                    <label>
+                                                        <input
+                                                            type="radio"
+                                                            name="singleOption"
+                                                            value={option}
+                                                            checked={selectedOptions.includes(option)}
+                                                            onChange={() => handleOptionSelect(option)}
+                                                        />
+                                                        <span style={{ color: option === '白色' ? 'black' : option === '黑色' ? 'white' : option, backgroundColor: option === '白色' ? 'white' : option === '黑色' ? 'black' : 'transparent', padding: '5px', borderRadius: '4px', display: 'inline-block' }}>{option}</span>
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : questions.find(q => q.question === currentQuestion)?.type === 'multiple' ? (
+                                        <div>
+                                            {questions.find(q => q.question === currentQuestion)?.options?.map((option, index) => (
+                                                <div key={index}>
+                                                    <label>
+                                                        <input
+                                                            type="checkbox"
+                                                            name="multipleOption"
+                                                            value={option}
+                                                            checked={selectedOptions.includes(option)}
+                                                            onChange={() => handleOptionSelect(option)}
+                                                        />
+                                                        <span style={{ color: option === '白色' ? 'black' : option === '黑色' ? 'white' : option, backgroundColor: option === '白色' ? 'white' : option === '黑色' ? 'black' : 'transparent', padding: '5px', borderRadius: '4px', display: 'inline-block' }}>{option}</span>
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <textarea
                                             value={answer}
                                             onChange={handleAnswerChange}
                                             placeholder="请在此输入你的答案"
@@ -781,7 +779,7 @@ import React, { useState, useEffect, useRef } from 'react';
                         ref={fileInputRef}
                         style={{ display: 'none' }}
                     />
-                    <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px' }}>选择照片</button>
+                    <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px', backgroundColor: '#28a745' }}>选择照片</button>
                 </div>
             </div>
                 )}
@@ -939,4 +937,3 @@ import React, { useState, useEffect, useRef } from 'react';
         }
 
         export default LazyDiaryPage;
-                            
