@@ -493,13 +493,18 @@ const handleStopRecording = () => {
         resolve();
       };
       try {
-        setTimeout(() => {
-          if (mediaRecorder) {
-            mediaRecorder.stop();
-            setIsRecording(false);
-            setRecordButtonText('开始录音');
-          }
-        }, 100); // Add a 100ms delay
+        if (mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+          setIsRecording(false);
+          setRecordButtonText('开始录音');
+          setTimeout(() => {
+            resolve();
+          }, 100);
+        } else {
+          setIsRecording(false);
+          setRecordButtonText('开始录音');
+          resolve();
+        }
       } catch (error) {
         console.error("handleStopRecording - mediaRecorder.stop() error:", error);
         setIsRecording(false);
@@ -511,8 +516,6 @@ const handleStopRecording = () => {
     }
   });
 };
-
-
 
 
         const handleVoiceInput = () => {
