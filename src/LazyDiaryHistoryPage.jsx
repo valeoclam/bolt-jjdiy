@@ -16,11 +16,10 @@ function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
   const containerRef = useRef(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
-    const [audioObjectURLs, setAudioObjectURLs] = useState({});
-    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-    const [editingAnswerId, setEditingAnswerId] = useState(null);
-    const [editedAnswer, setEditedAnswer] = useState('');
-
+  const [audioObjectURLs, setAudioObjectURLs] = useState({});
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [editingAnswerId, setEditingAnswerId] = useState(null);
+  const [editedAnswer, setEditedAnswer] = useState('');
 
   useEffect(() => {
     if (loggedInUser) {
@@ -34,7 +33,7 @@ function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
       let query = supabase
         .from('lazy_diary_records')
         .select('*')
-        .eq('user_id', loggedInUser.id)
+        .eq('user_id', loggedInUser.id);
 
       if (startDate) {
         query = query.gte('created_at', `${startDate}T00:00:00.000Z`);
@@ -50,25 +49,27 @@ function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
         setErrorMessage('获取懒人日记记录失败，请重试。');
       } else {
         if (data && data.length > 0) {
-          const recordsWithAnswers = await Promise.all(data.map(async (record) => {
-            const { data: answersData, error: answersError } = await supabase
-              .from('lazy_diary_answers')
-              .select('*')
-              .eq('record_id', record.id)
-              .order('created_at', { ascending: false });
+          const recordsWithAnswers = await Promise.all(
+            data.map(async (record) => {
+              const { data: answersData, error: answersError } = await supabase
+                .from('lazy_diary_answers')
+                .select('*')
+                .eq('record_id', record.id)
+                .order('created_at', { ascending: false });
 
-            if (answersError) {
-              console.error('获取懒人日记答案时发生错误:', answersError);
-              return { ...record, answers: [] };
-            } else {
-              return { ...record, answers: answersData };
-            }
-          }));
-            const sortedRecordsWithAnswers = [...recordsWithAnswers].sort((a, b) => {
-                const latestA = a.answers && a.answers.length > 0 ? new Date(a.answers[0].created_at) : new Date(a.created_at);
-                const latestB = b.answers && b.answers.length > 0 ? new Date(b.answers[0].created_at) : new Date(b.created_at);
-                return latestB - latestA;
-            });
+              if (answersError) {
+                console.error('获取懒人日记答案时发生错误:', answersError);
+                return { ...record, answers: [] };
+              } else {
+                return { ...record, answers: answersData };
+              }
+            }),
+          );
+          const sortedRecordsWithAnswers = [...recordsWithAnswers].sort((a, b) => {
+            const latestA = a.answers && a.answers.length > 0 ? new Date(a.answers[0].created_at) : new Date(a.created_at);
+            const latestB = b.answers && b.answers.length > 0 ? new Date(b.answers[0].created_at) : new Date(b.created_at);
+            return latestB - latestA;
+          });
           groupRecordsByDate(sortedRecordsWithAnswers || []);
         } else {
           groupRecordsByDate([]);
@@ -83,11 +84,11 @@ function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
   };
 
   const groupRecordsByDate = (records) => {
-    const filteredRecords = records.filter(record => {
+    const filteredRecords = records.filter((record) => {
       if (!searchKeyword) return true;
-      return record.answers.some(answer =>
+      return record.answers.some((answer) =>
         answer.question.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-        answer.answer.toLowerCase().includes(searchKeyword.toLowerCase())
+        answer.answer.toLowerCase().includes(searchKeyword.toLowerCase()),
       );
     });
 
@@ -114,130 +115,130 @@ function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
     navigate('/lazy-diary');
   };
 
-    const createAudioObjectURL = async (audioPath) => {
-        if (!audioPath) return null;
-        try {
-            const { data, error } = await supabase.storage
-                .from('lazy-diary-audio')
-                .download(audioPath);
+  const createAudioObjectURL = async (audioPath) => {
+    if (!audioPath) return null;
+    try {
+      const { data, error } = await supabase.storage
+        .from('lazy-diary-audio')
+        .download(audioPath);
 
-            if (error) {
-                console.error('下载录音文件失败:', error);
-                return null;
+      if (error) {
+        console.error('下载录音文件失败:', error);
+        return null;
+      }
+      const url = URL.createObjectURL(data);
+      return url;
+    } catch (error) {
+      console.error('创建音频 URL 失败:', error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const fetchAudioURLs = async () => {
+      const newAudioObjectURLs = {};
+      for (const group of groupedRecords) {
+        for (const record of group.records) {
+          if (record.answers) {
+            for (const answer of record.answers) {
+              if (answer.audio_path) {
+                const url = await createAudioObjectURL(answer.audio_path);
+                if (url) {
+                  newAudioObjectURLs[answer.audio_path] = url;
+                }
+              }
             }
-            const url = URL.createObjectURL(data);
-            return url;
-        } catch (error) {
-            console.error('创建音频 URL 失败:', error);
-            return null;
+          }
         }
+      }
+      setAudioObjectURLs(newAudioObjectURLs);
     };
 
-    useEffect(() => {
-        const fetchAudioURLs = async () => {
-            const newAudioObjectURLs = {};
-            for (const group of groupedRecords) {
-                for (const record of group.records) {
-                    if (record.answers) {
-                        for (const answer of record.answers) {
-                            if (answer.audio_path) {
-                                const url = await createAudioObjectURL(answer.audio_path);
-                                if (url) {
-                                    newAudioObjectURLs[answer.audio_path] = url;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            setAudioObjectURLs(newAudioObjectURLs);
-        };
+    fetchAudioURLs();
+    return () => {
+      for (const url of Object.values(audioObjectURLs)) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [groupedRecords]);
 
-        fetchAudioURLs();
-        return () => {
-            for (const url of Object.values(audioObjectURLs)) {
-                URL.revokeObjectURL(url);
-            }
-        };
-    }, [groupedRecords]);
+  const handleDeleteAnswer = async (id) => {
+    if (confirmDeleteId === id) {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('lazy_diary_answers')
+          .delete()
+          .eq('id', id);
 
-    const handleDeleteAnswer = async (id) => {
-        if (confirmDeleteId === id) {
-            setLoading(true);
-            try {
-                const { data, error } = await supabase
-                    .from('lazy_diary_answers')
-                    .delete()
-                    .eq('id', id);
-
-                if (error) {
-                    console.error('删除懒人日记答案时发生错误:', error);
-                    setErrorMessage('删除懒人日记答案失败，请重试。');
-                } else {
-                    console.log('懒人日记答案删除成功:', data);
-                    fetchRecords();
-                    setConfirmDeleteId(null);
-                }
-            } catch (error) {
-                console.error('发生意外错误:', error);
-                setErrorMessage('发生意外错误，请重试。');
-            } finally {
-                setLoading(false);
-            }
+        if (error) {
+          console.error('删除懒人日记答案时发生错误:', error);
+          setErrorMessage('删除懒人日记答案失败，请重试。');
         } else {
-            setConfirmDeleteId(id);
+          console.log('懒人日记答案删除成功:', data);
+          fetchRecords();
+          setConfirmDeleteId(null);
         }
-    };
+      } catch (error) {
+        console.error('发生意外错误:', error);
+        setErrorMessage('发生意外错误，请重试。');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setConfirmDeleteId(id);
+    }
+  };
 
-    const handleEditAnswer = (id, answer) => {
-        setEditingAnswerId(id);
-        setEditedAnswer(answer);
-    };
+  const handleEditAnswer = (id, answer) => {
+    setEditingAnswerId(id);
+    setEditedAnswer(answer);
+  };
 
-    const handleUpdateAnswer = async (id) => {
-        if (editedAnswer) {
-            setLoading(true);
-            try {
-                const { data, error } = await supabase
-                    .from('lazy_diary_answers')
-                    .update({ answer: editedAnswer })
-                    .eq('id', id);
+  const handleUpdateAnswer = async (id) => {
+    if (editedAnswer) {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('lazy_diary_answers')
+          .update({ answer: editedAnswer })
+          .eq('id', id);
 
-                if (error) {
-                    console.error('更新懒人日记答案时发生错误:', error);
-                    setErrorMessage('更新懒人日记答案失败，请重试。');
-                } else {
-                    console.log('懒人日记答案更新成功:', data);
-                    fetchRecords();
-                    setEditingAnswerId(null);
-                    setEditedAnswer('');
-                }
-            } catch (error) {
-                console.error('发生意外错误:', error);
-                setErrorMessage('发生意外错误，请重试。');
-            } finally {
-                setLoading(false);
-            }
+        if (error) {
+          console.error('更新懒人日记答案时发生错误:', error);
+          setErrorMessage('更新懒人日记答案失败，请重试。');
+        } else {
+          console.log('懒人日记答案更新成功:', data);
+          fetchRecords();
+          setEditingAnswerId(null);
+          setEditedAnswer('');
         }
+      } catch (error) {
+        console.error('发生意外错误:', error);
+        setErrorMessage('发生意外错误，请重试。');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAnswerId(null);
+    setEditedAnswer('');
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setConfirmDeleteId(null);
+      }
     };
 
-    const handleCancelEdit = () => {
-        setEditingAnswerId(null);
-        setEditedAnswer('');
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
     };
-
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (containerRef.current && !containerRef.current.contains(event.target)) {
-                setConfirmDeleteId(null);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
+  }, []);
 
   return (
     <div className="container" ref={containerRef}>
@@ -278,55 +279,75 @@ function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
         {groupedRecords.map((groupedRecord) => (
           <div key={groupedRecord.date} className="inspiration-item">
             <h4>{groupedRecord.date}</h4>
-            {groupedRecord.records.map((record) => (
-              <div key={record.id}>
-                {record.answers && record.answers.map((answer, index) => (
-                  <div key={index}>
-                    <p><strong>问题:</strong> {answer.question}</p>
-                      {editingAnswerId === answer.id ? (
+            {groupedRecord.records &&
+              groupedRecord.records.map((record) => (
+                <div key={record.id}>
+                  {record.answers &&
+                    record.answers.map((answer, index) => (
+                      <div key={index}>
+                        <p>
+                          <strong>问题:</strong> {answer.question}
+                        </p>
+                        {editingAnswerId === answer.id ? (
                           <>
-                              <textarea
-                                  value={editedAnswer}
-                                  onChange={(e) => setEditedAnswer(e.target.value)}
-                                  style={{ height: '80px' }}
-                              />
-                              <div className="edit-buttons">
-                                  <button onClick={() => handleUpdateAnswer(answer.id)} disabled={loading}>
-                                      {loading ? '正在保存...' : '更新'}
-                                  </button>
-                                  <button onClick={handleCancelEdit} style={{ backgroundColor: '#6c757d' }}>取消</button>
-                              </div>
+                            <textarea
+                              value={editedAnswer}
+                              onChange={(e) => setEditedAnswer(e.target.value)}
+                              style={{ height: '80px' }}
+                            />
+                            <div className="edit-buttons">
+                              <button onClick={() => handleUpdateAnswer(answer.id)} disabled={loading}>
+                                {loading ? '正在保存...' : '更新'}
+                              </button>
+                              <button onClick={handleCancelEdit} style={{ backgroundColor: '#6c757d' }}>取消</button>
+                            </div>
                           </>
-                      ) : (
+                        ) : (
                           <>
-                              <p><strong>回答:</strong> {answer.answer}</p>
-                              <p><strong>时间:</strong> {new Date(answer.created_at).toLocaleString()}</p>
-                              <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                                  {Array.isArray(answer.photos) &&
-                                      answer.photos.map((photo, index) => (
-                                          <img key={index} src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
-                                      ))}
-                              </div>
-                              {answer.audio_path && (
-                                  <audio src={audioObjectURLs[answer.audio_path] || ''} controls />
+                            <p>
+                              <strong>回答:</strong> {answer.answer}
+                            </p>
+                            <p>
+                              <strong>时间:</strong> {new Date(answer.created_at).toLocaleString()}
+                            </p>
+                            <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                              {Array.isArray(answer.photos) &&
+                                answer.photos.map((photo, index) => (
+                                  <img
+                                    key={index}
+                                    src={photo}
+                                    alt={`Diary ${index + 1}`}
+                                    style={{
+                                      maxWidth: '100%',
+                                      maxHeight: '150px',
+                                      display: 'block',
+                                      objectFit: 'contain',
+                                      marginRight: '5px',
+                                      marginBottom: '5px',
+                                    }}
+                                  />
+                                ))}
+                            </div>
+                            {answer.audio_path && (
+                              <audio src={audioObjectURLs[answer.audio_path] || ''} controls />
+                            )}
+                            <div className="edit-buttons">
+                              {!answer.audio_path && (
+                                <button onClick={() => handleEditAnswer(answer.id, answer.answer)}>编辑</button>
                               )}
-                              <div className="edit-buttons">
-                                  {!answer.audio_path && (
-                                      <button onClick={() => handleEditAnswer(answer.id, answer.answer)}>编辑</button>
-                                  )}
-                                  <button
-                                      className="delete-button"
-                                      onClick={() => handleDeleteAnswer(answer.id)}
-                                  >
-                                      {confirmDeleteId === answer.id ? '确认删除' : '删除'}
-                                  </button>
-                              </div>
+                              <button
+                                className="delete-button"
+                                onClick={() => handleDeleteAnswer(answer.id)}
+                              >
+                                {confirmDeleteId === answer.id ? '确认删除' : '删除'}
+                              </button>
+                            </div>
                           </>
-                      )}
-                  </div>
-                ))}
-              </div>
-            ))}
+                        )}
+                      </div>
+                    ))}
+                </div>
+              ))}
           </div>
         ))}
       </div>

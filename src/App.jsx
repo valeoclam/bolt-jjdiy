@@ -103,7 +103,8 @@
           {allowedModules.includes('lazy-diary') && (
             <>
               <Route path="/lazy-diary" element={<LazyDiaryPage loggedInUser={loggedInUser} onLogout={handleLogout} />} />
-              <Route path="/lazy-diary/history" element={<LazyDiaryHistoryPage loggedInUser={loggedInUser} onLogout={handleLogout} />} />
+<Route path="/lazy-diary/history" element={<LazyDiaryHistoryPage loggedInUser={loggedInUser} onLogout={handleLogout} />} />
+console.log("LazyDiaryHistoryPage loggedInUser:", loggedInUser);
             </>
           )}
           <Route path="/edit-questions" element={<EditQuestionsPage loggedInUser={loggedInUser} onLogout={handleLogout} supabase={supabase} />} />

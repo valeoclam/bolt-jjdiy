@@ -1,5 +1,4 @@
-
-    import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
     import { useNavigate } from 'react-router-dom';
     import { createClient } from '@supabase/supabase-js';
     import imageCompression from 'browser-image-compression';
@@ -271,16 +270,38 @@
                     }
                     audioPath = uploadData.path;
                 }
+     // Create a new record if currentRecord is null
+      let recordId = currentRecord?.id;
+      if (!recordId) {
+        const newRecord = {
+          user_id: userData.id,
+        };
+        const { data: recordData, error: recordError } = await supabase
+          .from('lazy_diary_records')
+          .insert([newRecord])
+          .select('id'); // Select the id of the newly created record
 
+        if (recordError) {
+          console.error('添加懒人日记记录时发生错误:', recordError);
+          setErrorMessage('添加懒人日记记录失败，请重试。' + recordError.message);
+          return;
+        } else if (recordData && recordData.length > 0) {
+          recordId = recordData[0].id;
+          setCurrentRecord({ ...newRecord, id: recordId, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+        } else {
+          setCurrentRecord({...newRecord, created_at: new Date().toISOString(), updated_at: new Date().toISOString()});
+        }
+      }
                 const newAnswer = {
-                    record_id: currentRecord?.id,
+                    record_id: recordId, // Use the recordId
                     question: isCustomInputMode ? '自定义内容' : currentQuestion,
                     answer: isCustomInputMode ? customInput : answer,
                     photos: tempDiaryPhotos,
                     audio_path: audioPath,
                     selected_option: currentQuestionType === 'multiple' ? JSON.stringify(selectedOptions) : selectedOptions.join(''),
                 };
-
+								console.log("handleSaveAndNext - Inserting new answer:", newAnswer);
+							
                 const { data, error } = await supabase
                     .from('lazy_diary_answers')
                     .insert([newAnswer]);
