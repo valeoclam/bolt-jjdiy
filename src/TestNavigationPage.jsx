@@ -24,6 +24,7 @@ import React, { useState, useEffect, useRef } from 'react';
       const [mediaRecorder, setMediaRecorder] = useState(null);
       const [audioUrl, setAudioUrl] = useState(null);
       const [recordButtonText, setRecordButtonText] = useState('开始录音');
+      const [recordingError, setRecordingError] = useState('');
 
       useEffect(() => {
         if (loggedInUser) {
@@ -150,13 +151,15 @@ import React, { useState, useEffect, useRef } from 'react';
                 setAudioUrl(URL.createObjectURL(blob));
                 stream.getTracks().forEach(track => track.stop());
                 setRecordButtonText('开始录音');
+                setRecordingError('');
             };
         } catch (error) {
             console.error('录音启动失败:', error);
             setIsRecording(false);
             setRecordButtonText('开始录音');
+            setRecordingError(`录音启动失败: ${error.message}`);
             if (error.name === 'NotAllowedError') {
-                alert('请允许麦克风权限，以便使用录音功能。');
+                setRecordingError('请允许麦克风权限，以便使用录音功能。');
             }
         }
     };
@@ -203,6 +206,7 @@ import React, { useState, useEffect, useRef } from 'react';
                     )}
                 </div>
                 {audioUrl && <audio src={audioUrl} controls />}
+                {recordingError && <p className="error-message">{recordingError}</p>}
             </>
           )}
         </div>
