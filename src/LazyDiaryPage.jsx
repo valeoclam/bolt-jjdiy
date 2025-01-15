@@ -433,63 +433,68 @@ const handleSaveAndNext = async () => {
         }
     };
 
-        const handleStartRecording = async () => {
-            if (audioBlob) {
-                if (!window.confirm('您确定要删除上次的录音并开始新的录音吗？')) {
-                    return;
-                }
-            }
-            setIsRecording(true);
-            setAudioBlob(null);
-            setAudioUrl(null);
-            setRecordButtonText('停止录音');
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const recorder = new MediaRecorder(stream, { mimeType: 'audio/mp4' });
-                setMediaRecorder(recorder);
-                recorder.start();
+const handleStartRecording = async () => {
+  if (audioBlob) {
+    if (!window.confirm('您确定要删除上次的录音并开始新的录音吗？')) {
+      return;
+    }
+  }
+  setIsRecording(true);
+  setAudioBlob(null);
+  setAudioUrl(null);
+  setRecordButtonText('停止录音');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new MediaRecorder(stream, { mimeType: 'audio/mp4' });
+    setMediaRecorder(recorder);
+    recorder.start();
 
-                const chunks = [];
-                recorder.ondataavailable = (event) => {
-                    chunks.push(event.data);
-                };
+    const chunks = [];
+    recorder.ondataavailable = (event) => {
+      chunks.push(event.data);
+    };
 
-                recorder.onstop = () => {
-                    const blob = new Blob(chunks, { type: 'audio/mp4' });
-                    setAudioBlob(blob);
-                    setAudioUrl(URL.createObjectURL(blob));
-                    stream.getTracks().forEach(track => track.stop());
-                    setRecordButtonText('开始录音');
-									
- recorder.onerror = (event) => {
-    console.error("MediaRecorder error:", event.error);
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: 'audio/mp4' });
+      setAudioBlob(blob);
+      setAudioUrl(URL.createObjectURL(blob));
+      stream.getTracks().forEach(track => track.stop());
+      setRecordButtonText('开始录音');
+      setRecordingError('');
+    };
+    recorder.onerror = (event) => {
+      console.error("MediaRecorder error:", event.error);
+      setIsRecording(false);
+      setRecordButtonText('开始录音');
+      setAttemptedMimeType('audio/mp4');
+      setRecordingError(`录音启动失败: ${event.error.message} (mimeType: audio/mp4)`);
+      console.error('Error object:', event.error);
+    };
+  } catch (error) {
+    console.error('录音启动失败:', error);
+    setErrorMessage('录音启动失败，请检查麦克风权限。');
     setIsRecording(false);
     setRecordButtonText('开始录音');
-    setErrorMessage("录音失败，请重试。");
-  };
+    if (error.name === 'NotAllowedError') {
+      setErrorMessage('请允许麦克风权限，以便使用录音功能。');
+    }
+  }
+};
 
-									};
-							
-            } catch (error) {
-                console.error('录音启动失败:', error);
-                setErrorMessage('录音启动失败，请检查麦克风权限。');
-                setIsRecording(false);
-                setRecordButtonText('开始录音');
-                if (error.name === 'NotAllowedError') {
-                    setErrorMessage('请允许麦克风权限，以便使用录音功能。');
-                }
-            }
-        };
 
 const handleStopRecording = () => {
   return new Promise((resolve) => {
     if (mediaRecorder) {
+      console.log("handleStopRecording - mediaRecorder state:", mediaRecorder.state);
       mediaRecorder.onstop = () => {
         const blob = new Blob(mediaRecorder.chunks, { type: 'audio/mp4' });
+        console.log("handleStopRecording - onstop - blob:", blob);
+        const url = URL.createObjectURL(blob);
+        console.log("handleStopRecording - onstop - url:", url);
         setAudioBlob(blob);
-        setAudioUrl(URL.createObjectURL(blob));
+        setAudioUrl(url);
         setTempAudioBlob(blob);
-        setTempAudioUrl(URL.createObjectURL(blob));
+        setTempAudioUrl(url);
         resolve();
       };
       mediaRecorder.stop();
@@ -500,6 +505,7 @@ const handleStopRecording = () => {
     }
   });
 };
+
 
 
         const handleVoiceInput = () => {
