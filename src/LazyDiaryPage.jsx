@@ -236,30 +236,7 @@ const handleSaveAndNext = async () => {
 
   // Check if recording is in progress and stop it
   if (isRecording) {
-    await new Promise((resolve) => {
-      const stopRecordingAndResolve = () => {
-        if (mediaRecorder) {
-          mediaRecorder.stop();
-          setIsRecording(false);
-          setRecordButtonText('开始录音');
-          resolve();
-        }
-      };
-
-      if (mediaRecorder) {
-        mediaRecorder.onstop = () => {
-          const blob = new Blob(mediaRecorder.chunks, { type: 'audio/mp4' });
-          setAudioBlob(blob);
-          setAudioUrl(URL.createObjectURL(blob));
-          setTempAudioBlob(blob);
-          setTempAudioUrl(URL.createObjectURL(blob));
-          stopRecordingAndResolve();
-        };
-        handleStopRecording();
-      } else {
-        resolve();
-      }
-    });
+    await handleStopRecording();
   }
 
   try {
@@ -409,6 +386,7 @@ const handleSaveAndNext = async () => {
 };
 
 
+
     const handleSkipQuestion = () => {
         if (disableSkip) {
             return;
@@ -503,13 +481,26 @@ const handleSaveAndNext = async () => {
             }
         };
 
-        const handleStopRecording = () => {
-            if (mediaRecorder) {
-                mediaRecorder.stop();
-                setIsRecording(false);
-                setRecordButtonText('开始录音');
-            }
-        };
+const handleStopRecording = () => {
+  return new Promise((resolve) => {
+    if (mediaRecorder) {
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(mediaRecorder.chunks, { type: 'audio/mp4' });
+        setAudioBlob(blob);
+        setAudioUrl(URL.createObjectURL(blob));
+        setTempAudioBlob(blob);
+        setTempAudioUrl(URL.createObjectURL(blob));
+        resolve();
+      };
+      mediaRecorder.stop();
+      setIsRecording(false);
+      setRecordButtonText('开始录音');
+    } else {
+      resolve();
+    }
+  });
+};
+
 
         const handleVoiceInput = () => {
             if (!recognitionRef.current) {
