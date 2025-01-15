@@ -58,6 +58,8 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const [currentQuestionType, setCurrentQuestionType] = useState('text');
     const [initialQuestionLoaded, setInitialQuestionLoaded] = useState(false);
     const [firstSkip, setFirstSkip] = useState(true);
+    const visitedQuestionsRef = useRef([]);
+    const questionIndexRef = useRef(0);
 
     useEffect(() => {
         if (loggedInUser) {
@@ -74,13 +76,15 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 if (fixedQuestion) {
                     setCurrentQuestion(fixedQuestion.question);
                     setCurrentQuestionType(fixedQuestion.type);
+                     visitedQuestionsRef.current = [questions.findIndex(q => q.id === fixedQuestion?.id)];
                      setVisitedQuestions([questions.findIndex(q => q.id === fixedQuestion?.id)]);
-                     setQuestionIndex(questions.findIndex(q => q.id === fixedQuestion?.id));
+                     questionIndexRef.current = questions.findIndex(q => q.id === fixedQuestion?.id);
                 } else {
                     setCurrentQuestion(questions[0].question);
                     setCurrentQuestionType(questions[0].type);
+                     visitedQuestionsRef.current = [0];
                      setVisitedQuestions([0]);
-                     setQuestionIndex(0);
+                     questionIndexRef.current = 0;
                 }
                 setInitialQuestionLoaded(true);
             }
@@ -120,12 +124,16 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             setDisableCustomInput(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob));
         }
         if (!isCustomInputMode) {
-            setDisablePrevious(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0) || visitedQuestions.length <= 1);
+            setDisablePrevious(!!(tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0) || visitedQuestionsRef.current.length <= 1);
         } else {
-            setDisablePrevious(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob) || visitedQuestions.length <= 1);
+            setDisablePrevious(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob) || visitedQuestionsRef.current.length <= 1);
         }
 
-    }, [isCustomInputMode, answer, tempDiaryPhotos, audioBlob, customInput, selectedOptions, visitedQuestions]);
+    }, [isCustomInputMode, answer, tempDiaryPhotos, audioBlob, customInput, selectedOptions, visitedQuestionsRef.current]);
+
+    useEffect(() => {
+        setVisitedQuestions([...new Set(visitedQuestionsRef.current)]);
+    }, [visitedQuestionsRef.current]);
 
     const fetchQuestions = async () => {
         try {
@@ -322,16 +330,13 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         setCustomInput('');
          if (questions && questions.length > 0 && !isCustomInputMode) {
             setQuestionIndex((prevIndex) => {
-                console.log('Skip - before setVisitedQuestions:', [...visitedQuestions]);
-                 setVisitedQuestions(prev => [...new Set([...prev, prevIndex])]);
-                console.log('Skip - after setVisitedQuestions:', [...visitedQuestions]);
-                let nextIndex = (prevIndex + 1) % questions.length;
+                let nextIndex;
                 const fixedQuestion = questions.find(question => question.is_fixed);
                  if (fixedQuestion && !answeredFixedQuestion) {
                     setAnsweredFixedQuestion(true);
-
-                    const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
+                    const nextQuestion = questions.find((question, index) => index === (prevIndex + 1) % questions.length && !question.is_fixed);
                     if (nextQuestion) {
+                        nextIndex = questions.findIndex(q => q.id === nextQuestion?.id);
                         setCurrentQuestion(nextQuestion.question);
                         setCurrentQuestionType(nextQuestion.type);
                         console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
@@ -339,19 +344,21 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                     } else {
                         const firstNonFixed = questions.find(question => !question.is_fixed);
                          if (firstNonFixed) {
+                            nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
                             setCurrentQuestion(firstNonFixed.question);
                             setCurrentQuestionType(firstNonFixed.type);
-                            console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', questions.findIndex(q => q.id === firstNonFixed?.id));
-                            return questions.findIndex(q => q.id === firstNonFixed?.id)
+                            console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
+                            return nextIndex
                          } else {
                             setCurrentQuestion('');
                             setCurrentQuestionType('text');
+                            console.log('Skip - no question');
                             return 0;
                          }
                     }
                 } else {
-                    const nextQuestion = questions[nextIndex];
-                    setCurrentQuestion(nextQuestion.question);
+                    nextIndex = (prevIndex + 1) % questions.length;
+                    setCurrentQuestion(questions[nextIndex].question);
                     setCurrentQuestionType(nextQuestion.type);
                     console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
                     return nextIndex
@@ -362,63 +369,59 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         fetchTodayRecord();
     };
 
-    const handleSkipQuestion = () => {
-        if (disableSkip) {
-            return;
-        }
-        setAnswer('');
-        setSelectedOptions([]);
-        setIsOptionSelected(false);
-        if (questions && questions.length > 0 && !isCustomInputMode) {
-            setPreviousQuestions(prev => [...prev, currentQuestion]);
-             setQuestionIndex((prevIndex) => {
-                console.log('Skip - before setVisitedQuestions:', [...visitedQuestions]);
-                 setVisitedQuestions(prev => [...new Set([...prev, prevIndex])]);
-                console.log('Skip - after setVisitedQuestions:', [...visitedQuestions]);
-                let nextIndex = (prevIndex + 1) % questions.length;
-                const fixedQuestion = questions.find(question => question.is_fixed);
-                 if (fixedQuestion && !answeredFixedQuestion) {
-                    setAnsweredFixedQuestion(true);
-                    const nextQuestion = questions.find((question, index) => index === nextIndex && !question.is_fixed);
-                    if (nextQuestion) {
-                        setCurrentQuestion(nextQuestion.question);
-                        setCurrentQuestionType(nextQuestion.type);
-                        console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
-                        return nextIndex
-                    } else {
-                        const firstNonFixed = questions.find(question => !question.is_fixed);
-                         if (firstNonFixed) {
-                            setCurrentQuestion(firstNonFixed.question);
-                            setCurrentQuestionType(firstNonFixed.type);
-                            console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', questions.findIndex(q => q.id === firstNonFixed?.id));
-                            return questions.findIndex(q => q.id === firstNonFixed?.id)
-                         } else {
-                            setCurrentQuestion('');
-                            setCurrentQuestionType('text');
-                            console.log('Skip - no question');
-                            return 0;
-                         }
-                    }
-                } else {
-                    const nextQuestion = questions[nextIndex];
-                    setCurrentQuestion(nextQuestion.question);
-                    setCurrentQuestionType(nextQuestion.type);
+const handleSkipQuestion = () => {
+    if (disableSkip) {
+        return;
+    }
+    setAnswer('');
+    setSelectedOptions([]);
+    setIsOptionSelected(false);
+    if (questions && questions.length > 0 && !isCustomInputMode) {
+        setPreviousQuestions(prev => [...prev, currentQuestion]);
+         setQuestionIndex((prevIndex) => {
+            let nextIndex = 0;
+            let nextQuestion;
+            const fixedQuestion = questions.find(question => question.is_fixed);
+             if (fixedQuestion && !answeredFixedQuestion) {
+                setAnsweredFixedQuestion(true);
+                nextQuestion = questions.find((question, index) => index === (prevIndex + 1) % questions.length && !question.is_fixed);
+                if (nextQuestion) {
+                    nextIndex = questions.findIndex(q => q.id === nextQuestion?.id);
                     console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
-                    return nextIndex
-
+                } else {
+                    const firstNonFixed = questions.find(question => !question.is_fixed);
+                     if (firstNonFixed) {
+                        nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
+                        console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
+                     } else {
+                        setCurrentQuestion('');
+                        setCurrentQuestionType('text');
+                        console.log('Skip - no question');
+                        return 0;
+                     }
                 }
-            });
-        }
-    };
+            } else {
+                nextIndex = (prevIndex + 1) % questions.length;
+                nextQuestion = questions[nextIndex];
+                 console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
+            }
+            if (nextQuestion) {
+                setCurrentQuestion(nextQuestion.question);
+                setCurrentQuestionType(nextQuestion.type);
+            }
+            return nextIndex;
+        });
+    }
+};
 
     const handlePreviousQuestion = () => {
         if (disablePrevious) {
             return;
         }
         console.log('Previous - before visitedQuestions:', [...visitedQuestions]);
-         if (visitedQuestions.length > 1) {
-            const lastQuestionIndex = visitedQuestions[visitedQuestions.length - 1];
-            const previousQuestionIndex = visitedQuestions[visitedQuestions.length - 2];
+         if (visitedQuestionsRef.current.length > 1) {
+            const lastQuestionIndex = visitedQuestionsRef.current[visitedQuestionsRef.current.length - 1];
+            const previousQuestionIndex = visitedQuestionsRef.current[visitedQuestionsRef.current.length - 2];
             if (previousQuestionIndex !== undefined) {
                 setCurrentQuestion(questions[previousQuestionIndex]?.question);
                 setCurrentQuestionType(questions[previousQuestionIndex]?.type || 'text');
@@ -955,3 +958,4 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     }
 
     export default LazyDiaryPage;
+
