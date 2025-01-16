@@ -1,217 +1,217 @@
-		import React, { useState, useEffect, useRef } from 'react';
-    import { useNavigate } from 'react-router-dom';
-    import { createClient } from '@supabase/supabase-js';
-    import imageCompression from 'browser-image-compression';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { createClient } from '@supabase/supabase-js';
+import imageCompression from 'browser-image-compression';
 
-    const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8';
-    const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-    function LazyDiaryPage({ loggedInUser, onLogout }) {
-        const [currentQuestion, setCurrentQuestion] = useState('');
-        const [answer, setAnswer] = useState('');
-        const [isRecording, setIsRecording] = useState(false);
-        const navigate = useNavigate();
-        const recognitionRef = useRef(null);
-        const [loading, setLoading] = useState(false);
-        const [currentRecord, setCurrentRecord] = useState(null);
-        const [questions, setQuestions] = useState([]);
-        const [questionIndex, setQuestionIndex] = useState(0);
-        const [successMessage, setSuccessMessage] = useState('');
-        const [errorMessage, setErrorMessage] = useState('');
-        const successTimeoutRef = useRef(null);
-        const fileInputRef = useRef(null);
-        const [tempDiaryPhotos, setTempDiaryPhotos] = useState([]);
-        const MAX_PHOTOS = 6;
-        const [noRecordMessage, setNoRecordMessage] = useState('');
-        const [recordingTime, setRecordingTime] = useState(0);
-        const [recordingWarning, setRecordingWarning] = useState(false);
-        const [audioBlob, setAudioBlob] = useState(null);
-        const [mediaRecorder, setMediaRecorder] = useState(null);
-        const [audioUrl, setAudioUrl] = useState(null);
-        const timerRef = useRef(null);
-        const [answeredFixedQuestion, setAnsweredFixedQuestion] = useState(false);
-        const [isCustomInputMode, setIsCustomInputMode] = useState(true);
-        const [customInput, setCustomInput] = useState('');
-        const [audioObjectURLs, setAudioObjectURLs] = useState({});
-        const [testAudioUrl, setTestAudioUrl] = useState(null);
-        const [isVoiceInputActive, setIsVoiceInputActive] = useState(false);
-        const [voiceInputButtonText, setVoiceInputButtonText] = useState('开始语音输入');
-        const [recordButtonText, setRecordButtonText] = useState('开始录音');
-        const [tempAnswer, setTempAnswer] = useState('');
-        const [tempCustomInput, setTempCustomInput] = useState('');
-        const [tempAudioBlob, setTempAudioBlob] = useState(null);
-        const [tempAudioUrl, setTempAudioUrl] = useState(null);
-        const [tempPhotos, setTempPhotos] = useState([]);
-        const [showConfirmModal, setShowConfirmModal] = useState(false);
-        const [confirmAction, setConfirmAction] = useState('');
-        const [disableSkip, setDisableSkip] = useState(false);
-        const [visitedQuestions, setVisitedQuestions] = useState([]);
-        const [disableCustomInput, setDisableCustomInput] = useState(false);
-        const [customInputMessage, setCustomInputMessage] = useState('');
-        const [problemInputMessage, setProblemInputMessage] = useState('');
-        const errorMessageTimeoutRef = useRef(null);
-        const [selectedOptions, setSelectedOptions] = useState([]);
-        const [isOptionSelected, setIsOptionSelected] = useState(false);
-        const [previousQuestions, setPreviousQuestions] = useState([]);
-        const [currentQuestionType, setCurrentQuestionType] = useState('text');
-        const [initialQuestionLoaded, setInitialQuestionLoaded] = useState(false);
-        const [firstSkip, setFirstSkip] = useState(true);
-        const visitedQuestionsRef = useRef([]);
-        const questionIndexRef = useRef(0);
+function LazyDiaryPage({ loggedInUser, onLogout }) {
+    const [currentQuestion, setCurrentQuestion] = useState('');
+    const [answer, setAnswer] = useState('');
+    const [isRecording, setIsRecording] = useState(false);
+    const navigate = useNavigate();
+    const recognitionRef = useRef(null);
+    const [loading, setLoading] = useState(false);
+    const [currentRecord, setCurrentRecord] = useState(null);
+    const [questions, setQuestions] = useState([]);
+    const [questionIndex, setQuestionIndex] = useState(0);
+    const [successMessage, setSuccessMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
+    const successTimeoutRef = useRef(null);
+    const fileInputRef = useRef(null);
+    const [tempDiaryPhotos, setTempDiaryPhotos] = useState([]);
+    const MAX_PHOTOS = 6;
+    const [noRecordMessage, setNoRecordMessage] = useState('');
+    const [recordingTime, setRecordingTime] = useState(0);
+    const [recordingWarning, setRecordingWarning] = useState(false);
+    const [audioBlob, setAudioBlob] = useState(null);
+    const [mediaRecorder, setMediaRecorder] = useState(null);
+    const [audioUrl, setAudioUrl] = useState(null);
+    const timerRef = useRef(null);
+    const [answeredFixedQuestion, setAnsweredFixedQuestion] = useState(false);
+    const [isCustomInputMode, setIsCustomInputMode] = useState(true);
+    const [customInput, setCustomInput] = useState('');
+    const [audioObjectURLs, setAudioObjectURLs] = useState({});
+    const [testAudioUrl, setTestAudioUrl] = useState(null);
+    const [isVoiceInputActive, setIsVoiceInputActive] = useState(false);
+    const [voiceInputButtonText, setVoiceInputButtonText] = useState('开始语音输入');
+    const [recordButtonText, setRecordButtonText] = useState('开始录音');
+    const [tempAnswer, setTempAnswer] = useState('');
+    const [tempCustomInput, setTempCustomInput] = useState('');
+    const [tempAudioBlob, setTempAudioBlob] = useState(null);
+    const [tempAudioUrl, setTempAudioUrl] = useState(null);
+    const [tempPhotos, setTempPhotos] = useState([]);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [confirmAction, setConfirmAction] = useState('');
+    const [disableSkip, setDisableSkip] = useState(false);
+    const [visitedQuestions, setVisitedQuestions] = useState([]);
+    const [disableCustomInput, setDisableCustomInput] = useState(false);
+    const [customInputMessage, setCustomInputMessage] = useState('');
+    const [problemInputMessage, setProblemInputMessage] = useState('');
+    const errorMessageTimeoutRef = useRef(null);
+    const [selectedOptions, setSelectedOptions] = useState([]);
+    const [isOptionSelected, setIsOptionSelected] = useState(false);
+    const [previousQuestions, setPreviousQuestions] = useState([]);
+    const [currentQuestionType, setCurrentQuestionType] = useState('text');
+    const [initialQuestionLoaded, setInitialQuestionLoaded] = useState(false);
+    const [firstSkip, setFirstSkip] = useState(true);
+    const visitedQuestionsRef = useRef([]);
+    const questionIndexRef = useRef(0);
 
-        useEffect(() => {
-            if (loggedInUser) {
-                setLoading(true);
-                fetchQuestions();
-                fetchTodayRecord();
-            }
-        }, [loggedInUser]);
+    useEffect(() => {
+        if (loggedInUser) {
+            setLoading(true);
+            fetchQuestions();
+            fetchTodayRecord();
+        }
+    }, [loggedInUser]);
 
-        useEffect(() => {
-            if (questions && questions.length > 0) {
-                if (!isCustomInputMode && !initialQuestionLoaded) {
-                    const fixedQuestion = questions.find(question => question.is_fixed);
-                    if (fixedQuestion) {
-                        setCurrentQuestion(fixedQuestion.question);
-                        setCurrentQuestionType(fixedQuestion.type);
-                         visitedQuestionsRef.current = [questions.findIndex(q => q.id === fixedQuestion?.id)];
-                         setVisitedQuestions([questions.findIndex(q => q.id === fixedQuestion?.id)]);
-                         questionIndexRef.current = questions.findIndex(q => q.id === fixedQuestion?.id);
-                    } else {
-                        setCurrentQuestion(questions[0].question);
-                        setCurrentQuestionType(questions[0].type);
-                         visitedQuestionsRef.current = [0];
-                         setVisitedQuestions([0]);
-                         questionIndexRef.current = 0;
-                    }
-                    setInitialQuestionLoaded(true);
-                }
-            }
-        }, [questions, isCustomInputMode, initialQuestionLoaded]);
-
-        useEffect(() => {
-            let intervalId;
-            if (isRecording) {
-                intervalId = setInterval(() => {
-                    setRecordingTime((prevTime) => prevTime + 1);
-                }, 1000);
-            } else {
-                clearInterval(intervalId);
-                setRecordingTime(0);
-                setRecordingWarning(false);
-            }
-            return () => clearInterval(intervalId);
-        }, [isRecording]);
-
-        useEffect(() => {
-            if (recordingTime >= 50 && recordingTime < 60) {
-                setRecordingWarning(true);
-            } else {
-                setRecordingWarning(false);
-            }
-            if (recordingTime >= 60) {
-                handleStopRecording();
-            }
-        }, [recordingTime]);
-
-        useEffect(() => {
-            if (!isCustomInputMode) {
-                setDisableSkip(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0));
-                setDisableCustomInput(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0));
-            } else {
-                setDisableCustomInput(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob));
-            }
-            if (!isCustomInputMode) {
-                // setDisablePrevious(!!(tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0) || visitedQuestionsRef.current.length <= 1);
-            }  else {
-                // setDisablePrevious(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob) || visitedQuestionsRef.current.length <= 1);
-            }
-
-        }, [isCustomInputMode, answer, tempDiaryPhotos, audioBlob, customInput, selectedOptions]);
-
-        useEffect(() => {
-            setVisitedQuestions([...new Set(visitedQuestionsRef.current)]);
-        }, [visitedQuestionsRef.current]);
-
-        const fetchQuestions = async () => {
-            try {
-                const { data, error } = await supabase
-                    .from('lazy_diary_questions')
-                    .select('*')
-                    .eq('is_active', true)
-                    .order('created_at', { ascending: false });
-
-                if (error) {
-                    console.error('获取问题列表时发生错误:', error);
+    useEffect(() => {
+        if (questions && questions.length > 0) {
+            if (!isCustomInputMode && !initialQuestionLoaded) {
+                const fixedQuestion = questions.find(question => question.is_fixed);
+                if (fixedQuestion) {
+                    setCurrentQuestion(fixedQuestion.question);
+                    setCurrentQuestionType(fixedQuestion.type);
+                     visitedQuestionsRef.current = [questions.findIndex(q => q.id === fixedQuestion?.id)];
+                     setVisitedQuestions([questions.findIndex(q => q.id === fixedQuestion?.id)]);
+                     questionIndexRef.current = questions.findIndex(q => q.id === fixedQuestion?.id);
                 } else {
-                    console.log('Fetched questions:', data);
-                    setQuestions(data);
+                    setCurrentQuestion(questions[0].question);
+                    setCurrentQuestionType(questions[0].type);
+                     visitedQuestionsRef.current = [0];
+                     setVisitedQuestions([0]);
+                     questionIndexRef.current = 0;
                 }
-            } catch (error) {
-                console.error('发生意外错误:', error);
-            } finally {
-                console.log('questions.length in finally:', questions.length);
-                setLoading(false);
+                setInitialQuestionLoaded(true);
             }
-        };
+        }
+    }, [questions, isCustomInputMode, initialQuestionLoaded]);
 
-        const fetchTodayRecord = async () => {
-            try {
-                const today = new Date().toISOString().split('T')[0];
-                const { data, error } = await supabase
-                    .from('lazy_diary_records')
-                    .select('*')
-                    .eq('user_id', loggedInUser.id)
-                    .gte('created_at', `${today}T00:00:00.000Z`)
-                    .lt('created_at', `${today}T23:59:59.999Z`)
-                    .limit(1);
+    useEffect(() => {
+        let intervalId;
+        if (isRecording) {
+            intervalId = setInterval(() => {
+                setRecordingTime((prevTime) => prevTime + 1);
+            }, 1000);
+        } else {
+            clearInterval(intervalId);
+            setRecordingTime(0);
+            setRecordingWarning(false);
+        }
+        return () => clearInterval(intervalId);
+    }, [isRecording]);
 
-                if (error) {
-                    if (error.code !== '404') {
-                        console.error('获取今日懒人日记记录时发生错误:', error, error.message);
-                        setErrorMessage('获取今日懒人日记记录失败，请重试。');
+    useEffect(() => {
+        if (recordingTime >= 50 && recordingTime < 60) {
+            setRecordingWarning(true);
+        } else {
+            setRecordingWarning(false);
+        }
+        if (recordingTime >= 60) {
+            handleStopRecording();
+        }
+    }, [recordingTime]);
+
+    useEffect(() => {
+        if (!isCustomInputMode) {
+            setDisableSkip(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0));
+            setDisableCustomInput(!!(answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0));
+        } else {
+            setDisableCustomInput(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob));
+        }
+        if (!isCustomInputMode) {
+            // setDisablePrevious(!!(tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0) || visitedQuestionsRef.current.length <= 1);
+        }  else {
+            // setDisablePrevious(!!(customInput || tempDiaryPhotos.length > 0 || audioBlob) || visitedQuestionsRef.current.length <= 1);
+        }
+
+    }, [isCustomInputMode, answer, tempDiaryPhotos, audioBlob, customInput, selectedOptions]);
+
+    useEffect(() => {
+        setVisitedQuestions([...new Set(visitedQuestionsRef.current)]);
+    }, [visitedQuestionsRef.current]);
+
+    const fetchQuestions = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('lazy_diary_questions')
+                .select('*')
+                .eq('is_active', true)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('获取问题列表时发生错误:', error);
+            } else {
+                console.log('Fetched questions:', data);
+                setQuestions(data);
+            }
+        } catch (error) {
+            console.error('发生意外错误:', error);
+        } finally {
+            console.log('questions.length in finally:', questions.length);
+            setLoading(false);
+        }
+    };
+
+    const fetchTodayRecord = async () => {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const { data, error } = await supabase
+                .from('lazy_diary_records')
+                .select('*')
+                .eq('user_id', loggedInUser.id)
+                .gte('created_at', `${today}T00:00:00.000Z`)
+                .lt('created_at', `${today}T23:59:59.999Z`)
+                .limit(1);
+
+            if (error) {
+                if (error.code !== '404') {
+                    console.error('获取今日懒人日记记录时发生错误:', error, error.message);
+                    setErrorMessage('获取今日懒人日记记录失败，请重试。');
+                } else {
+                    setNoRecordMessage('还没有今日的记录，请开始记录吧！');
+                    setCurrentRecord(null);
+                    setErrorMessage('');
+                }
+            } else {
+                if (data && data[0]) {
+                    const { data: answersData, error: answersError } = await supabase
+                        .from('lazy_diary_answers')
+                        .select('*')
+                        .eq('record_id', data[0].id)
+                        .order('created_at', { ascending: false });
+
+                    if (answersError) {
+                        console.error('获取今日懒人日记答案时发生错误:', answersError);
+                        setCurrentRecord({ ...data[0], answers: [] });
                     } else {
-                        setNoRecordMessage('还没有今日的记录，请开始记录吧！');
-                        setCurrentRecord(null);
-                        setErrorMessage('');
+                        setCurrentRecord({ ...data[0], answers: answersData });
                     }
                 } else {
-                    if (data && data[0]) {
-                        const { data: answersData, error: answersError } = await supabase
-                            .from('lazy_diary_answers')
-                            .select('*')
-                            .eq('record_id', data[0].id)
-                            .order('created_at', { ascending: false });
-
-                        if (answersError) {
-                            console.error('获取今日懒人日记答案时发生错误:', answersError);
-                            setCurrentRecord({ ...data[0], answers: [] });
-                        } else {
-                            setCurrentRecord({ ...data[0], answers: answersData });
-                        }
-                    } else {
-                        setCurrentRecord(null);
-                    }
-                    setNoRecordMessage('');
+                    setCurrentRecord(null);
                 }
-            } catch (error) {
-                console.error('发生意外错误:', error, error.message);
-                setErrorMessage('发生意外错误，请重试。');
-                setCurrentRecord(null);
                 setNoRecordMessage('');
-            } finally {
-                setLoading(false);
             }
-        };
+        } catch (error) {
+            console.error('发生意外错误:', error, error.message);
+            setErrorMessage('发生意外错误，请重试。');
+            setCurrentRecord(null);
+            setNoRecordMessage('');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        const handleAnswerChange = (e) => {
-            setAnswer(e.target.value);
-        };
+    const handleAnswerChange = (e) => {
+        setAnswer(e.target.value);
+    };
 
-        const handleCustomInputChange = (e) => {
-            setCustomInput(e.target.value);
-        };
+    const handleCustomInputChange = (e) => {
+        setCustomInput(e.target.value);
+    };
 
 const handleSaveAndNext = async () => {
   if (isCustomInputMode && !customInput) {
@@ -382,12 +382,6 @@ const handleSaveAndNext = async () => {
   fetchTodayRecord();
 };
 
-
-
-
-
-
-
     const handleSkipQuestion = () => {
         if (disableSkip) {
             return;
@@ -410,11 +404,17 @@ const handleSaveAndNext = async () => {
                     if (nextQuestion) {
                         nextIndex = questions.findIndex(q => q.id === nextQuestion?.id);
                         console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
+                         setCurrentQuestion(nextQuestion.question);
+                         setCurrentQuestionType(nextQuestion.type);
+                         return nextIndex;
                     } else {
                         const firstNonFixed = questions.find(question => !question.is_fixed);
                          if (firstNonFixed) {
                             nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
                             console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
+                             setCurrentQuestion(firstNonFixed.question);
+                             setCurrentQuestionType(firstNonFixed.type);
+                             return nextIndex;
                          } else {
                             setCurrentQuestion('');
                             setCurrentQuestionType('text');
