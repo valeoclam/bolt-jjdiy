@@ -53,20 +53,6 @@ function App() {
     }
   };
 
-  // Removed the direct navigation logic
-  // useEffect(() => {
-  //   if (loggedInUser && allowedModules.length === 1) {
-  //     const module = allowedModules[0];
-  //     if (module === 'inspiration') {
-  //       navigate('/inspiration');
-  //     } else if (module === 'tiger-game') {
-  //       navigate('/tiger-game');
-  //     } else if (module === 'lazy-diary') {
-  //       navigate('/lazy-diary');
-  //     }
-  //   }
-  // }, [loggedInUser, allowedModules, navigate]);
-
   const handleLoginSuccess = (user) => {
     setLoggedInUser(user);
     if (allowedModules.length !== 1) {
@@ -104,7 +90,7 @@ function App() {
       {allowedModules.includes('lazy-diary') && (
         <>
           <Route path="/lazy-diary" element={<LazyDiaryPage loggedInUser={loggedInUser} onLogout={handleLogout} />} />
-          <Route path="/lazy-diary/history" element={<LazyDiaryHistoryPage loggedInUser={loggedInUser} onLogout={handleLogout} />} />
+          <Route path="/lazy-diary/history" element={<LazyDiaryHistoryPage loggedInUser={loggedInUser} onLogout={handleLogout} allowedModules={allowedModules} />} />
         </>
       )}
       <Route path="/edit-questions" element={<EditQuestionsPage loggedInUser={loggedInUser} onLogout={handleLogout} supabase={supabase} />} />

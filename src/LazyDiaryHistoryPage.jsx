@@ -7,7 +7,7 @@ const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
+function LazyDiaryHistoryPage({ loggedInUser, onLogout, allowedModules }) {
   const [groupedRecords, setGroupedRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -162,33 +162,68 @@ function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
     };
   }, [groupedRecords]);
 
-  const handleDeleteAnswer = async (id) => {
-    if (confirmDeleteId === id) {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('lazy_diary_answers')
-          .delete()
-          .eq('id', id);
+const handleDeleteAnswer = async (id) => {
+  if (confirmDeleteId === id) {
+    setLoading(true);
+    try {
+      // Get the audio_path before deleting the record
+      const { data: answerData, error: answerError } = await supabase
+        .from('lazy_diary_answers')
+        .select('audio_path')
+        .eq('id', id)
+        .single();
 
-        if (error) {
-          console.error('删除懒人日记答案时发生错误:', error);
-          setErrorMessage('删除懒人日记答案失败，请重试。');
-        } else {
-          console.log('懒人日记答案删除成功:', data);
-          fetchRecords();
-          setConfirmDeleteId(null);
-        }
-      } catch (error) {
-        console.error('发生意外错误:', error);
-        setErrorMessage('发生意外错误，请重试。');
-      } finally {
-        setLoading(false);
+      if (answerError) {
+        console.error('获取懒人日记答案时发生错误:', answerError);
+        setErrorMessage('获取懒人日记答案失败，请重试。');
+        return;
       }
-    } else {
-      setConfirmDeleteId(id);
+
+      const audioPath = answerData?.audio_path;
+
+      // Delete the record from lazy_diary_answers
+      const { data, error } = await supabase
+        .from('lazy_diary_answers')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('删除懒人日记答案时发生错误:', error);
+        setErrorMessage('删除懒人日记答案失败，请重试。');
+      } else {
+        console.log('懒人日记答案删除成功:', data);
+        // Delete the audio file from Supabase Storage if audioPath exists
+        if (audioPath) {
+          try {
+            const { error: storageError } = await supabase.storage
+              .from('lazy-diary-audio')
+              .remove([audioPath]);
+
+            if (storageError) {
+              console.error('删除录音文件时发生错误:', storageError);
+              setErrorMessage('删除录音文件失败，请重试。');
+            } else {
+              console.log('录音文件删除成功:', audioPath);
+            }
+          } catch (storageError) {
+            console.error('发生意外错误:', storageError);
+            setErrorMessage('发生意外错误，请重试。');
+          }
+        }
+        fetchRecords();
+        setConfirmDeleteId(null);
+      }
+    } catch (error) {
+      console.error('发生意外错误:', error);
+      setErrorMessage('发生意外错误，请重试。');
+    } finally {
+      setLoading(false);
     }
-  };
+  } else {
+    setConfirmDeleteId(id);
+  }
+};
+
 
   const handleEditAnswer = (id, answer) => {
     setEditingAnswerId(id);
@@ -245,7 +280,9 @@ function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
       <h2>懒人日记 - 历史记录</h2>
       {loggedInUser && <p>当前用户: {loggedInUser.username}</p>}
       <button type="button" onClick={onLogout} className="logout-button">退出</button>
-      <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
+      {allowedModules && allowedModules.length !== 1 && (
+        <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
+      )}
       <button type="button" onClick={handleBackToLazyDiary} style={{ marginTop: '10px', backgroundColor: '#28a745' }}>返回懒人日记</button>
       <div className="form-group">
         <label>开始时间:</label>
@@ -285,7 +322,7 @@ function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
               {groupedRecord.records &&
                 groupedRecord.records.map((record) => (
                   <div key={record.id}>
-                    {record.answers && record.answers.length > 0 ? (
+                    {record.answers &&
                       record.answers.map((answer, index) => (
                         <div key={index}>
                           <p>
@@ -331,27 +368,23 @@ function LazyDiaryHistoryPage({ loggedInUser, onLogout }) {
                                     />
                                   ))}
                               </div>
-                              {answer.audio_path && (
-                                <audio src={audioObjectURLs[answer.audio_path] || ''} controls />
-                              )}
-                              <div className="edit-buttons">
-                                {!answer.audio_path && (
-                                  <button onClick={() => handleEditAnswer(answer.id, answer.answer)}>编辑</button>
-                                )}
-                                <button
-                                  className="delete-button"
-                                  onClick={() => handleDeleteAnswer(answer.id)}
-                                >
-                                  {confirmDeleteId === answer.id ? '确认删除' : '删除'}
-                                </button>
-                              </div>
-                            </>
-                          )}
+                             {answer.audio_path && (
+      <audio src={audioObjectURLs[answer.audio_path] || ''} controls />
+    )}
+    <div className="edit-buttons">
+      {/* Modified condition to always show edit button */}
+      <button onClick={() => handleEditAnswer(answer.id, answer.answer)}>编辑</button>
+      <button
+        className="delete-button"
+        onClick={() => handleDeleteAnswer(answer.id)}
+      >
+        {confirmDeleteId === answer.id ? '确认删除' : '删除'}
+      </button>
+    </div>
+  </>
+)}
                         </div>
-                      ))
-                    ) : (
-                      <p>没有回答</p>
-                    )}
+                      ))}
                   </div>
                 ))}
             </div>
