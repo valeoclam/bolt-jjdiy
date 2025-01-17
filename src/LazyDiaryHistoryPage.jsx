@@ -88,6 +88,7 @@ function LazyDiaryHistoryPage({ loggedInUser, onLogout, allowedModules }) {
       return record.answers.some((answer) =>
         answer.question.toLowerCase().includes(searchKeyword.toLowerCase()) ||
         answer.answer.toLowerCase().includes(searchKeyword.toLowerCase()),
+				(questions.find(q => q.id === answer.question_id)?.question?.toLowerCase().includes(searchKeyword.toLowerCase()))
       );
     });
 
