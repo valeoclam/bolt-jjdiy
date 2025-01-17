@@ -359,57 +359,59 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
         setCustomInput('');
         if (questions && questions.length > 0 && !isCustomInputMode) {
             setQuestionIndex((prevIndex) => {
-                let nextIndex;
+                let nextIndex = 0;
                 let nextQuestion;
-                const fixedQuestion = questions.find(question => question.is_fixed && !answeredQuestionsToday.includes(question.id));
-                if (fixedQuestion && !answeredFixedQuestion) {
-                    setAnsweredFixedQuestion(true);
-                    nextQuestion = questions.find((question, index) => index === (prevIndex + 1) % questions.length && !question.is_fixed && !answeredQuestionsToday.includes(question.id));
+                const fixedQuestions = questions.filter(question => question.is_fixed && !answeredQuestionsToday.includes(question.id));
+                if (fixedQuestions.length > 0 && !answeredFixedQuestion) {
+                    // If there are unanswered fixed questions, find the next one
+                    const nextFixedQuestion = questions.find((question, index) => index > prevIndex && question.is_fixed && !answeredQuestionsToday.includes(question.id));
+                    if (nextFixedQuestion) {
+                        nextIndex = questions.findIndex(q => q.id === nextFixedQuestion?.id);
+                        setCurrentQuestion(nextFixedQuestion.question);
+                        setCurrentQuestionType(nextFixedQuestion.type);
+                        console.log('handleSaveAndNext - next fixed question:', nextFixedQuestion.question, 'index:', nextIndex);
+                        return nextIndex;
+                    } else {
+                        // If no more unanswered fixed questions, find the first non-fixed question
+                        const firstNonFixed = questions.find(question => !question.is_fixed && !answeredQuestionsToday.includes(question.id));
+                        if (firstNonFixed) {
+                            nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
+                            setCurrentQuestion(firstNonFixed.question);
+                            setCurrentQuestionType(firstNonFixed.type);
+                            console.log('handleSaveAndNext - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
+                            setAnsweredFixedQuestion(true);
+                            return nextIndex;
+                        } else {
+                            setCurrentQuestion('');
+                            setCurrentQuestionType('text');
+                            console.log('handleSaveAndNext - no question');
+                            return 0;
+                        }
+                    }
+                } else {
+                    // If all fixed questions are answered, find the next non-fixed question
+                    nextQuestion = questions.find((question, index) => index > prevIndex && !question.is_fixed && !answeredQuestionsToday.includes(question.id));
                     if (nextQuestion) {
                         nextIndex = questions.findIndex(q => q.id === nextQuestion?.id);
                         setCurrentQuestion(nextQuestion.question);
                         setCurrentQuestionType(nextQuestion.type);
-                        console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
-                        return nextIndex
+                        console.log('handleSaveAndNext - next non-fixed question:', nextQuestion.question, 'index:', nextIndex);
+                        return nextIndex;
                     } else {
                         const firstNonFixed = questions.find(question => !question.is_fixed && !answeredQuestionsToday.includes(question.id));
                         if (firstNonFixed) {
                             nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
                             setCurrentQuestion(firstNonFixed.question);
                             setCurrentQuestionType(firstNonFixed.type);
-                            console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
-                            return nextIndex
+                            console.log('handleSaveAndNext - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
+                            return nextIndex;
                         } else {
                             setCurrentQuestion('');
                             setCurrentQuestionType('text');
-                            console.log('Skip - no question');
+                            console.log('handleSaveAndNext - no question');
                             return 0;
                         }
                     }
-                } else {
-                    nextIndex = (prevIndex + 1) % questions.length;
-                    nextQuestion = questions[nextIndex];
-                    if (answeredQuestionsToday.includes(nextQuestion.id)) {
-                        const nextNonAnswered = questions.find((question, index) => index > nextIndex && !answeredQuestionsToday.includes(question.id));
-                        if (nextNonAnswered) {
-                            nextIndex = questions.findIndex(q => q.id === nextNonAnswered?.id);
-                            nextQuestion = nextNonAnswered;
-                        } else {
-                            const firstNonAnswered = questions.find(question => !answeredQuestionsToday.includes(question.id));
-                            if (firstNonAnswered) {
-                                nextIndex = questions.findIndex(q => q.id === firstNonAnswered?.id);
-                                nextQuestion = firstNonAnswered;
-                            } else {
-                                setCurrentQuestion('');
-                                setCurrentQuestionType('text');
-                                return 0;
-                            }
-                        }
-                    }
-                    console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
-                    setCurrentQuestion(nextQuestion.question);
-                    setCurrentQuestionType(nextQuestion.type);
-                    return nextIndex
                 }
             });
         }
@@ -431,55 +433,57 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             setQuestionIndex((prevIndex) => {
                 let nextIndex = 0;
                 let nextQuestion;
-                const fixedQuestion = questions.find(question => question.is_fixed && !answeredQuestionsToday.includes(question.id));
-                if (fixedQuestion && !answeredFixedQuestion) {
-                    setAnsweredFixedQuestion(true);
-                    nextQuestion = questions.find((question, index) => index === (prevIndex + 1) % questions.length && !question.is_fixed && !answeredQuestionsToday.includes(question.id));
+                const fixedQuestions = questions.filter(question => question.is_fixed && !answeredQuestionsToday.includes(question.id));
+                if (fixedQuestions.length > 0 && !answeredFixedQuestion) {
+                    // If there are unanswered fixed questions, find the next one
+                    const nextFixedQuestion = questions.find((question, index) => index > prevIndex && question.is_fixed && !answeredQuestionsToday.includes(question.id));
+                    if (nextFixedQuestion) {
+                        nextIndex = questions.findIndex(q => q.id === nextFixedQuestion?.id);
+                        console.log('handleSkipQuestion - next fixed question:', nextFixedQuestion.question, 'index:', nextIndex);
+                        setCurrentQuestion(nextFixedQuestion.question);
+                        setCurrentQuestionType(nextFixedQuestion.type);
+                        return nextIndex;
+                    } else {
+                        // If no more unanswered fixed questions, find the first non-fixed question
+                        const firstNonFixed = questions.find(question => !question.is_fixed && !answeredQuestionsToday.includes(question.id));
+                        if (firstNonFixed) {
+                            nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
+                            console.log('handleSkipQuestion - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
+                            setCurrentQuestion(firstNonFixed.question);
+                            setCurrentQuestionType(firstNonFixed.type);
+                            setAnsweredFixedQuestion(true);
+                            return nextIndex;
+                        } else {
+                            setCurrentQuestion('');
+                            setCurrentQuestionType('text');
+                            console.log('handleSkipQuestion - no question');
+                            return 0;
+                        }
+                    }
+                } else {
+                    // If all fixed questions are answered, find the next non-fixed question
+                    nextQuestion = questions.find((question, index) => index > prevIndex && !question.is_fixed && !answeredQuestionsToday.includes(question.id));
                     if (nextQuestion) {
                         nextIndex = questions.findIndex(q => q.id === nextQuestion?.id);
-                        console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
                         setCurrentQuestion(nextQuestion.question);
                         setCurrentQuestionType(nextQuestion.type);
+                        console.log('handleSkipQuestion - next non-fixed question:', nextQuestion.question, 'index:', nextIndex);
                         return nextIndex;
                     } else {
                         const firstNonFixed = questions.find(question => !question.is_fixed && !answeredQuestionsToday.includes(question.id));
                         if (firstNonFixed) {
                             nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
-                            console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
                             setCurrentQuestion(firstNonFixed.question);
                             setCurrentQuestionType(firstNonFixed.type);
+                            console.log('handleSkipQuestion - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
                             return nextIndex;
                         } else {
                             setCurrentQuestion('');
                             setCurrentQuestionType('text');
-                            console.log('Skip - no question');
+                            console.log('handleSkipQuestion - no question');
                             return 0;
                         }
                     }
-                } else {
-                    nextIndex = (prevIndex + 1) % questions.length;
-                    nextQuestion = questions[nextIndex];
-                    if (answeredQuestionsToday.includes(nextQuestion.id)) {
-                        const nextNonAnswered = questions.find((question, index) => index > nextIndex && !answeredQuestionsToday.includes(question.id));
-                        if (nextNonAnswered) {
-                            nextIndex = questions.findIndex(q => q.id === nextNonAnswered?.id);
-                            nextQuestion = nextNonAnswered;
-                        } else {
-                            const firstNonAnswered = questions.find(question => !answeredQuestionsToday.includes(question.id));
-                            if (firstNonAnswered) {
-                                nextIndex = questions.findIndex(q => q.id === firstNonAnswered?.id);
-                                nextQuestion = firstNonAnswered;
-                            } else {
-                                setCurrentQuestion('');
-                                setCurrentQuestionType('text');
-                                return 0;
-                            }
-                        }
-                    }
-                    console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
-                    setCurrentQuestion(nextQuestion.question);
-                    setCurrentQuestionType(nextQuestion.type);
-                    return nextIndex
                 }
             });
         }
