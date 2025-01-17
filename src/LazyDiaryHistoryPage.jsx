@@ -1,4 +1,3 @@
-// src/LazyDiaryHistoryPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
@@ -345,7 +344,22 @@ const handleDeleteAnswer = async (id) => {
                           ) : (
                             <>
                               <p>
-                                <strong>回答:</strong> {answer.answer}
+                                <strong>回答:</strong> {
+                                  // Check if the question type is single or multiple choice
+                                  answer.selected_option
+                                    ? // If selected_option exists, parse it as JSON if it's a string, otherwise use it directly
+                                    typeof answer.selected_option === 'string'
+                                      ? (() => {
+                                          try {
+                                            return JSON.parse(answer.selected_option).join(', ');
+                                          } catch (e) {
+                                            return answer.selected_option;
+                                          }
+                                        })()
+                                      : Array.isArray(answer.selected_option) ? answer.selected_option.join(', ') : answer.selected_option
+                                    : // If selected_option doesn't exist, use the regular answer
+                                    answer.answer
+                                }
                               </p>
                               <p>
                                 <strong>时间:</strong> {new Date(answer.created_at).toLocaleString()}

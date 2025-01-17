@@ -59,6 +59,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const [firstSkip, setFirstSkip] = useState(true);
     const visitedQuestionsRef = useRef([]);
     const questionIndexRef = useRef(0);
+    const [answeredQuestionsToday, setAnsweredQuestionsToday] = useState([]);
 
     useEffect(() => {
         if (loggedInUser) {
@@ -71,24 +72,33 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     useEffect(() => {
         if (questions && questions.length > 0) {
             if (!isCustomInputMode && !initialQuestionLoaded) {
-                const fixedQuestion = questions.find(question => question.is_fixed);
+                // Find the first non-answered fixed question
+                const fixedQuestion = questions.find(question => question.is_fixed && !answeredQuestionsToday.includes(question.id));
+                let initialIndex = 0;
                 if (fixedQuestion) {
+                    initialIndex = questions.findIndex(q => q.id === fixedQuestion?.id);
                     setCurrentQuestion(fixedQuestion.question);
                     setCurrentQuestionType(fixedQuestion.type);
-                     visitedQuestionsRef.current = [questions.findIndex(q => q.id === fixedQuestion?.id)];
-                     setVisitedQuestions([questions.findIndex(q => q.id === fixedQuestion?.id)]);
-                     questionIndexRef.current = questions.findIndex(q => q.id === fixedQuestion?.id);
                 } else {
-                    setCurrentQuestion(questions[0].question);
-                    setCurrentQuestionType(questions[0].type);
-                     visitedQuestionsRef.current = [0];
-                     setVisitedQuestions([0]);
-                     questionIndexRef.current = 0;
+                    // If no non-answered fixed question, find the first non-fixed question
+                    const firstNonFixed = questions.find(question => !question.is_fixed && !answeredQuestionsToday.includes(question.id));
+                    if (firstNonFixed) {
+                        initialIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
+                        setCurrentQuestion(firstNonFixed.question);
+                        setCurrentQuestionType(firstNonFixed.type);
+                    } else {
+                        setCurrentQuestion('');
+                        setCurrentQuestionType('text');
+                        initialIndex = 0;
+                    }
                 }
+                visitedQuestionsRef.current = [initialIndex];
+                setVisitedQuestions([initialIndex]);
+                questionIndexRef.current = initialIndex;
                 setInitialQuestionLoaded(true);
             }
         }
-    }, [questions, isCustomInputMode, initialQuestionLoaded]);
+    }, [questions, isCustomInputMode, initialQuestionLoaded, answeredQuestionsToday]);
 
     useEffect(() => {
         let intervalId;
@@ -189,9 +199,19 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                         setCurrentRecord({ ...data[0], answers: [] });
                     } else {
                         setCurrentRecord({ ...data[0], answers: answersData });
+                        // Extract answered question IDs
+                        const answeredIds = answersData.map(answer => {
+                            try {
+                                return questions.find(q => q.question === answer.question)?.id;
+                            } catch (e) {
+                                return null;
+                            }
+                        }).filter(id => id != null);
+                        setAnsweredQuestionsToday(answeredIds);
                     }
                 } else {
                     setCurrentRecord(null);
+                    setAnsweredQuestionsToday([]);
                 }
                 setNoRecordMessage('');
             }
@@ -200,6 +220,7 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
             setErrorMessage('发生意外错误，请重试。');
             setCurrentRecord(null);
             setNoRecordMessage('');
+            setAnsweredQuestionsToday([]);
         } finally {
             setLoading(false);
         }
@@ -344,10 +365,10 @@ const handleSaveAndNext = async () => {
     setQuestionIndex((prevIndex) => {
       let nextIndex;
       let nextQuestion;
-      const fixedQuestion = questions.find(question => question.is_fixed);
+      const fixedQuestion = questions.find(question => question.is_fixed && !answeredQuestionsToday.includes(question.id));
       if (fixedQuestion && !answeredFixedQuestion) {
         setAnsweredFixedQuestion(true);
-        nextQuestion = questions.find((question, index) => index === (prevIndex + 1) % questions.length && !question.is_fixed);
+        nextQuestion = questions.find((question, index) => index === (prevIndex + 1) % questions.length && !question.is_fixed && !answeredQuestionsToday.includes(question.id));
         if (nextQuestion) {
           nextIndex = questions.findIndex(q => q.id === nextQuestion?.id);
           setCurrentQuestion(nextQuestion.question);
@@ -355,7 +376,7 @@ const handleSaveAndNext = async () => {
           console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
           return nextIndex
         } else {
-          const firstNonFixed = questions.find(question => !question.is_fixed);
+          const firstNonFixed = questions.find(question => !question.is_fixed && !answeredQuestionsToday.includes(question.id));
           if (firstNonFixed) {
             nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
             setCurrentQuestion(firstNonFixed.question);
@@ -372,6 +393,23 @@ const handleSaveAndNext = async () => {
       } else {
         nextIndex = (prevIndex + 1) % questions.length;
         nextQuestion = questions[nextIndex];
+        if (answeredQuestionsToday.includes(nextQuestion.id)) {
+            const nextNonAnswered = questions.find((question, index) => index > nextIndex && !answeredQuestionsToday.includes(question.id));
+            if (nextNonAnswered) {
+                nextIndex = questions.findIndex(q => q.id === nextNonAnswered?.id);
+                nextQuestion = nextNonAnswered;
+            } else {
+                const firstNonAnswered = questions.find(question => !answeredQuestionsToday.includes(question.id));
+                if (firstNonAnswered) {
+                    nextIndex = questions.findIndex(q => q.id === firstNonAnswered?.id);
+                    nextQuestion = firstNonAnswered;
+                } else {
+                    setCurrentQuestion('');
+                    setCurrentQuestionType('text');
+                    return 0;
+                }
+            }
+        }
         console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
         setCurrentQuestion(nextQuestion.question);
         setCurrentQuestionType(nextQuestion.type);
@@ -397,10 +435,10 @@ const handleSaveAndNext = async () => {
              setQuestionIndex((prevIndex) => {
                 let nextIndex = 0;
                 let nextQuestion;
-                const fixedQuestion = questions.find(question => question.is_fixed);
+                const fixedQuestion = questions.find(question => question.is_fixed && !answeredQuestionsToday.includes(question.id));
                  if (fixedQuestion && !answeredFixedQuestion) {
                     setAnsweredFixedQuestion(true);
-                    nextQuestion = questions.find((question, index) => index === (prevIndex + 1) % questions.length && !question.is_fixed);
+                    nextQuestion = questions.find((question, index) => index === (prevIndex + 1) % questions.length && !question.is_fixed && !answeredQuestionsToday.includes(question.id));
                     if (nextQuestion) {
                         nextIndex = questions.findIndex(q => q.id === nextQuestion?.id);
                         console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
@@ -408,7 +446,7 @@ const handleSaveAndNext = async () => {
                          setCurrentQuestionType(nextQuestion.type);
                          return nextIndex;
                     } else {
-                        const firstNonFixed = questions.find(question => !question.is_fixed);
+                        const firstNonFixed = questions.find(question => !question.is_fixed && !answeredQuestionsToday.includes(question.id));
                          if (firstNonFixed) {
                             nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
                             console.log('Skip - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
@@ -425,6 +463,23 @@ const handleSaveAndNext = async () => {
                 } else {
                     nextIndex = (prevIndex + 1) % questions.length;
                     nextQuestion = questions[nextIndex];
+                    if (answeredQuestionsToday.includes(nextQuestion.id)) {
+                        const nextNonAnswered = questions.find((question, index) => index > nextIndex && !answeredQuestionsToday.includes(question.id));
+                        if (nextNonAnswered) {
+                            nextIndex = questions.findIndex(q => q.id === nextNonAnswered?.id);
+                            nextQuestion = nextNonAnswered;
+                        } else {
+                            const firstNonAnswered = questions.find(question => !answeredQuestionsToday.includes(question.id));
+                            if (firstNonAnswered) {
+                                nextIndex = questions.findIndex(q => q.id === firstNonAnswered?.id);
+                                nextQuestion = firstNonAnswered;
+                            } else {
+                                setCurrentQuestion('');
+                                setCurrentQuestionType('text');
+                                return 0;
+                            }
+                        }
+                    }
                      console.log('Skip - next question:', nextQuestion.question, 'index:', nextIndex);
                      setCurrentQuestion(nextQuestion.question);
                      setCurrentQuestionType(nextQuestion.type);
@@ -757,6 +812,7 @@ const handleStopRecording = () => {
                                                             name="singleOption"
                                                             value={option}
                                                             checked={selectedOptions.includes(option)}
+                                                            
                                                             onChange={() => handleOptionSelect(option)}
                                                         />
                                                         <span style={{ color: option === '白色' ? 'black' : option === '黑色' ? 'white' : option, backgroundColor: option === '白色' ? 'white' : option === '黑色' ? 'black' : 'transparent', padding: '5px', borderRadius: '4px', display: 'inline-block' }}>{option}</span>
@@ -938,7 +994,19 @@ const handleStopRecording = () => {
                             [...currentRecord.answers].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map((record, index) => (
                                 <div key={index} className="inspiration-item">
                                     <p><strong>问题:</strong> {record.question}</p>
-                                    <p><strong>回答:</strong> {record.answer}</p>
+                                    <p><strong>回答:</strong> {
+                                        record.selected_option
+                                            ? typeof record.selected_option === 'string'
+                                                ? (() => {
+                                                    try {
+                                                        return JSON.parse(record.selected_option).join(', ');
+                                                    } catch (e) {
+                                                        return record.selected_option;
+                                                    }
+                                                })()
+                                                : Array.isArray(record.selected_option) ? record.selected_option.join(', ') : record.selected_option
+                                            : record.answer
+                                    }</p>
                                     <p><strong>时间:</strong> {new Date(record.created_at).toLocaleString()}</p>
                                     <div style={{ display: 'flex', flexWrap: 'wrap' }}>
                                         {Array.isArray(record.photos) &&
