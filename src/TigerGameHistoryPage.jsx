@@ -47,6 +47,7 @@ function TigerGameHistory({ loggedInUser, onLogout }) {
     const [logsPerPage] = useState(3);
     const [totalLogs, setTotalLogs] = useState(0);
     const [showPhotos, setShowPhotos] = useState({});
+    const [loadingPhotos, setLoadingPhotos] = useState({});
 
     useEffect(() => {
         setSortedLogs([...logs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
@@ -112,7 +113,7 @@ const fetchLogs = async (fetchOnlyCount = false) => {
             // ADDED: 计算并设置指标
             let query = supabase
                 .from('tiger_game_logs')
-                .select('*')
+                .select('id, created_at, input_amount, cash_out_amount, attempts, encountered_trailer, bet_amount, prize_amount')
                 .eq('user_id', loggedInUser.id);
 
             if (startDate) {
@@ -138,7 +139,7 @@ const fetchLogs = async (fetchOnlyCount = false) => {
 
         let query = supabase
             .from('tiger_game_logs')
-            .select('*')
+            .select('id, created_at, input_amount, cash_out_amount, attempts, encountered_trailer, bet_amount, prize_amount')
             .eq('user_id', loggedInUser.id)
             .order('created_at', { ascending: false });
 
@@ -239,19 +240,43 @@ const fetchLogs = async (fetchOnlyCount = false) => {
         });
     };
 
-    const handleEditLog = (log) => {
+    const handleEditLog = async (log) => {
+        console.log('handleEditLog called for log ID:', log.id);
         setEditingLogId(log.id);
         setInputAmount(log.input_amount);
         setCashOutAmount(log.cash_out_amount);
-        setMainPhoto(log.main_photo);
-        setWinningPhotos(() => log.winning_photos);
-        setTempWinningPhotos(log.winning_photos || []);
+        setMainPhoto(null);
+        setWinningPhotos([]);
+        setTempWinningPhotos([]);
         setAddTime(log.created_at);
         setModifyTime(log.updated_at);
         setAttempts(log.attempts);
         setEncounteredTrailer(log.encountered_trailer);
         setBetAmount(log.bet_amount);
         setPrizeAmount(log.prize_amount);
+        setLoadingPhotos(prev => ({ ...prev, [log.id]: true }));
+        try {
+            const { data, error } = await supabase
+                .from('tiger_game_logs')
+                .select('main_photo, winning_photos')
+                .eq('id', log.id)
+                .single();
+
+            if (error) {
+                console.error('获取图片信息时发生错误:', error);
+                setErrorMessage('获取图片信息失败。');
+            } else if (data) {
+                console.log('Fetched image data for log ID:', log.id, data);
+                setMainPhoto(data.main_photo);
+                setWinningPhotos(data.winning_photos || []);
+                setTempWinningPhotos(data.winning_photos || []);
+            }
+        } catch (error) {
+            console.error('发生意外错误:', error);
+            setErrorMessage('发生意外错误。');
+        } finally {
+            setLoadingPhotos(prev => ({ ...prev, [log.id]: false }));
+        }
     };
 
     const handleWinningPhotosChange = async (e) => {
@@ -692,46 +717,53 @@ const fetchLogs = async (fetchOnlyCount = false) => {
                             <strong>遇到预告片:</strong> {log.encountered_trailer ? '是' : '否'}
                         </p>
                         <label>
-                            显示图片
-                            <input
-                                type="checkbox"
-                                checked={showPhotos[log.id] || false}
-                                onChange={() => setShowPhotos(prev => ({ ...prev, [log.id]: !prev[log.id] }))}
-                            />
-                        </label>
-                        {log.main_photo && showPhotos[log.id] && <img src={log.main_photo} alt="Main Log" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
-                        <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                            {log.winning_photos &&
-                                log.winning_photos.map((photo, index) => (
-                                    <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
-                                        {showPhotos[log.id] && <img src={photo} alt={`Winning Log ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />}
-                                        {editingLogId === log.id && (
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveWinningPhoto(index)}
-                                                style={{
-                                                    position: 'absolute',
-                                                    top: '5px',
-                                                    right: '5px',
-                                                    background: 'rgba(0, 0, 0, 0.5)',
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    borderRadius: '50%',
-                                                    width: '20px',
-                                                    height: '20px',
-                                                    fontSize: '12px',
-                                                    cursor: 'pointer',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center'
-                                                }}
-                                            >
-                                                x
-                                            </button>
-                                        )}
-                                    </div>
-                                ))}
-                        </div>
+    显示图片
+    <input
+        type="checkbox"
+        checked={showPhotos[log.id] || false}
+        onChange={async () => {
+            console.log('Checkbox clicked for log ID:', log.id, 'Current showPhotos:', showPhotos);
+            setShowPhotos(prev => ({ ...prev, [log.id]: !prev[log.id] }));
+            if (!showPhotos[log.id]) {
+                setLoadingPhotos(prev => ({ ...prev, [log.id]: true }));
+                try {
+                    const { data, error } = await supabase
+                        .from('tiger_game_logs')
+                        .select('main_photo, winning_photos')
+                        .eq('id', log.id)
+                        .single();
+
+                    if (error) {
+                        console.error('获取图片信息时发生错误:', error);
+                        setErrorMessage('获取图片信息失败。');
+                    } else if (data) {
+                        console.log('Fetched image data for log ID:', log.id, data);
+                        setMainPhoto(data.main_photo);
+                        setWinningPhotos(data.winning_photos || []);
+                    }
+                } catch (error) {
+                    console.error('发生意外错误:', error);
+                    setErrorMessage('发生意外错误。');
+                } finally {
+                    setLoadingPhotos(prev => ({ ...prev, [log.id]: false }));
+                }
+            }
+        }}
+    />
+</label>
+{loadingPhotos[log.id] ? <p>加载图片中...</p> : (
+    <>
+        {showPhotos[log.id] && mainPhoto && <img src={mainPhoto} alt="Main Log" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
+        <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+            {showPhotos[log.id] && winningPhotos &&
+                winningPhotos.map((photo, index) => (
+                    <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
+                        <img src={photo} alt={`Winning Log ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
+                    </div>
+                ))}
+        </div>
+    </>
+)}
                         <div className="edit-buttons">
                             {editingLogId === log.id ? (
                                 <form onSubmit={handleUpdateLog} style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
@@ -870,3 +902,4 @@ const fetchLogs = async (fetchOnlyCount = false) => {
 }
 
 export default TigerGameHistory;
+
