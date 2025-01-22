@@ -33,12 +33,12 @@ function Tracker({ loggedInUser, onLogout }) {
   const keyboardOffset = 5;
   const successTimeoutRef = useRef(null);
 
-  useEffect(() => {
-    if (loggedInUser) {
-      setLoading(true);
-      fetchLogs();
-    }
-  }, [loggedInUser]);
+useEffect(() => {
+    // if (loggedInUser) { // REMOVED: 移除初始加载
+    //   setLoading(true);
+    //   fetchLogs();
+    // }
+}, [loggedInUser]);
 
   const fetchLogs = async () => {
     try {

@@ -60,8 +60,6 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     const visitedQuestionsRef = useRef([]);
     const questionIndexRef = useRef(0);
     const [answeredQuestionsToday, setAnsweredQuestionsToday] = useState([]);
-    const [allQuestionsAnswered, setAllQuestionsAnswered] = useState(false);
-    const [loadingQuestions, setLoadingQuestions] = useState(true); // ADDED: 加载状态
 
     useEffect(() => {
         if (loggedInUser) {
@@ -74,7 +72,6 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
     useEffect(() => {
         if (questions && questions.length > 0) {
             if (!isCustomInputMode && !initialQuestionLoaded) {
-                setLoadingQuestions(true); // ADDED: 开始筛选前设置为 true
                 // Find the first non-answered fixed question
                 const fixedQuestion = questions.find(question => question.is_fixed && !answeredQuestionsToday.includes(question.id));
                 let initialIndex = 0;
@@ -99,7 +96,6 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                 setVisitedQuestions([initialIndex]);
                 questionIndexRef.current = initialIndex;
                 setInitialQuestionLoaded(true);
-                setLoadingQuestions(false); // ADDED: 筛选完成后设置为 false
             }
         }
     }, [questions, isCustomInputMode, initialQuestionLoaded, answeredQuestionsToday]);
@@ -389,39 +385,38 @@ function LazyDiaryPage({ loggedInUser, onLogout }) {
                             setCurrentQuestion('');
                             setCurrentQuestionType('text');
                             console.log('handleSaveAndNext - no question');
-														setAllQuestionsAnswered(true); // ADDED: 设置所有问题已回答
                             return 0;
                         }
                     }
                 } else {
                     // If all fixed questions are answered, find the next non-fixed question
-                    let nextNonFixedIndex = (prevIndex + 1) % questions.length;
-                		let nextNonFixedQuestion = questions[nextNonFixedIndex];
-									
-                    // Skip already answered non-fixed questions
-                		while (nextNonFixedQuestion && (nextNonFixedQuestion.is_fixed || answeredQuestionsToday.includes(nextNonFixedQuestion.id))) {
-                    		nextNonFixedIndex = (nextNonFixedIndex + 1) % questions.length;
-                    		nextNonFixedQuestion = questions[nextNonFixedIndex];
-                		}
-   
-										if (nextNonFixedQuestion) {
-                    		nextIndex = questions.findIndex(q => q.id === nextNonFixedQuestion?.id);
-                    		setCurrentQuestion(nextNonFixedQuestion.question);
-                    		setCurrentQuestionType(nextNonFixedQuestion.type);
-                    		console.log('handleSaveAndNext - next non-fixed question:', nextNonFixedQuestion.question, 'index:', nextIndex);
-                    		return nextIndex;        
-										} else {
+                    nextQuestion = questions.find((question, index) => index > prevIndex && !question.is_fixed && !answeredQuestionsToday.includes(question.id));
+                    if (nextQuestion) {
+                        nextIndex = questions.findIndex(q => q.id === nextQuestion?.id);
+                        setCurrentQuestion(nextQuestion.question);
+                        setCurrentQuestionType(nextQuestion.type);
+                        console.log('handleSaveAndNext - next non-fixed question:', nextQuestion.question, 'index:', nextIndex);
+                        return nextIndex;
+                    } else {
+                        const firstNonFixed = questions.find(question => !question.is_fixed && !answeredQuestionsToday.includes(question.id));
+                        if (firstNonFixed) {
+                            nextIndex = questions.findIndex(q => q.id === firstNonFixed?.id);
+                            setCurrentQuestion(firstNonFixed.question);
+                            setCurrentQuestionType(firstNonFixed.type);
+                            console.log('handleSaveAndNext - first non-fixed question:', firstNonFixed.question, 'index:', nextIndex);
+                            return nextIndex;
+                        } else {
                             setCurrentQuestion('');
                             setCurrentQuestionType('text');
                             console.log('handleSaveAndNext - no question');
-														setAllQuestionsAnswered(true); // ADDED: 设置所有问题已回答
                             return 0;
+                        }
+                    }
                 }
-            }
-        });
-    }
-    fetchTodayRecord();
-};
+            });
+        }
+        fetchTodayRecord();
+    };
 
     const handleSkipQuestion = () => {
         if (disableSkip) {
@@ -782,15 +777,6 @@ const handleStopRecording = () => {
             setIsOptionSelected(true);
         };
 
-        useEffect(() => {
-            if (!isCustomInputMode && questions.length > 0) {
-                const allAnswered = questions.every(question => answeredQuestionsToday.includes(question.id) || !question.is_active);
-                setAllQuestionsAnswered(allAnswered);
-            } else {
-                setAllQuestionsAnswered(false);
-            }
-        }, [isCustomInputMode, questions, answeredQuestionsToday]);
-
         return (
         <div className="container">
             <h2>懒人日记</h2>
@@ -800,7 +786,7 @@ const handleStopRecording = () => {
                 <button
                     type="button"
                     onClick={disableCustomInput ? null : handleToggleCustomInputMode}
-                    style={{ marginTop: '10px', backgroundColor: !disableCustomInput ? '#007bff' : '#ddd', cursor: disableCustomInput ? 'notallowed' : 'pointer' }}
+                    style={{ marginTop: '10px', backgroundColor: !disableCustomInput ? '#007bff' : '#ddd', cursor: disableCustomInput ? 'not-allowed' : 'pointer' }}
                     onMouseEnter={() => setCustomInputMessage((!isCustomInputMode && (answer || tempDiaryPhotos.length > 0 || audioBlob || selectedOptions.length > 0)) ? '请先保存当前问题内容' : '')}
                     onMouseLeave={() => setCustomInputMessage('')}
                     disabled={disableCustomInput}
@@ -812,78 +798,64 @@ const handleStopRecording = () => {
             <div className="form-group">
                 {!isCustomInputMode ? (
                     <>
-                        {loadingQuestions ? (
-                            <p>问题加载中...</p>
+                        {questions.length === 0 ? (
+                            <p>问题库为空，请联系管理员添加问题</p>
                         ) : (
                             <>
-                                {questions.length === 0 ? (
-                                    <p>问题库为空，请联系管理员添加问题</p>
-                                ) : (
-                                    <>
-                                        {allQuestionsAnswered ? (
-                                            <p>今日问题已全部完成，您可以切换到⬆️我有话要说⬆️模式记录。</p>
-                                        ) : (
-                                            <>
-                                                <p><strong>问题:</strong> {currentQuestion}</p>
-                                                {questions.find(q => q.question === currentQuestion)?.type === 'single' ? (
-                                                    <div>
-                                                        {questions.find(q => q.question === currentQuestion)?.options?.map((option, index) => (
-                                                            <div key={index}>
-                                                                <label>
-                                                                    <input
-                                                                        type="radio"
-                                                                        name="singleOption"
-                                                                        value={option}
-                                                                        checked={selectedOptions.includes(option)}
+                                <p><strong>问题:</strong> {currentQuestion}</p>
+                                {questions.find(q => q.question === currentQuestion)?.type === 'single' ? (
+                                    <div>
+                                        {questions.find(q => q.question === currentQuestion)?.options?.map((option, index) => (
+                                            <div key={index}>
+                                                <label>
+                                                    <input
+                                                        type="radio"
+                                                        name="singleOption"
+                                                        value={option}
+                                                        checked={selectedOptions.includes(option)}
 
-                                                                        onChange={() => handleOptionSelect(option)}
-                                                                    />
-                                                                    <span style={{ color: option === '白色' ? 'black' : option === '黑色' ? 'white' : option, backgroundColor: option === '白色' ? 'white' : option === '黑色' ? 'black' : 'transparent', padding: '5px', borderRadius: '4px', display: 'inline-block' }}>{option}</span>
-                                                                </label>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ) : questions.find(q => q.question === currentQuestion)?.type === 'multiple' ? (
-                                                    <div>
-                                                        {questions.find(q => q.question === currentQuestion)?.options?.map((option, index) => (
-                                                            <div key={index}>
-                                                                <label>
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        name="multipleOption"
-                                                                        value={option}
-                                                                        checked={selectedOptions.includes(option)}
-                                                                        onChange={() => handleOptionSelect(option)}
-                                                                    />
-                                                                    <span style={{ color: option === '白色' ? 'black' : option === '黑色' ? 'white' : option, backgroundColor: option === '白色' ? 'white' : option === '黑色' ? 'black' : 'transparent', padding: '5px', borderRadius: '4px', display: 'inline-block' }}>{option}</span>
-                                                                </label>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <textarea
-                                                        value={answer}
-                                                        onChange={handleAnswerChange}
-                                                        placeholder="请在此输入你的答案"
-                                                        style={{ height: '100px' }}
+                                                        onChange={() => handleOptionSelect(option)}
                                                     />
-                                                )}
-                                            </>
-                                        )}
-                                    </>
+                                                    <span style={{ color: option === '白色' ? 'black' : option === '黑色' ? 'white' : option, backgroundColor: option === '白色' ? 'white' : option === '黑色' ? 'black' : 'transparent', padding: '5px', borderRadius: '4px', display: 'inline-block' }}>{option}</span>
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : questions.find(q => q.question === currentQuestion)?.type === 'multiple' ? (
+                                    <div>
+                                        {questions.find(q => q.question === currentQuestion)?.options?.map((option, index) => (
+                                            <div key={index}>
+                                                <label>
+                                                    <input
+                                                        type="checkbox"
+                                                        name="multipleOption"
+                                                        value={option}
+                                                        checked={selectedOptions.includes(option)}
+                                                        onChange={() => handleOptionSelect(option)}
+                                                    />
+                                                    <span style={{ color: option === '白色' ? 'black' : option === '黑色' ? 'white' : option, backgroundColor: option === '白色' ? 'white' : option === '黑色' ? 'black' : 'transparent', padding: '5px', borderRadius: '4px', display: 'inline-block' }}>{option}</span>
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <textarea
+                                        value={answer}
+                                        onChange={handleAnswerChange}
+                                        placeholder="请在此输入你的答案"
+                                        style={{ height: '100px' }}
+                                    />
                                 )}
                             </>
                         )}
                     </>
                 ) : (
-                    <>
-                        <textarea
-                            value={customInput}
-                            onChange={handleCustomInputChange}
-                            placeholder="请在此输入你想说的话"
-                            style={{ height: '100px' }}
-                        />
-                    </>
+                    <textarea
+                        value={customInput}
+                        onChange={handleCustomInputChange}
+                        placeholder="请在此输入你想说的话"
+                        style={{ height: '100px' }}
+                    />
                 )}
             </div>
             {currentQuestionType === 'text' && !isCustomInputMode && questions.length > 0 && (
@@ -991,10 +963,10 @@ const handleStopRecording = () => {
             {audioUrl && <audio src={audioUrl} controls />}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                 {questions.length > 0 && (
-                    <button type="button" onClick={handleSaveAndNext} disabled={loading || isRecording || allQuestionsAnswered} style={{
+                    <button type="button" onClick={handleSaveAndNext} disabled={loading || isRecording} style={{
                         marginTop: '10px',
-                        backgroundColor: loading || isRecording || allQuestionsAnswered ? '#ddd' : '#007bff',
-                        cursor: loading || isRecording || allQuestionsAnswered ? 'not-allowed' : 'pointer',
+                        backgroundColor: loading || isRecording ? '#ddd' : '#007bff',
+                        cursor: loading || isRecording ? 'not-allowed' : 'pointer',
                     }}
                         title={isRecording ? '请先停止录音' : loading ? '正在保存...' : ''}
                     >
