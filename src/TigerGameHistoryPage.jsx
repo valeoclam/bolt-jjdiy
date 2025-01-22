@@ -44,10 +44,13 @@ function TigerGameHistory({ loggedInUser, onLogout }) {
     const [betAmount, setBetAmount] = useState('');
     const [prizeAmount, setPrizeAmount] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [logsPerPage] = useState(3);
+    const [logsPerPage, setLogsPerPage] = useState(3);
+    const [perPageInput, setPerPageInput] = useState(3);
     const [totalLogs, setTotalLogs] = useState(0);
     const [showPhotos, setShowPhotos] = useState({});
     const [loadingPhotos, setLoadingPhotos] = useState({});
+    const [disablePerPage, setDisablePerPage] = useState(true);
+    const [paginatedLogs, setPaginatedLogs] = useState([]);
 
     useEffect(() => {
         setSortedLogs([...logs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
@@ -81,6 +84,10 @@ function TigerGameHistory({ loggedInUser, onLogout }) {
             setShowPhotos(logs.reduce((acc, log) => ({ ...acc, [log.id]: false }), {}));
         }
     }, [logs]);
+
+    useEffect(() => {
+        updatePaginatedLogs();
+    }, [currentPage, logsPerPage, sortedLogs]);
 
 const fetchLogs = async (fetchOnlyCount = false) => {
     setErrorMessage('');
@@ -134,9 +141,6 @@ const fetchLogs = async (fetchOnlyCount = false) => {
             return;
         }
 
-        const startIndex = (currentPage - 1) * logsPerPage;
-        const endIndex = startIndex + logsPerPage - 1;
-
         let query = supabase
             .from('tiger_game_logs')
             .select('id, created_at, input_amount, cash_out_amount, attempts, encountered_trailer, bet_amount, prize_amount')
@@ -150,8 +154,6 @@ const fetchLogs = async (fetchOnlyCount = false) => {
             query = query.lt('created_at', `${endDate}:00.000Z`);
         }
 
-        query = query.range(startIndex, endIndex);
-
         const { data, error } = await query;
 
         if (error) {
@@ -163,8 +165,14 @@ const fetchLogs = async (fetchOnlyCount = false) => {
     } catch (error) {
         console.error('发生意外错误:', error);
         setErrorMessage('发生意外错误。');
+    } finally {
+        if (!fetchOnlyCount) {
+            setDisablePerPage(false);
+        }
     }
 };
+
+
 
     const calculateTotalProfit = () => {
         return filteredLogs.reduce(
@@ -219,7 +227,7 @@ const fetchLogs = async (fetchOnlyCount = false) => {
     const handleSortByProfit = () => {
         setSortByProfit(!sortByProfit);
         setSortedLogs((prevLogs) => {
-            const sorted = [...prevLogs].sort((a, b) =>
+            const sorted = [...filteredLogs].sort((a, b) =>
                 sortByProfit
                     ? (a.cash_out_amount - a.input_amount) -
                     (b.cash_out_amount - b.input_amount)
@@ -233,7 +241,7 @@ const fetchLogs = async (fetchOnlyCount = false) => {
     const handleSortByAttempts = () => {
         setSortByAttempts(!sortByAttempts);
         setSortedLogs((prevLogs) => {
-            const sorted = [...prevLogs].sort((a, b) =>
+            const sorted = [...filteredLogs].sort((a, b) =>
                 sortByAttempts ? a.attempts - b.attempts : b.attempts - a.attempts,
             );
             return sorted;
@@ -241,7 +249,6 @@ const fetchLogs = async (fetchOnlyCount = false) => {
     };
 
     const handleEditLog = async (log) => {
-        console.log('handleEditLog called for log ID:', log.id);
         setEditingLogId(log.id);
         setInputAmount(log.input_amount);
         setCashOutAmount(log.cash_out_amount);
@@ -266,7 +273,6 @@ const fetchLogs = async (fetchOnlyCount = false) => {
                 console.error('获取图片信息时发生错误:', error);
                 setErrorMessage('获取图片信息失败。');
             } else if (data) {
-                console.log('Fetched image data for log ID:', log.id, data);
                 setMainPhoto(data.main_photo);
                 setWinningPhotos(data.winning_photos || []);
                 setTempWinningPhotos(data.winning_photos || []);
@@ -569,6 +575,46 @@ const fetchLogs = async (fetchOnlyCount = false) => {
         ctx.restore();
     };
 
+    const handlePerPageChange = (e) => {
+        const value = parseInt(e.target.value, 10);
+        setPerPageInput(value);
+    };
+
+    const handleSetPerPage = () => {
+    console.log('handleSetPerPage called, perPageInput:', perPageInput);
+    if (perPageInput > 0) {
+        setLogsPerPage(perPageInput);
+        setCurrentPage(1);
+        updatePaginatedLogs();
+        console.log('handleSetPerPage - logsPerPage updated to:', perPageInput, 'currentPage reset to 1');
+    } else {
+        setErrorMessage('每页显示数量必须大于 0');
+    }
+};
+
+useEffect(() => {
+    console.log('useEffect - logs changed, logs:', logs);
+    if (logs && logs.length > 0) {
+        setSortedLogs([...logs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
+    } else {
+        setSortedLogs([]);
+    }
+}, [logs]);
+
+useEffect(() => {
+    console.log('useEffect - currentPage, logsPerPage, or sortedLogs changed, currentPage:', currentPage, 'logsPerPage:', logsPerPage, 'sortedLogs:', sortedLogs);
+    updatePaginatedLogs();
+}, [currentPage, logsPerPage, sortedLogs]);
+
+
+
+
+    const updatePaginatedLogs = () => {
+        const startIndex = (currentPage - 1) * logsPerPage;
+        const endIndex = startIndex + logsPerPage;
+        setPaginatedLogs(sortedLogs.slice(startIndex, endIndex));
+    };
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (containerRef.current && !containerRef.current.contains(event.target)) {
@@ -613,6 +659,7 @@ const fetchLogs = async (fetchOnlyCount = false) => {
             <div className="form-group">
     <button type="button" onClick={() => fetchLogs(true)} style={{ marginTop: '10px', backgroundColor: '#28a745' }}>查询</button>
 </div>
+
 <p>
     <strong>符合条件的记录数:</strong> {totalLogs}
 </p>
@@ -666,22 +713,47 @@ const fetchLogs = async (fetchOnlyCount = false) => {
 <p>
     <strong>遇到预告片占比:</strong> {calculateEncounteredTrailerPercentage()}
 </p>
-
-<div className="sort-buttons">
-    <button type="button" onClick={handleSortByProfit} className="sort-button">
-        按盈亏金额排序
+<button type="button" onClick={() => {setCurrentPage(1); fetchLogs(false)}} style={{ marginTop: '10px', backgroundColor: '#28a745' }}>显示历史记录</button>
+<div className="sort-buttons" style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+    <button type="button" onClick={handleSortByProfit} className="sort-button" style={{ flex: 1, padding: '10px', fontSize: '14px' }}>
+        按盈亏排序
     </button>
-    <button type="button" onClick={handleSortByAttempts} className="sort-button">
-        按尝试次数排序
+    <button type="button" onClick={handleSortByAttempts} className="sort-button" style={{ flex: 1, padding: '10px', fontSize: '14px' }}>
+        按次数排序
     </button>
 </div>
-<button type="button" onClick={() => setShowPhotos(logs.reduce((acc, log) => ({ ...acc, [log.id]: true }), {}))}>
-    显示全部图片
-</button>
-<button type="button" onClick={() => {setCurrentPage(1); fetchLogs(false)}} style={{ marginTop: '10px', backgroundColor: '#007bff' }}>显示历史记录</button>
+<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '10px' }}>
+    <div className="pagination" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+        <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            style={{ padding: '10px 15px', fontSize: '14px' }}
+        >
+            上一页
+        </button>
+        <span style={{ fontSize: '14px' }}>{currentPage}</span>
+        <button
+            onClick={() => setCurrentPage(prev => prev + 1)}
+            disabled={paginatedLogs.length < logsPerPage || (currentPage * logsPerPage >= totalLogs)}
+            style={{ padding: '10px 15px', fontSize: '14px' }}
+        >
+            下一页
+        </button>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+        <button type="button" onClick={handleSetPerPage} style={{ padding: '5px 10px', fontSize: '14px' }} disabled={disablePerPage}>每页显示</button>
+        <input
+            type="number"
+            value={perPageInput}
+            onChange={handlePerPageChange}
+            style={{ width: '60px', padding: '5px', fontSize: '14px' }}
+            disabled={disablePerPage}
+        />
+    </div>
+</div>
 
-            {logs.length > 0 && (
-                sortedLogs.map((log, index) => (
+            {paginatedLogs.length > 0 && (
+                paginatedLogs.map((log, index) => (
                     <div key={log.id} className="log-item">
                         <p>
                             <strong>编号:</strong>{' '}
@@ -717,53 +789,78 @@ const fetchLogs = async (fetchOnlyCount = false) => {
                             <strong>遇到预告片:</strong> {log.encountered_trailer ? '是' : '否'}
                         </p>
                         <label>
-    显示图片
-    <input
-        type="checkbox"
-        checked={showPhotos[log.id] || false}
-        onChange={async () => {
-            console.log('Checkbox clicked for log ID:', log.id, 'Current showPhotos:', showPhotos);
-            setShowPhotos(prev => ({ ...prev, [log.id]: !prev[log.id] }));
-            if (!showPhotos[log.id]) {
-                setLoadingPhotos(prev => ({ ...prev, [log.id]: true }));
-                try {
-                    const { data, error } = await supabase
-                        .from('tiger_game_logs')
-                        .select('main_photo, winning_photos')
-                        .eq('id', log.id)
-                        .single();
+                            显示图片
+                            <input
+                                type="checkbox"
+                                checked={showPhotos[log.id] || false}
+                                onChange={async () => {
+                                    console.log('Checkbox clicked for log ID:', log.id, 'Current showPhotos:', showPhotos);
+                                    setShowPhotos(prev => ({ ...prev, [log.id]: !prev[log.id]
+ }));
+                                    if (!showPhotos[log.id]) {
+                                        setLoadingPhotos(prev => ({ ...prev, [log.id]: true }));
+                                        try {
+                                            const { data, error } = await supabase
+                                                .from('tiger_game_logs')
+                                                .select('main_photo, winning_photos')
+                                                .eq('id', log.id)
+                                                .single();
 
-                    if (error) {
-                        console.error('获取图片信息时发生错误:', error);
-                        setErrorMessage('获取图片信息失败。');
-                    } else if (data) {
-                        console.log('Fetched image data for log ID:', log.id, data);
-                        setMainPhoto(data.main_photo);
-                        setWinningPhotos(data.winning_photos || []);
-                    }
-                } catch (error) {
-                    console.error('发生意外错误:', error);
-                    setErrorMessage('发生意外错误。');
-                } finally {
-                    setLoadingPhotos(prev => ({ ...prev, [log.id]: false }));
-                }
-            }
-        }}
-    />
-</label>
-{loadingPhotos[log.id] ? <p>加载图片中...</p> : (
-    <>
-        {showPhotos[log.id] && mainPhoto && <img src={mainPhoto} alt="Main Log" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
-        <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-            {showPhotos[log.id] && winningPhotos &&
-                winningPhotos.map((photo, index) => (
-                    <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
-                        <img src={photo} alt={`Winning Log ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
-                    </div>
-                ))}
-        </div>
-    </>
-)}
+                                            if (error) {
+                                                console.error('获取图片信息时发生错误:', error);
+                                                setErrorMessage('获取图片信息失败。');
+                                            } else if (data) {
+                                                console.log('Fetched image data for log ID:', log.id, data);
+                                                setMainPhoto(data.main_photo);
+                                                setWinningPhotos(data.winning_photos || []);
+                                            }
+                                        } catch (error) {
+                                            console.error('发生意外错误:', error);
+                                            setErrorMessage('发生意外错误。');
+                                        } finally {
+                                            setLoadingPhotos(prev => ({ ...prev, [log.id]: false }));
+                                        }
+                                    }
+                                }}
+                            />
+                        </label>
+                        {loadingPhotos[log.id] ? <p>加载图片中...</p> : (
+                            <>
+                                {showPhotos[log.id] && mainPhoto && <img src={mainPhoto} alt="Main Log" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
+                                <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                                    {showPhotos[log.id] && winningPhotos &&
+                                        winningPhotos.map((photo, index) => (
+                                            <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
+                                                <img src={photo} alt={`Winning Log ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
+                                                {editingLogId === log.id && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveWinningPhoto(index)}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: '5px',
+                                                            right: '5px',
+                                                            background: 'rgba(0, 0, 0, 0.5)',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            borderRadius: '50%',
+                                                            width: '20px',
+                                                            height: '20px',
+                                                            fontSize: '12px',
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center'
+                                                        }}
+                                                    >
+                                                        x
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                </div>
+                            </>
+                        )}
                         <div className="edit-buttons">
                             {editingLogId === log.id ? (
                                 <form onSubmit={handleUpdateLog} style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
@@ -882,24 +979,8 @@ const fetchLogs = async (fetchOnlyCount = false) => {
                     </div>
                 ))
             )}
-            <div className="pagination">
-                <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                >
-                    上一页
-                </button>
-                <span>{currentPage}</span>
-                <button
-                    onClick={() => setCurrentPage(prev => prev + 1)}
-                    disabled={logs.length < logsPerPage || (currentPage * logsPerPage >= totalLogs)}
-                >
-                    下一页
-                </button>
-            </div>
         </div>
     );
 }
 
 export default TigerGameHistory;
-
