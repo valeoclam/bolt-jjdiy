@@ -216,13 +216,31 @@ const fetchLogs = async (fetchOnlyCount = false) => {
         return (totalAttempts / trailerLogs.length).toFixed(2);
     };
 
-    const calculateAveragePrizeMultiplier = () => {
-        if (filteredLogs.length === 0) return 0;
-        let validLogs = filteredLogs.filter(log => log.bet_amount > 0);
-        if (validLogs.length === 0) return 0;
-        const totalMultiplier = validLogs.reduce((sum, log) => sum + (log.prize_amount / log.bet_amount), 0);
-        return (totalMultiplier / validLogs.length).toFixed(2);
-    };
+    const calculateAverageBetAmount = () => {
+    if (filteredLogs.length === 0) return 0;
+    const totalBetAmount = filteredLogs.reduce((sum, log) => sum + log.bet_amount, 0);
+    return (totalBetAmount / filteredLogs.length).toFixed(2);
+};
+
+const calculateAveragePrizeMultiplier = () => {
+    if (filteredLogs.length === 0) return 0;
+    let validLogs = filteredLogs.filter(log => log.bet_amount > 0);
+    if (validLogs.length === 0) return 0;
+    const totalMultiplier = validLogs.reduce((sum, log) => sum + (log.prize_amount / log.bet_amount), 0);
+    return (totalMultiplier / validLogs.length).toFixed(2);
+};
+
+const calculateWinningLogsCount = () => {
+    return filteredLogs.filter(log => log.prize_amount > 0).length;
+};
+
+const calculateWinningLogsPercentage = () => {
+    if (filteredLogs.length === 0) return '0.00%';
+    const winningLogsCount = filteredLogs.filter(log => log.prize_amount > 0).length;
+    const percentage = (winningLogsCount / filteredLogs.length) * 100;
+    return percentage.toFixed(2) + '%';
+};
+
 
     const handleSortByProfit = () => {
         setSortByProfit(!sortByProfit);
@@ -684,8 +702,18 @@ useEffect(() => {
     <strong>符合条件的记录数:</strong> {totalLogs}
 </p>
 <p>
+    <strong>送钱老虎数量:</strong> {calculateWinningLogsCount()}
+</p>
+<p>
+    <strong>送钱老虎占比:</strong> {calculateWinningLogsPercentage()}
+</p>
+<p>
+    <strong>平均下注金额:</strong> {calculateAverageBetAmount()}
+</p>
+<p>
     <strong>平均中奖倍数:</strong> {calculateAveragePrizeMultiplier()}
 </p>
+
 <div className="form-group" style={{ display: 'flex', alignItems: 'center' }}>
     <label style={{ marginBottom: '0', marginRight: '10px' }}>
         <strong>盈亏总额:</strong> {calculateTotalProfit()}
