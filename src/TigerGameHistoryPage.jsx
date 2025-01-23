@@ -51,6 +51,7 @@ function TigerGameHistory({ loggedInUser, onLogout }) {
     const [loadingPhotos, setLoadingPhotos] = useState({});
     const [disablePerPage, setDisablePerPage] = useState(true);
     const [paginatedLogs, setPaginatedLogs] = useState([]);
+		const [prizeAmountFilter, setPrizeAmountFilter] = useState(false);
 
     useEffect(() => {
         setSortedLogs([...logs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
@@ -103,6 +104,9 @@ const fetchLogs = async (fetchOnlyCount = false) => {
         if (endDate) {
             countQuery = countQuery.lt('created_at', `${endDate}:00.000Z`);
         }
+        if (prizeAmountFilter) {
+            countQuery = countQuery.gt('prize_amount', 0);
+        }
 
         const { count, error: countError } = await countQuery;
 
@@ -120,7 +124,7 @@ const fetchLogs = async (fetchOnlyCount = false) => {
             // ADDED: 计算并设置指标
             let query = supabase
                 .from('tiger_game_logs')
-                .select('id, created_at, input_amount, cash_out_amount, attempts, encountered_trailer, bet_amount, prize_amount')
+                .select('bet_amount, prize_amount, attempts, cash_out_amount, input_amount, encountered_trailer')
                 .eq('user_id', loggedInUser.id);
 
             if (startDate) {
@@ -128,6 +132,9 @@ const fetchLogs = async (fetchOnlyCount = false) => {
             }
             if (endDate) {
                 query = query.lt('created_at', `${endDate}:00.000Z`);
+            }
+            if (prizeAmountFilter) {
+                query = query.gt('prize_amount', 0);
             }
 
             const { data, error } = await query;
@@ -152,6 +159,9 @@ const fetchLogs = async (fetchOnlyCount = false) => {
         }
         if (endDate) {
             query = query.lt('created_at', `${endDate}:00.000Z`);
+        }
+        if (prizeAmountFilter) {
+            query = query.gt('prize_amount', 0);
         }
 
         const { data, error } = await query;
