@@ -426,154 +426,174 @@ const fetchLogs = async (fetchOnlyCount = false) => {
         navigate('/modules');
     };
 
-    const drawChart = () => {
-        if (!chartCanvasRef.current) return;
-        const canvas = chartCanvasRef.current;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+const drawChart = () => {
+    if (!chartCanvasRef.current) return;
+    const canvas = chartCanvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-        const dailyData = {};
-        filteredLogs.forEach(log => {
-            const date = new Date(log.created_at).toLocaleDateString();
-            const profit = log.cash_out_amount - log.input_amount;
-            dailyData[date] = (dailyData[date] || 0) + profit;
-        });
+    const dailyData = {};
+    filteredLogs.forEach(log => {
+        const date = new Date(log.created_at).toLocaleDateString();
+        const profit = log.cash_out_amount - log.input_amount;
+        dailyData[date] = (dailyData[date] || 0) + profit;
+    });
 
-        const dates = Object.keys(dailyData);
-        const profits = Object.values(dailyData);
+    const dates = Object.keys(dailyData);
+    const profits = Object.values(dailyData);
 
-        if (dates.length === 0) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            return;
-        }
-
-        const barWidth = canvas.width / dates.length;
-        const maxProfit = Math.max(...profits, 0);
-        const minProfit = Math.min(...profits, 0);
-        const range = maxProfit - minProfit;
-        const padding = 40;
-        const zeroY = canvas.height - padding - (range === 0 ? 0 : (0 - minProfit) / range * (canvas.height - 2 * padding));
-
+    if (dates.length === 0) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+    }
 
-        // Draw x-axis
-        ctx.beginPath();
-        ctx.moveTo(padding, zeroY);
-        ctx.lineTo(canvas.width - padding, zeroY);
-        ctx.stroke();
+    const maxProfit = Math.max(...profits, 0);
+    const minProfit = Math.min(...profits, 0);
+    const range = maxProfit - minProfit;
+    const padding = 10; // 进一步减小 padding
 
-        // Draw y-axis
-        ctx.beginPath();
-        ctx.moveTo(padding, padding);
-        ctx.lineTo(padding, canvas.height - padding);
-        ctx.stroke();
+    // Calculate dynamic canvas height
+    const textHeight = 12; // 进一步减小 textHeight
+    const barHeight = 60; // 进一步减小 barHeight
+    const chartHeight = padding * 2 + textHeight + barHeight;
+    canvas.height = chartHeight;
 
-        // Draw bars
-        dates.forEach((date, index) => {
-            const x = padding + index * barWidth;
-            const profit = profits[index];
-            const barHeight = range === 0 ? 0 : (profit) / range * (canvas.height - 2 * padding);
-            const y = zeroY - barHeight;
+    // Calculate dynamic canvas width
+    const containerWidth = containerRef.current ? containerRef.current.offsetWidth : 250; // 进一步减小默认宽度
+    const barWidth = Math.max(15, (containerWidth - 2 * padding) / dates.length); // 进一步减小 barWidth
+    canvas.width = Math.max(containerWidth, dates.length * barWidth + 2 * padding);
 
-            ctx.fillStyle = profit > 0 ? 'green' : 'red';
-            ctx.fillRect(x, y, barWidth - 2, barHeight);
+    const zeroY = canvas.height - padding - (range === 0 ? 0 : (0 - minProfit) / range * (canvas.height - 2 * padding));
 
-            ctx.fillStyle = 'black';
-            ctx.font = '10px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(date, x + barWidth / 2, canvas.height - 5);
-            ctx.fillText(profit.toFixed(2), x + barWidth / 2, y - 5);
-        });
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Add chart title
-        ctx.font = '14px Arial';
+    // Draw x-axis
+    ctx.beginPath();
+    ctx.moveTo(padding, zeroY);
+    ctx.lineTo(canvas.width - padding, zeroY);
+    ctx.stroke();
+
+    // Draw y-axis
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, canvas.height - padding);
+    ctx.stroke();
+
+    // Draw bars
+    dates.forEach((date, index) => {
+        const x = padding + index * barWidth;
+        const profit = profits[index];
+        const barHeight = range === 0 ? 0 : (profit) / range * (canvas.height - 2 * padding);
+        const y = zeroY - barHeight;
+
+        ctx.fillStyle = profit > 0 ? 'green' : 'red';
+        ctx.fillRect(x, y, barWidth - 2, barHeight);
+
+        ctx.fillStyle = 'black';
+        ctx.font = '6px Arial'; // 进一步减小字体大小
         ctx.textAlign = 'center';
-        ctx.fillText('每日盈亏图', canvas.width / 2, padding / 2);
+        ctx.fillText(date, x + barWidth / 2, canvas.height - 5);
+        ctx.fillText(profit.toFixed(2), x + barWidth / 2, y - 5);
+    });
 
-        // Add y-axis label
-        ctx.save();
-        ctx.translate(padding / 2, canvas.height / 2);
-        ctx.rotate(-Math.PI / 2);
-        ctx.textAlign = 'center';
-        ctx.fillText('盈亏金额', 0, 0);
-        ctx.restore();
-    };
+    // Add chart title
+    ctx.font = '10px Arial'; // 进一步减小字体大小
+    ctx.textAlign = 'center';
+    ctx.fillText('每日盈亏图', canvas.width / 2, padding / 2);
 
-    const drawScatterPlot = () => {
-        if (!scatterCanvasRef.current) return;
-        const canvas = scatterCanvasRef.current;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+    // Add y-axis label
+    ctx.save();
+    ctx.translate(padding / 2, canvas.height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText('盈亏金额', 0, 0);
+    ctx.restore();
+};
 
-        if (filteredLogs.length === 0) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            return;
-        }
+const drawScatterPlot = () => {
+    if (!scatterCanvasRef.current) return;
+    const canvas = scatterCanvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
+    if (filteredLogs.length === 0) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+    }
 
-        const profits = filteredLogs.map(log => log.cash_out_amount - log.input_amount);
-        const attempts = filteredLogs.map(log => log.attempts);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        const maxProfit = Math.max(...profits, 0);
-        const minProfit = Math.min(...profits, 0);
-        const maxAttempts = Math.max(...attempts, 0);
-        const minAttempts = Math.min(...attempts, 0);
+    const profits = filteredLogs.map(log => log.cash_out_amount - log.input_amount);
+    const attempts = filteredLogs.map(log => log.attempts);
 
-        const profitRange = maxProfit - minProfit;
-        const attemptsRange = maxAttempts - minAttempts;
+    const maxProfit = Math.max(...profits, 0);
+    const minProfit = Math.min(...profits, 0);
+    const maxAttempts = Math.max(...attempts, 0);
+    const minAttempts = Math.min(...attempts, 0);
 
-        const padding = 40;
+    const profitRange = maxProfit - minProfit;
+    const attemptsRange = maxAttempts - minAttempts;
 
-        // Draw x-axis
+    const padding = 10; // 进一步减小 padding
+
+    // Calculate dynamic canvas height
+    const textHeight = 12; // 进一步减小 textHeight
+    const chartHeight = padding * 2 + textHeight + 100; // 进一步减小 chartHeight
+    canvas.height = chartHeight;
+
+    // Calculate dynamic canvas width
+    const containerWidth = containerRef.current ? containerRef.current.offsetWidth : 250; // 进一步减小默认宽度
+    canvas.width = Math.max(containerWidth, attemptsRange * 10 + 2 * padding); // 进一步减小 attemptsRange 的倍数
+
+    // Draw x-axis
+    ctx.beginPath();
+    ctx.moveTo(padding, canvas.height - padding);
+    ctx.lineTo(canvas.width - padding, canvas.height - padding);
+    ctx.stroke();
+
+    // Draw y-axis
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, canvas.height - padding);
+    ctx.stroke();
+
+    filteredLogs.forEach((log, index) => {
+        const profit = profits[index];
+        const attempt = attempts[index];
+
+        const x = attemptsRange === 0 ? padding : padding + (attempt - minAttempts) / attemptsRange * (canvas.width - 2 * padding);
+        const y = profitRange === 0 ? canvas.height - padding : canvas.height - padding - (profit - minProfit) / profitRange * (canvas.height - 2 * padding);
+
         ctx.beginPath();
-        ctx.moveTo(padding, canvas.height - padding);
-        ctx.lineTo(canvas.width - padding, canvas.height - padding);
-        ctx.stroke();
+        ctx.arc(x, y, 1, 0, 2 * Math.PI); // 进一步减小圆点大小
+        ctx.fillStyle = profit > 0 ? 'green' : 'red';
+        ctx.fill();
 
-        // Draw y-axis
-        ctx.beginPath();
-        ctx.moveTo(padding, padding);
-        ctx.lineTo(padding, canvas.height - padding);
-        ctx.stroke();
-
-        filteredLogs.forEach((log, index) => {
-            const profit = profits[index];
-            const attempt = attempts[index];
-
-            const x = attemptsRange === 0 ? padding : padding + (attempt - minAttempts) / attemptsRange * (canvas.width - 2 * padding);
-            const y = profitRange === 0 ? canvas.height - padding : canvas.height - padding - (profit - minProfit) / profitRange * (canvas.height - 2 * padding);
-
-            ctx.beginPath();
-            ctx.arc(x, y, 3, 0, 2 * Math.PI);
-            ctx.fillStyle = profit > 0 ? 'green' : 'red';
-            ctx.fill();
-
-            ctx.fillStyle = 'black';
-            ctx.font = '10px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(profit.toFixed(2), x, y - 5);
-            ctx.fillText(attempt, x, canvas.height - padding + 10);
-        });
-
-        // Add chart title
-        ctx.font = '14px Arial';
+        ctx.fillStyle = 'black';
+        ctx.font = '6px Arial'; // 进一步减小字体大小
         ctx.textAlign = 'center';
-        ctx.fillText('盈亏 vs 尝试次数', canvas.width / 2, padding / 2);
+        ctx.fillText(profit.toFixed(2), x, y - 5);
+        ctx.fillText(attempt, x, canvas.height - padding + 10);
+    });
 
-        // Add x-axis label
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('尝试次数', canvas.width / 2, canvas.height - 5);
+    // Add chart title
+    ctx.font = '10px Arial'; // 进一步减小字体大小
+    ctx.textAlign = 'center';
+    ctx.fillText('盈亏 vs 尝试次数', canvas.width / 2, padding / 2);
 
-        // Add y-axis label
-        ctx.save();
-        ctx.translate(padding / 2, canvas.height / 2);
-        ctx.rotate(-Math.PI / 2);
-        ctx.textAlign = 'center';
-        ctx.fillText('盈亏金额', 0, 0);
-        ctx.restore();
-    };
+    // Add x-axis label
+    ctx.font = '8px Arial'; // 进一步减小字体大小
+    ctx.textAlign = 'center';
+    ctx.fillText('尝试次数', canvas.width / 2, canvas.height - 5);
+
+    // Add y-axis label
+    ctx.save();
+    ctx.translate(padding / 2, canvas.height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText('盈亏金额', 0, 0);
+    ctx.restore();
+};
 
     const handlePerPageChange = (e) => {
         const value = parseInt(e.target.value, 10);
