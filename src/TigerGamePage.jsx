@@ -32,6 +32,42 @@ function Tracker({ loggedInUser, onLogout }) {
   const [keyboardPosition, setKeyboardPosition] = useState({ top: 0, left: 0 });
   const keyboardOffset = 5;
   const successTimeoutRef = useRef(null);
+	  const betInputRef = useRef(null);
+  const prizeInputRef = useRef(null);
+  const cashOutInputRef = useRef(null);
+  const attemptsInputRef = useRef(null);
+  const inputAmountInputRef = useRef(null);
+
+  useEffect(() => {
+    if (betInputRef.current) {
+      betInputRef.current.value = String(betAmount);
+    }
+  }, [betAmount]);
+
+  useEffect(() => {
+    if (prizeInputRef.current) {
+      prizeInputRef.current.value = String(prizeAmount);
+    }
+  }, [prizeAmount]);
+
+  useEffect(() => {
+    if (cashOutInputRef.current) {
+      cashOutInputRef.current.value = String(cashOutAmount);
+    }
+  }, [cashOutAmount]);
+
+  useEffect(() => {
+    if (attemptsInputRef.current) {
+      attemptsInputRef.current.value = String(attempts);
+    }
+  }, [attempts]);
+
+  useEffect(() => {
+    if (inputAmountInputRef.current) {
+      inputAmountInputRef.current.value = String(inputAmount);
+    }
+  }, [inputAmount]);
+
 
 useEffect(() => {
     // if (loggedInUser) { // REMOVED: 移除初始加载
@@ -319,60 +355,60 @@ useEffect(() => {
         <div className="form-group">
           <label htmlFor="inputAmount">投入金额:</label>
           <input
-            type="number"
+            type="text"
             id="inputAmount"
             value={inputAmount}
             onChange={(e) => setInputAmount(e.target.value)}
             onFocus={(e) => handleInputFocus('inputAmount', e.target)}
-            ref={inputRef}
+            ref={inputAmountInputRef}
             required
           />
         </div>
          <div className="form-group">
           <label htmlFor="betAmount">下注金额:</label>
           <input
-            type="number"
+            type="text"
             id="betAmount"
             value={betAmount}
             onChange={(e) => setBetAmount(e.target.value)}
             onFocus={(e) => handleInputFocus('betAmount', e.target)}
-            ref={inputRef}
+            ref={betInputRef}
             required
           />
         </div>
         <div className="form-group">
           <label htmlFor="prizeAmount">中奖金额:</label>
           <input
-            type="number"
+            type="text"
             id="prizeAmount"
             value={prizeAmount}
             onChange={(e) => setPrizeAmount(e.target.value)}
             onFocus={(e) => handleInputFocus('prizeAmount', e.target)}
-            ref={inputRef}
+            ref={prizeInputRef}
             required
           />
         </div>
         <div className="form-group">
           <label htmlFor="cashOutAmount">兑换金额:</label>
           <input
-            type="number"
+            type="text"
             id="cashOutAmount"
             value={cashOutAmount}
             onChange={(e) => setCashOutAmount(e.target.value)}
             onFocus={(e) => handleInputFocus('cashOutAmount', e.target)}
-            ref={inputRef}
+            ref={cashOutInputRef}
             required
           />
         </div>
         <div className="form-group">
           <label htmlFor="attempts">尝试次数:</label>
           <input
-            type="number"
+            type="text"
             id="attempts"
             value={attempts}
             onChange={(e) => setAttempts(e.target.value)}
             onFocus={(e) => handleInputFocus('attempts', e.target)}
-            ref={inputRef}
+            ref={attemptsInputRef}
             required
           />
         </div>
