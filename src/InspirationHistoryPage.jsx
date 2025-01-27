@@ -20,6 +20,7 @@ function InspirationHistoryPage({ loggedInUser, supabase, onLogout }) {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const containerRef = useRef(null);
   const editFormRef = useRef(null); // Ref for the edit form
+  const [strikeThroughStates, setStrikeThroughStates] = useState({});
 
   useEffect(() => {
     if (loggedInUser) {
@@ -46,6 +47,11 @@ function InspirationHistoryPage({ loggedInUser, supabase, onLogout }) {
         setErrorMessage('获取灵感记录失败。');
       } else {
         setInspirations(data);
+        const initialStrikeThroughStates = data.reduce((acc, inspiration) => {
+          acc[inspiration.id] = inspiration.strike_through_states || {};
+          return acc;
+        }, {});
+        setStrikeThroughStates(initialStrikeThroughStates);
       }
     } catch (error) {
       console.error('发生意外错误:', error);
@@ -77,11 +83,10 @@ function InspirationHistoryPage({ loggedInUser, supabase, onLogout }) {
     setStatus(inspiration.status);
     setInspirationPhotos(inspiration.photos || []);
     setTempInspirationPhotos(inspiration.photos || []);
-
-    // Scroll to the edit form
-    if (editFormRef.current) {
-      editFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    setStrikeThroughStates(prev => ({
+      ...prev,
+      [inspiration.id]: inspiration.strike_through_states || (inspiration.description ? inspiration.description.split('\n').reduce((acc, _, index) => ({ ...acc, [index]: false }), {}) : {})
+    }));
   };
 
   const handleUpdate = async (event) => {
@@ -96,7 +101,7 @@ function InspirationHistoryPage({ loggedInUser, supabase, onLogout }) {
     try {
       const { data, error } = await supabase
         .from('user_inspirations')
-        .update({ title, description, status, photos: tempInspirationPhotos, updated_at: new Date().toISOString() })
+        .update({ title, description, status, photos: tempInspirationPhotos, updated_at: new Date().toISOString(), strike_through_states: strikeThroughStates[editingInspiration.id] })
         .eq('id', editingInspiration.id);
 
       if (error) {
@@ -215,6 +220,65 @@ function InspirationHistoryPage({ loggedInUser, supabase, onLogout }) {
     };
   }, []);
 
+  const toggleStrikeThrough = (inspirationId, index) => {
+    setStrikeThroughStates(prev => {
+      const newState = { ...prev };
+      if (newState[inspirationId]) {
+        newState[inspirationId] = {
+          ...newState[inspirationId],
+          [index]: !newState[inspirationId][index]
+        };
+      }
+      return newState;
+    });
+  };
+
+  const renderDescription = (text, inspirationId, editing) => {
+    const lines = text.split('\n');
+    const listRegex = /^(\d+)\.\s+(.*)$/;
+    let inList = false;
+    let listItems = [];
+    const rendered = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const match = line.match(listRegex);
+      if (match) {
+        if (!inList) {
+          inList = true;
+          listItems = [];
+        }
+        listItems.push(<li key={match[1]}>{match[2]}</li>);
+      } else {
+        if (inList) {
+          inList = false;
+          rendered.push(<ol key={rendered.length}>{listItems}</ol>);
+          listItems = [];
+        }
+        const isStrikeThrough = strikeThroughStates[inspirationId] && strikeThroughStates[inspirationId][i] || false;
+        rendered.push(
+          editing ? (
+            <p
+              key={i}
+              onClick={() => toggleStrikeThrough(inspirationId, i)}
+              style={{ cursor: 'pointer' }}
+            >
+              <span style={{ textDecoration: isStrikeThrough ? 'line-through' : 'none' }}>{line}</span>
+            </p>
+          ) : (
+            <p key={i}>
+              <span style={{ textDecoration: isStrikeThrough ? 'line-through' : 'none' }}>{line}</span>
+            </p>
+          )
+        );
+      }
+    }
+    if (inList) {
+      rendered.push(<ol key={rendered.length}>{listItems}</ol>);
+    }
+    return rendered;
+  };
+
   return (
     <div className="container" ref={containerRef}>
       <h2>灵感集中营</h2>
@@ -237,7 +301,7 @@ function InspirationHistoryPage({ loggedInUser, supabase, onLogout }) {
           <option value="">所有状态</option>
           <option value="未执行">未执行</option>
           <option value="执行中">执行中</option>
-          <option value="已实现">已实现</option>
+          <option value="已实现">已完成</option>
         </select>
       </div>
 
@@ -245,7 +309,7 @@ function InspirationHistoryPage({ loggedInUser, supabase, onLogout }) {
        <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '20px' }}>
         <p><strong>未执行:</strong> {countInspirationsByStatus('未执行')}</p>
         <p><strong>执行中:</strong> {countInspirationsByStatus('执行中')}</p>
-        <p><strong>已实现:</strong> {countInspirationsByStatus('已实现')}</p>
+        <p><strong>已完成:</strong> {countInspirationsByStatus('已完成')}</p>
       </div>
 
       <div className="inspiration-list">
@@ -253,7 +317,7 @@ function InspirationHistoryPage({ loggedInUser, supabase, onLogout }) {
         {filteredInspirations.map((inspiration) => (
           <div key={inspiration.id} className="inspiration-item">
             <h4>{inspiration.title}</h4>
-            <p>{inspiration.description}</p>
+            <div>{renderDescription(inspiration.description, inspiration.id, editingInspiration && editingInspiration.id === inspiration.id)}</div>
             <p>状态: {inspiration.status}</p>
             <p>创建时间: {new Date(inspiration.created_at).toLocaleString()}</p>
             <p>最后修改时间: {new Date(inspiration.updated_at).toLocaleString()}</p>
@@ -291,7 +355,7 @@ function InspirationHistoryPage({ loggedInUser, supabase, onLogout }) {
                   >
                     <option value="未执行">未执行</option>
                     <option value="执行中">执行中</option>
-                    <option value="已实现">已实现</option>
+                    <option value="已完成">已完成</option>
                   </select>
                 </div>
                 <div className="form-group">
