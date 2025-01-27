@@ -800,7 +800,8 @@ const handleStopRecording = () => {
                     <>
                         {questions.length === 0 ? (
                             <p>问题库为空，请联系管理员添加问题</p>
-                        ) : (
+                        )
+ : (
                             <>
                                 <p><strong>问题:</strong> {currentQuestion}</p>
                                 {questions.find(q => q.question === currentQuestion)?.type === 'single' ? (
@@ -871,6 +872,34 @@ const handleStopRecording = () => {
                             style={{ display: 'none' }}
                         />
                         <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px', backgroundColor: '#28a745' }}>选择照片</button>
+                        {Array.isArray(tempDiaryPhotos) &&
+                            tempDiaryPhotos.map((photo, index) => (
+                                <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
+                                    <img src={photo} alt={`Diary ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain' }} />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveDiaryPhoto(index)}
+                                        style={{
+                                            position: 'absolute',
+                                            top: '5px',
+                                            right: '5px',
+                                            background: 'rgba(0, 0, 0, 0.5)',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '50%',
+                                            width: '20px',
+                                            height: '20px',
+                                            fontSize: '12px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }}
+                                    >
+                                        x
+                                    </button>
+                                </div>
+                            ))}
                     </div>
                 </div>
             )}
