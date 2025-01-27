@@ -36,6 +36,7 @@ function TigerGameHistory({ loggedInUser, onLogout }) {
     const [attempts, setAttempts] = useState('');
     const chartCanvasRef = useRef(null);
     const scatterCanvasRef = useRef(null);
+    const dailyMultiplierCanvasRef = useRef(null);
     const [showChart, setShowChart] = useState(false);
     const [filteredLogs, setFilteredLogs] = useState([]);
     const [encounteredTrailer, setEncounteredTrailer] = useState(false);
@@ -77,6 +78,7 @@ function TigerGameHistory({ loggedInUser, onLogout }) {
         if (logs.length > 0 && showChart) {
             drawChart();
             drawScatterPlot();
+            drawDailyMultiplierChart();
         }
     }, [logs, startDate, endDate, showChart, chartWidth]);
 
@@ -478,17 +480,17 @@ const drawChart = () => {
     const maxProfit = Math.max(...profits, 0);
     const minProfit = Math.min(...profits, 0);
     const range = maxProfit - minProfit;
-    const padding = 10; // 进一步减小 padding
+    const padding = 10;
 
     // Calculate dynamic canvas height
-    const textHeight = 12; // 进一步减小 textHeight
-    const barHeight = 60; // 进一步减小 barHeight
+    const textHeight = 12;
+    const barHeight = 60;
     const chartHeight = padding * 2 + textHeight + barHeight;
     canvas.height = chartHeight;
 
     // Calculate dynamic canvas width
-    const containerWidth = containerRef.current ? containerRef.current.offsetWidth : 250; // 进一步减小默认宽度
-    const barWidth = Math.max(15, (containerWidth - 2 * padding) / dates.length); // 进一步减小 barWidth
+    const containerWidth = containerRef.current ? containerRef.current.offsetWidth : 250;
+    const barWidth = Math.max(15, (containerWidth - 2 * padding) / dates.length);
     canvas.width = Math.max(containerWidth, dates.length * barWidth + 2 * padding);
 
     const zeroY = canvas.height - padding - (range === 0 ? 0 : (0 - minProfit) / range * (canvas.height - 2 * padding));
@@ -518,14 +520,14 @@ const drawChart = () => {
         ctx.fillRect(x, y, barWidth - 2, barHeight);
 
         ctx.fillStyle = 'black';
-        ctx.font = '6px Arial'; // 进一步减小字体大小
+        ctx.font = '6px Arial';
         ctx.textAlign = 'center';
         ctx.fillText(date, x + barWidth / 2, canvas.height - 5);
         ctx.fillText(profit.toFixed(2), x + barWidth / 2, y - 5);
     });
 
     // Add chart title
-    ctx.font = '10px Arial'; // 进一步减小字体大小
+    ctx.font = '10px Arial';
     ctx.textAlign = 'center';
     ctx.fillText('每日盈亏图', canvas.width / 2, padding / 2);
 
@@ -562,16 +564,16 @@ const drawScatterPlot = () => {
     const profitRange = maxProfit - minProfit;
     const attemptsRange = maxAttempts - minAttempts;
 
-    const padding = 10; // 进一步减小 padding
+    const padding = 10;
 
     // Calculate dynamic canvas height
-    const textHeight = 12; // 进一步减小 textHeight
-    const chartHeight = padding * 2 + textHeight + 100; // 进一步减小 chartHeight
+    const textHeight = 12;
+    const chartHeight = padding * 2 + textHeight + 100;
     canvas.height = chartHeight;
 
     // Calculate dynamic canvas width
-    const containerWidth = containerRef.current ? containerRef.current.offsetWidth : 250; // 进一步减小默认宽度
-    canvas.width = Math.max(containerWidth, attemptsRange * 10 + 2 * padding); // 进一步减小 attemptsRange 的倍数
+    const containerWidth = containerRef.current ? containerRef.current.offsetWidth : 250;
+    canvas.width = Math.max(containerWidth, attemptsRange * 10 + 2 * padding);
 
     // Draw x-axis
     ctx.beginPath();
@@ -593,24 +595,24 @@ const drawScatterPlot = () => {
         const y = profitRange === 0 ? canvas.height - padding : canvas.height - padding - (profit - minProfit) / profitRange * (canvas.height - 2 * padding);
 
         ctx.beginPath();
-        ctx.arc(x, y, 1, 0, 2 * Math.PI); // 进一步减小圆点大小
+        ctx.arc(x, y, 1, 0, 2 * Math.PI);
         ctx.fillStyle = profit > 0 ? 'green' : 'red';
         ctx.fill();
 
         ctx.fillStyle = 'black';
-        ctx.font = '6px Arial'; // 进一步减小字体大小
+        ctx.font = '6px Arial';
         ctx.textAlign = 'center';
         ctx.fillText(profit.toFixed(2), x, y - 5);
         ctx.fillText(attempt, x, canvas.height - padding + 10);
     });
 
     // Add chart title
-    ctx.font = '10px Arial'; // 进一步减小字体大小
+    ctx.font = '10px Arial';
     ctx.textAlign = 'center';
     ctx.fillText('盈亏 vs 尝试次数', canvas.width / 2, padding / 2);
 
     // Add x-axis label
-    ctx.font = '8px Arial'; // 进一步减小字体大小
+    ctx.font = '8px Arial';
     ctx.textAlign = 'center';
     ctx.fillText('尝试次数', canvas.width / 2, canvas.height - 5);
 
@@ -620,6 +622,97 @@ const drawScatterPlot = () => {
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
     ctx.fillText('盈亏金额', 0, 0);
+    ctx.restore();
+};
+
+const drawDailyMultiplierChart = () => {
+    if (!dailyMultiplierCanvasRef.current) return;
+    const canvas = dailyMultiplierCanvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dailyData = {};
+    filteredLogs.forEach(log => {
+        const date = new Date(log.created_at).toLocaleDateString();
+        if (!dailyData[date]) {
+            dailyData[date] = { totalMultiplier: 0, count: 0 };
+        }
+        if (log.bet_amount > 0) {
+            dailyData[date].totalMultiplier += (log.prize_amount / log.bet_amount);
+            dailyData[date].count++;
+        }
+    });
+
+    const dates = Object.keys(dailyData);
+    const averageMultipliers = dates.map(date => {
+        return dailyData[date].count > 0 ? dailyData[date].totalMultiplier / dailyData[date].count : 0;
+    });
+
+    if (dates.length === 0) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+    }
+
+    const maxMultiplier = Math.max(...averageMultipliers, 0);
+    const minMultiplier = Math.min(...averageMultipliers, 0);
+    const range = maxMultiplier - minMultiplier;
+    const padding = 10;
+
+    // Calculate dynamic canvas height
+    const textHeight = 12;
+    const barHeight = 60;
+    const chartHeight = padding * 2 + textHeight + barHeight;
+    canvas.height = chartHeight;
+
+    // Calculate dynamic canvas width
+    const containerWidth = containerRef.current ? containerRef.current.offsetWidth : 250;
+    const barWidth = Math.max(15, (containerWidth - 2 * padding) / dates.length);
+    canvas.width = Math.max(containerWidth, dates.length * barWidth + 2 * padding);
+
+    const zeroY = canvas.height - padding - (range === 0 ? 0 : (0 - minMultiplier) / range * (canvas.height - 2 * padding));
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw x-axis
+    ctx.beginPath();
+    ctx.moveTo(padding, zeroY);
+    ctx.lineTo(canvas.width - padding, zeroY);
+    ctx.stroke();
+
+    // Draw y-axis
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, canvas.height - padding);
+    ctx.stroke();
+
+    // Draw bars
+    dates.forEach((date, index) => {
+        const x = padding + index * barWidth;
+        const multiplier = averageMultipliers[index];
+        const barHeight = range === 0 ? 0 : (multiplier) / range * (canvas.height - 2 * padding);
+        const y = zeroY - barHeight;
+
+        ctx.fillStyle = multiplier > 1 ? 'green' : 'red';
+        ctx.fillRect(x, y, barWidth - 2, barHeight);
+
+        ctx.fillStyle = 'black';
+        ctx.font = '6px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(date, x + barWidth / 2, canvas.height - 5);
+        ctx.fillText(multiplier.toFixed(2), x + barWidth / 2, y - 5);
+    });
+
+    // Add chart title
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('每日平均支付倍数', canvas.width / 2, padding / 2);
+
+    // Add y-axis label
+    ctx.save();
+    ctx.translate(padding / 2, canvas.height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText('平均支付倍数', 0, 0);
     ctx.restore();
 };
 
@@ -721,7 +814,7 @@ useEffect(() => {
     <strong>平均下注金额:</strong> {calculateAverageBetAmount()}
 </p>
 <p>
-    <strong>平均中奖倍数:</strong> {calculateAveragePrizeMultiplier()}
+    <strong>平均支付倍数:</strong> {calculateAveragePrizeMultiplier()}
 </p>
 
 <div className="form-group" style={{ display: 'flex', alignItems: 'center' }}>
@@ -740,6 +833,7 @@ useEffect(() => {
 </div>
 {showChart && <canvas ref={chartCanvasRef} width={chartWidth} height={200} style={{ border: '1px solid #ddd', marginTop: '20px' }}></canvas>}
 {showChart && <canvas ref={scatterCanvasRef} width={chartWidth} height={200} style={{ border: '1px solid #ddd', marginTop: '20px' }}></canvas>}
+{showChart && <canvas ref={dailyMultiplierCanvasRef} width={chartWidth} height={200} style={{ border: '1px solid #ddd', marginTop: '20px' }}></canvas>}
 <div style={{ overflowX: 'auto' }}>
     <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
         <thead>
