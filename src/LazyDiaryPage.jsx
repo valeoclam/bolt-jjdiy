@@ -1129,4 +1129,3 @@ const handleStopRecording = () => {
 }
 
 export default LazyDiaryPage;
-
