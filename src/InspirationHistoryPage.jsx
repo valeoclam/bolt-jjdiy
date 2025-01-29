@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
+import supabase from './supabaseClient';
 
 function InspirationHistoryPage({ loggedInUser, supabase, onLogout }) {
   const [inspirations, setInspirations] = useState([]);
