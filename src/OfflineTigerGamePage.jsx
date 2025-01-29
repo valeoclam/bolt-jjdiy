@@ -732,4 +732,3 @@ function OfflineTigerGamePage({ onLogout }) {
 }
 
 export default OfflineTigerGamePage;
-
