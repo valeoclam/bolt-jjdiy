@@ -1,5 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
     import { useNavigate } from 'react-router-dom';
+    import { createClient } from '@supabase/supabase-js';
+
+    const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8';
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     function OfflinePaymentMultiplierCalculator() {
       const [records, setRecords] = useState([]);
@@ -33,6 +38,13 @@ import React, { useState, useRef, useEffect } from 'react';
       const [sortField, setSortField] = useState(null);
       const [sortDirection, setSortDirection] = useState('asc');
       const [showComplexQuery, setShowComplexQuery] = useState(false);
+      const [syncing, setSyncing] = useState(false);
+      const [syncMessage, setSyncMessage] = useState('');
+      const [showLoginModal, setShowLoginModal] = useState(false);
+      const [loginUsername, setLoginUsername] = useState('');
+      const [loginPassword, setLoginPassword] = useState('');
+      const [userId, setUserId] = useState(localStorage.getItem('offlineCalculatorUserId') || null);
+      const [loginError, setLoginError] = useState('');
 
       useEffect(() => {
         fetchRecords();
@@ -64,6 +76,7 @@ import React, { useState, useRef, useEffect } from 'react';
               bet_amount: parseFloat(betAmount),
               prize_amount: parseFloat(prizeAmount),
               created_at: new Date().toISOString(),
+              isSynced: false,
             };
             const storedLogs = localStorage.getItem('offlinePaymentMultiplierLogs');
             let existingLogs = storedLogs ? JSON.parse(storedLogs) : [];
@@ -367,6 +380,96 @@ import React, { useState, useRef, useEffect } from 'react';
         };
       }, []);
 
+      const handleSync = async () => {
+        setSyncing(true);
+        setSyncMessage('正在同步数据...');
+        if (!userId) {
+          setShowLoginModal(true);
+          setSyncing(false);
+          return;
+        }
+        try {
+          const storedLogs = localStorage.getItem('offlinePaymentMultiplierLogs');
+          if (!storedLogs) {
+            setSyncMessage('没有需要同步的数据。');
+            setSyncing(false);
+            return;
+          }
+
+          const logsToSync = JSON.parse(storedLogs).filter(log => !log.isSynced);
+          if (logsToSync.length === 0) {
+            setSyncMessage('所有数据已同步。');
+            setSyncing(false);
+            return;
+          }
+
+          for (const log of logsToSync) {
+            const { data, error } = await supabase
+              .from('payment_multiplier_logs')
+              .insert([{
+                user_id: userId,
+                game_name: log.game_name,
+                bet_amount: log.bet_amount,
+                prize_amount: log.prize_amount,
+                created_at: log.created_at,
+              }]);
+
+            if (error) {
+              console.error('同步数据到 Supabase 时发生错误:', error);
+              setSyncMessage(`同步数据失败，请重试。错误信息: ${error.message}`);
+              setSyncing(false);
+              return;
+            } else {
+              console.log('数据同步成功:', data);
+              const updatedLogs = records.map(record =>
+                record.id === log.id ? { ...record, isSynced: true } : record
+              );
+              localStorage.setItem('offlinePaymentMultiplierLogs', JSON.stringify(updatedLogs));
+              setRecords(updatedLogs);
+            }
+          }
+          setSyncMessage('数据同步成功！');
+        } catch (error) {
+          console.error('同步数据时发生意外错误:', error);
+          setSyncMessage(`同步数据失败，请重试。错误信息: ${error.message}`);
+        } finally {
+          setSyncing(false);
+        }
+      };
+
+      const handleLogin = async () => {
+        setLoading(true);
+        setLoginError('');
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('id')
+            .eq('username', loginUsername)
+            .eq('password', loginPassword)
+            .single();
+
+          if (error) {
+            console.error('登录时发生错误:', error);
+            setLoginError('登录失败，请重试。');
+          } else if (data) {
+            console.log('登录成功, user_id:', data.id);
+            setUserId(data.id);
+            localStorage.setItem('offlineCalculatorUserId', data.id);
+            setShowLoginModal(false);
+            setLoginUsername('');
+            setLoginPassword('');
+            handleSync();
+          } else {
+            setLoginError('用户名或密码无效。');
+          }
+        } catch (error) {
+          console.error('发生意外错误:', error);
+          setLoginError('发生意外错误，请重试。');
+        } finally {
+          setLoading(false);
+        }
+      };
+
       return (
         <div className="container" ref={containerRef}>
           <h2>离线支付倍数计算器</h2>
@@ -624,6 +727,44 @@ import React, { useState, useRef, useEffect } from 'react';
                 <button type="button" onClick={handleDecimalClick} className="keyboard-button">.</button>
                 <button type="button" onClick={handleTabClick} className="keyboard-button">Tab</button>
                 <button type="button" onClick={handleHideKeyboard} className="keyboard-button">隐藏</button>
+              </div>
+            </div>
+          )}
+          <button type="button" onClick={handleSync} disabled={syncing} style={{ marginTop: '20px', backgroundColor: '#007bff' }}>
+            {syncing ? '同步中...' : '同步到云端'}
+          </button>
+          {syncMessage && <p style={{ marginTop: '10px', textAlign: 'center' }}>{syncMessage}</p>}
+          {showLoginModal && (
+            <div className="modal">
+              <div className="modal-content">
+                <h2>登录</h2>
+                <div className="form-group">
+                  <label htmlFor="loginUsername">用户名:</label>
+                  <input
+                    type="text"
+                    id="loginUsername"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="loginPassword">密码:</label>
+                  <input
+                    type="password"
+                    id="loginPassword"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                  />
+                </div>
+                {loginError && <p className="error-message">{loginError}</p>}
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                  <button type="button" onClick={handleLogin} disabled={loading} style={{ backgroundColor: '#28a745' }}>
+                    {loading ? '登录中...' : '登录'}
+                  </button>
+                  <button type="button" onClick={() => setShowLoginModal(false)} style={{ backgroundColor: '#dc3545' }}>
+                    取消
+                  </button>
+                </div>
               </div>
             </div>
           )}
