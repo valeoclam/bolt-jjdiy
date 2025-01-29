@@ -2,6 +2,7 @@ import React, { useState } from 'react';
     import LoginForm from './LoginForm';
     import RegisterForm from './RegisterForm';
     import packageJson from '../package.json';
+    import { Link } from 'react-router-dom';
 
     function LoginPage({ onLoginSuccess, supabase }) {
       const [isRegistering, setIsRegistering] = useState(false);
@@ -67,6 +68,11 @@ import React, { useState } from 'react';
           {errorMessage && <p className="error-message">{errorMessage}</p>}
           {registrationSuccess && <p className="success-message">注册成功，请登录。</p>}
           <p style={{ textAlign: 'center', marginTop: '20px', color: '#777' }}>v{appVersion}</p>
+          <Link to="/offline-calculator" style={{ display: 'block', textAlign: 'center', marginTop: '20px' }}>
+            <button type="button" style={{ backgroundColor: '#28a745' }}>
+              使用离线计算器
+            </button>
+          </Link>
         </div>
       );
     }
