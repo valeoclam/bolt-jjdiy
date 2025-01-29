@@ -268,6 +268,11 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
 
   const getUniqueGameNames = () => {
     const gameNames = records.map((record) => record.game_name);
+    return [...new Set(gameNames)];
+  };
+
+  const getFilterGameNames = () => {
+    const gameNames = records.map((record) => record.game_name);
     return ['全部', ...new Set(gameNames)];
   };
 
@@ -364,7 +369,13 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
           onChange={(e) => setGameName(e.target.value)}
           ref={gameNameInputRef}
           maxLength="15"
+          list="gameNames"
         />
+        <datalist id="gameNames">
+          {getUniqueGameNames().map((name) => (
+            <option key={name} value={name} />
+          ))}
+        </datalist>
       </div>
       <div className="form-group">
         <label htmlFor="betAmount">下注金额:</label>
@@ -392,7 +403,10 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
       </div>
       <button type="button" onClick={handleAddRecord} style={{ backgroundColor: '#28a745' }}>添加记录</button>
       <p>
-        <strong>平均支付倍数:</strong> {calculateAverageMultiplier()}
+        <strong>总平均支付倍数:</strong> {calculateAverageMultiplier()}
+      </p>
+      <p>
+        <strong>总记录数:</strong> {records.length}
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '10px' }}>
         <input
@@ -407,7 +421,7 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
           onChange={handleFilterChange}
           style={{ padding: '10px', fontSize: '16px', borderRadius: '4px', border: '1px solid #ddd' }}
         >
-          {getUniqueGameNames().map((name) => (
+          {getFilterGameNames().map((name) => (
             <option key={name} value={name}>
               {name}
             </option>
