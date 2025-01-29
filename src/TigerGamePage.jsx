@@ -180,7 +180,7 @@ useEffect(() => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       attempts: parseInt(attempts, 10) || 0,
-      encountered_trailer: encounteredTrailer,
+      encounteredTrailer: encounteredTrailer,
       bet_amount: parseFloat(betAmount),
       prize_amount: parseFloat(prizeAmount),
     };
@@ -308,6 +308,10 @@ useEffect(() => {
         left: inputRect.left - containerRect.left,
       });
     }
+  };
+
+  const handleHideKeyboard = () => {
+    setShowKeyboard(false);
   };
 
   const handleInputFocus = (inputField, inputElement) => {
@@ -514,6 +518,7 @@ useEffect(() => {
           </div>
            <div className="keyboard-row">
             <button type="button" onClick={handleDecimalClick} className="keyboard-button">.</button>
+            <button type="button" onClick={handleHideKeyboard} className="keyboard-button" style={{ fontSize: '16px' }}>隐藏</button>
           </div>
         </div>
       )}

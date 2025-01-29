@@ -181,6 +181,10 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
     }
   };
 
+  const handleHideKeyboard = () => {
+    setShowKeyboard(false);
+  };
+
   const handleInputFocus = (inputField, inputElement) => {
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
       inputElement.blur();
@@ -668,6 +672,7 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
           </div>
            <div className="keyboard-row">
             <button type="button" onClick={handleDecimalClick} className="keyboard-button">.</button>
+            <button type="button" onClick={handleHideKeyboard} className="keyboard-button">隐藏</button>
           </div>
         </div>
       )}
