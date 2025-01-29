@@ -1,7 +1,7 @@
 {
       "name": "supabase-inspiration-app",
       "private": true,
-      "version": "5.0.8.012925_beta",
+      "version": "5.0.9.012925_beta",
       "type": "module",
       "scripts": {
             "dev": "vite",
@@ -13,6 +13,7 @@
             "browser-image-compression": "^2.0.2",
             "exifreader": "^4.15.0",
             "idb": "^8.0.1",
+            "jwt-decode": "^4.0.0",
             "react": "^18.2.0",
             "react-dom": "^18.2.0",
             "react-router-dom": "^6.21.1",

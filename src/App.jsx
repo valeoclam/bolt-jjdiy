@@ -14,7 +14,7 @@ import AdminPage from './AdminPage';
 import LazyDiaryHistoryPage from './LazyDiaryHistoryPage';
 import TestNavigationPage from './TestNavigationPage';
 import PaymentMultiplierCalculator from './PaymentMultiplierCalculator';
-import { getStoredToken, clearToken, validateToken, refreshToken, storeToken } from './utils/auth'; // 修改引用
+import { getStoredToken, clearToken, validateToken, refreshToken, storeToken, validateTokenLocally } from './utils/auth'; // 修改引用
 
 const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co'; // Replace with your Supabase URL
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8'; // Replace with your Supabase anon API key
@@ -25,6 +25,20 @@ function App() {
   const [allowedModules, setAllowedModules] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const checkStoredToken = async () => {
@@ -32,17 +46,22 @@ function App() {
       let token = await getStoredToken();
       if (token) {
         // 验证 JWT 的有效性
-        let isValid = await validateToken(token, supabase);
-        if (!isValid) {
-          // 如果 JWT 过期，则尝试刷新 JWT
-          const newToken = await refreshToken(supabase);
-          if (newToken) {
-            token = newToken;
-            await storeToken(newToken);
-            isValid = true;
-          } else {
-            clearToken();
+        let isValid = false;
+        if (isOnline) {
+          isValid = await validateToken(token, supabase);
+          if (!isValid) {
+            // 如果 JWT 过期，则尝试刷新 JWT
+            const newToken = await refreshToken(supabase);
+            if (newToken) {
+              token = newToken;
+              await storeToken(newToken);
+              isValid = true;
+            } else {
+              clearToken();
+            }
           }
+        } else {
+          isValid = validateTokenLocally(token);
         }
         if (isValid) {
           try {
@@ -63,7 +82,7 @@ function App() {
       setLoading(false);
     };
     checkStoredToken();
-  }, []);
+  }, [isOnline]);
 
   useEffect(() => {
     if (loggedInUser) {

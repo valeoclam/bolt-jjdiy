@@ -1,4 +1,5 @@
 import { openDB } from 'idb';
+import * as jwt_decode from 'jwt-decode'; // Modified import
 
 const dbName = 'my-app-db';
 const storeName = 'auth';
@@ -56,5 +57,18 @@ export const refreshToken = async (supabase) => {
   } catch (error) {
     console.error('JWT 刷新失败:', error);
     return null;
+  }
+};
+
+export const validateTokenLocally = (token) => {
+  try {
+    const decoded = jwt_decode.jwtDecode(token); // Modified usage
+    if (decoded.exp > Date.now() / 1000) {
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('本地 JWT 验证失败:', error);
+    return false;
   }
 };
