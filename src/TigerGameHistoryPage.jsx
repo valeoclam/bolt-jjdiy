@@ -1,18 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createClient } from '@supabase/supabase-js';
+import supabase from './supabaseClient';
 import imageCompression from 'browser-image-compression';
-
-const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8';
-const supabase = createClient(supabaseUrl, supabaseKey, {
-    auth: {
-        persistSession: false
-    },
-    fetch: (input, init) => {
-        return fetch(input, { ...init, timeout: 30000 });
-    }
-});
 
 function TigerGameHistory({ loggedInUser, onLogout }) {
     const [logs, setLogs] = useState([]);
