@@ -1,10 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
+import { openDB } from 'idb'; // 导入 idb 库
+import { getStoredToken, clearToken, validateToken } from './utils/auth';
 
 const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8';
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+const dbName = 'payment-multiplier-db';
+const storeName = 'payment-multiplier-logs';
+
+const getDB = async () => {
+  return openDB(dbName, 1, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains(storeName)) {
+        db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true });
+      }
+    },
+  });
+};
 
 function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
   const [records, setRecords] = useState([]);
@@ -30,7 +45,7 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
   const gameNameInputRef = useRef(null);
   const containerRef = useRef(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [groupByHour, setGroupByHour] = useState(false);
@@ -38,37 +53,75 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
   const [sortField, setSortField] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc');
   const [showComplexQuery, setShowComplexQuery] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [jwt, setJwt] = useState(null);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchToken = async () => {
+      const token = await getStoredToken();
+      setJwt(token);
+    };
+    fetchToken();
+  }, []);
 
   useEffect(() => {
     if (loggedInUser) {
       fetchRecords(loggedInUser);
     }
-  }, [loggedInUser, startDate, endDate, groupByHour, groupByDay, sortField, sortDirection, showComplexQuery]);
+  }, [loggedInUser, startDate, endDate, groupByHour, groupByDay, sortField, sortDirection, showComplexQuery, isOnline, jwt]);
 
   const fetchRecords = async (loggedInUser) => {
     setLoading(true);
     try {
-      let query = supabase
-        .from('payment_multiplier_logs')
-        .select('*')
-        .eq('user_id', loggedInUser.id)
-        .order('created_at', { ascending: false });
+      if (isOnline) {
+        // Online mode: fetch from Supabase
+        let query = supabase
+          .from('payment_multiplier_logs')
+          .select('*')
+          .eq('user_id', loggedInUser.id)
+          .order('created_at', { ascending: false });
 
-      if (showComplexQuery) {
-        if (startDate) {
-          query = query.gte('created_at', `${startDate}:00.000Z`);
+        if (showComplexQuery) {
+          if (startDate) {
+            query = query.gte('created_at', `${startDate}:00.000Z`);
+          }
+          if (endDate) {
+            query = query.lt('created_at', `${endDate}:00.000Z`);
+          }
         }
-        if (endDate) {
-          query = query.lt('created_at', `${endDate}:00.000Z`);
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error('获取支付倍数记录时发生错误:', error);
+        } else {
+          setRecords(data || []);
+          // Store data to IndexedDB
+          const db = await getDB();
+          if (data) {
+            data.forEach(async (record) => {
+              await db.put(storeName, record);
+            });
+          }
         }
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('获取支付倍数记录时发生错误:', error);
       } else {
-        setRecords(data || []);
+        // Offline mode: fetch from IndexedDB
+        const db = await getDB();
+        const allRecords = await db.getAll(storeName);
+        setRecords(allRecords || []);
       }
     } catch (error) {
       console.error('发生意外错误:', error);
@@ -81,25 +134,40 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
     if (betAmount && prizeAmount && gameName && loggedInUser) {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('payment_multiplier_logs')
-          .insert([{
-            user_id: loggedInUser.id,
-            game_name: gameName,
-            bet_amount: parseFloat(betAmount),
-            prize_amount: parseFloat(prizeAmount),
-          }])
-          .select('*');
+        const newRecord = {
+          user_id: loggedInUser.id,
+          game_name: gameName,
+          bet_amount: parseFloat(betAmount),
+          prize_amount: parseFloat(prizeAmount),
+          created_at: new Date().toISOString(),
+        };
 
-        if (error) {
-          console.error('添加支付倍数记录时发生错误:', error);
+        if (isOnline) {
+          // Online mode: add to Supabase
+          const { data, error } = await supabase
+            .from('payment_multiplier_logs')
+            .insert([newRecord])
+            .select('*');
+
+          if (error) {
+            console.error('添加支付倍数记录时发生错误:', error);
+          } else {
+            console.log('支付倍数记录添加成功:', data);
+            setRecords(prevRecords => [data[0], ...prevRecords]);
+            // Store data to IndexedDB
+            const db = await getDB();
+            await db.put(storeName, data[0]);
+          }
         } else {
-          console.log('支付倍数记录添加成功:', data);
-          setRecords(prevRecords => [data[0], ...prevRecords]);
-          setBetAmount('');
-          setPrizeAmount('');
-          setGameName('');
+          // Offline mode: add to IndexedDB
+          const db = await getDB();
+          const id = await db.add(storeName, newRecord);
+          const addedRecord = { ...newRecord, id: id };
+          setRecords(prevRecords => [addedRecord, ...prevRecords]);
         }
+        setBetAmount('');
+        setPrizeAmount('');
+        setGameName('');
       } catch (error) {
         console.error('发生意外错误:', error);
       } finally {
@@ -219,31 +287,46 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
     if (editedGameName && editedBetAmount && editedPrizeAmount && loggedInUser) {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('payment_multiplier_logs')
-          .update({
-            game_name: editedGameName,
-            bet_amount: parseFloat(editedBetAmount),
-            prize_amount: parseFloat(editedPrizeAmount),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', id)
-          .select('*');
+        const updatedLog = {
+          game_name: editedGameName,
+          bet_amount: parseFloat(editedBetAmount),
+          prize_amount: parseFloat(editedPrizeAmount),
+          updated_at: new Date().toISOString()
+        };
+        if (isOnline) {
+          const { data, error } = await supabase
+            .from('payment_multiplier_logs')
+            .update(updatedLog)
+            .eq('id', id)
+            .select('*');
 
-        if (error) {
-          console.error('更新支付倍数记录时发生错误:', error);
+          if (error) {
+            console.error('更新支付倍数记录时发生错误:', error);
+          } else {
+            console.log('支付倍数记录更新成功:', data);
+            setRecords((prevRecords) =>
+              prevRecords.map((record) =>
+                record.id === id ? { ...record, ...data[0] } : record,
+              ),
+            );
+            // Update data in IndexedDB
+            const db = await getDB();
+            await db.put(storeName, { ...updatedLog, id: id });
+          }
         } else {
-          console.log('支付倍数记录更新成功:', data);
+          // Offline mode: update in IndexedDB
+          const db = await getDB();
+          await db.put(storeName, { ...updatedLog, id: id });
           setRecords((prevRecords) =>
             prevRecords.map((record) =>
-              record.id === id ? { ...record, ...data[0] } : record,
+              record.id === id ? { ...record, ...updatedLog } : record,
             ),
           );
-          setEditingLogId(null);
-          setEditedGameName('');
-          setEditedBetAmount('');
-          setEditedPrizeAmount('');
         }
+        setEditingLogId(null);
+        setEditedGameName('');
+        setEditedBetAmount('');
+        setEditedPrizeAmount('');
       } catch (error) {
         console.error('发生意外错误:', error);
       } finally {
@@ -256,18 +339,28 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
     if (confirmDeleteId === id && loggedInUser) {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('payment_multiplier_logs')
-          .delete()
-          .eq('id', id);
+        if (isOnline) {
+          const { data, error } = await supabase
+            .from('payment_multiplier_logs')
+            .delete()
+            .eq('id', id);
 
-        if (error) {
-          console.error('删除支付倍数记录时发生错误:', error);
+          if (error) {
+            console.error('删除支付倍数记录时发生错误:', error);
+          } else {
+            console.log('支付倍数记录删除成功:', data);
+            setRecords((prevRecords) => prevRecords.filter((record) => record.id !== id));
+            // Delete data from IndexedDB
+            const db = await getDB();
+            await db.delete(storeName, id);
+          }
         } else {
-          console.log('支付倍数记录删除成功:', data);
+          // Offline mode: delete from IndexedDB
+          const db = await getDB();
+          await db.delete(storeName, id);
           setRecords((prevRecords) => prevRecords.filter((record) => record.id !== id));
-          setConfirmDeleteId(null);
         }
+        setConfirmDeleteId(null);
       } catch (error) {
         console.error('发生意外错误:', error);
       } finally {
