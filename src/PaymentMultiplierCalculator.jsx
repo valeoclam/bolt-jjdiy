@@ -33,12 +33,17 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
   const [loading, setLoading] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [groupByHour, setGroupByHour] = useState(false);
+  const [groupByDay, setGroupByDay] = useState(false);
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
+  const [showComplexQuery, setShowComplexQuery] = useState(false);
 
   useEffect(() => {
     if (loggedInUser) {
       fetchRecords(loggedInUser);
     }
-  }, [loggedInUser, startDate, endDate]);
+  }, [loggedInUser, startDate, endDate, groupByHour, groupByDay, sortField, sortDirection, showComplexQuery]);
 
   const fetchRecords = async (loggedInUser) => {
     setLoading(true);
@@ -49,11 +54,13 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
         .eq('user_id', loggedInUser.id)
         .order('created_at', { ascending: false });
 
-      if (startDate) {
-        query = query.gte('created_at', `${startDate}:00.000Z`);
-      }
-      if (endDate) {
-        query = query.lt('created_at', `${endDate}:00.000Z`);
+      if (showComplexQuery) {
+        if (startDate) {
+          query = query.gte('created_at', `${startDate}:00.000Z`);
+        }
+        if (endDate) {
+          query = query.lt('created_at', `${endDate}:00.000Z`);
+        }
       }
 
       const { data, error } = await query;
@@ -288,25 +295,75 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
   const getGameSummary = () => {
     const summary = {};
     filteredRecords.forEach((record) => {
-      if (!summary[record.game_name]) {
-        summary[record.game_name] = {
+      const date = new Date(record.created_at);
+      const key = groupByHour
+        ? `${date.toLocaleDateString()} ${date.getHours()}`
+        : groupByDay
+        ? date.toLocaleDateString()
+        : 'all';
+
+      if (!summary[key]) {
+        summary[key] = {};
+      }
+      if (!summary[key][record.game_name]) {
+        summary[key][record.game_name] = {
           count: 0,
           totalMultiplier: 0,
           totalBetAmount: 0,
         };
       }
-      summary[record.game_name].count++;
+      summary[key][record.game_name].count++;
       if (record.bet_amount > 0) {
-        summary[record.game_name].totalMultiplier += record.prize_amount / record.bet_amount;
-        summary[record.game_name].totalBetAmount += record.bet_amount;
+        summary[key][record.game_name].totalMultiplier += record.prize_amount / record.bet_amount;
+        summary[key][record.game_name].totalBetAmount += record.bet_amount;
       }
     });
 
-    return Object.entries(summary).map(([gameName, data]) => ({
-      gameName,
-      count: data.count,
-      averageMultiplier: data.totalBetAmount > 0 ? (data.totalMultiplier / data.count).toFixed(2) : 0,
+    let summaryArray = Object.entries(summary).map(([key, games]) => ({
+      key,
+      games: Object.entries(games).map(([gameName, data]) => ({
+        gameName,
+        count: data.count,
+        averageMultiplier: data.totalBetAmount > 0 ? (data.totalMultiplier / data.count).toFixed(2) : 0,
+      })),
     }));
+
+    if (sortField === 'averageMultiplier') {
+      summaryArray = summaryArray.sort((a, b) => {
+        const avgA = a.games.reduce((sum, game) => sum + game.averageMultiplier, 0) / a.games.length;
+        const avgB = b.games.reduce((sum, game) => sum + game.averageMultiplier, 0) / b.games.length;
+        return sortDirection === 'asc' ? avgA - avgB : avgB - avgA;
+      });
+    }
+
+    return summaryArray;
+  };
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const handleGroupByHourChange = () => {
+    setGroupByHour(!groupByHour);
+    if (groupByDay) {
+      setGroupByDay(false);
+    }
+  };
+
+  const handleGroupByDayChange = () => {
+    setGroupByDay(!groupByDay);
+    if (groupByHour) {
+      setGroupByHour(false);
+    }
+  };
+
+  const handleShowComplexQueryChange = () => {
+    setShowComplexQuery(!showComplexQuery);
   };
 
   useEffect(() => {
@@ -408,70 +465,111 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
       <p>
         <strong>总记录数:</strong> {records.length}
       </p>
-      <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '10px' }}>
-        <input
-          type="text"
-          placeholder="搜索游戏名称/金额"
-          value={searchKeyword}
-          onChange={handleSearchChange}
-          style={{ marginBottom: '10px', padding: '10px', fontSize: '16px', borderRadius: '4px', border: '1px solid #ddd' }}
-        />
-        <select
-          value={filterGameName}
-          onChange={handleFilterChange}
-          style={{ padding: '10px', fontSize: '16px', borderRadius: '4px', border: '1px solid #ddd' }}
-        >
-          {getFilterGameNames().map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </select>
-      </div>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
         <label style={{ marginRight: '10px' }}>
-          显示历史记录
+          复杂查询
           <input
             type="checkbox"
-            checked={showHistory}
-            onChange={() => setShowHistory(!showHistory)}
+            checked={showComplexQuery}
+            onChange={() => handleShowComplexQueryChange()}
             style={{ width: 'auto', margin: '0' }}
           />
         </label>
       </div>
-      <div className="form-group">
-        <label>开始时间:</label>
-        <input
-          type="datetime-local"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-        />
-      </div>
-      <div className="form-group">
-        <label>结束时间:</label>
-        <input
-          type="datetime-local"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-        />
-      </div>
+      {showComplexQuery && (
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '10px' }}>
+            <input
+              type="text"
+              placeholder="搜索游戏名称/金额"
+              value={searchKeyword}
+              onChange={handleSearchChange}
+              style={{ marginBottom: '10px', padding: '10px', fontSize: '16px', borderRadius: '4px', border: '1px solid #ddd' }}
+            />
+            <select
+              value={filterGameName}
+              onChange={handleFilterChange}
+              style={{ padding: '10px', fontSize: '16px', borderRadius: '4px', border: '1px solid #ddd' }}
+            >
+              {getFilterGameNames().map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+            <label style={{ marginRight: '10px' }}>
+              显示历史记录
+              <input
+                type="checkbox"
+                checked={showHistory}
+                onChange={() => setShowHistory(!showHistory)}
+                style={{ width: 'auto', margin: '0' }}
+              />
+            </label>
+          </div>
+          <div className="form-group">
+            <label>开始时间:</label>
+            <input
+              type="datetime-local"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <label>结束时间:</label>
+            <input
+              type="datetime-local"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+            <label style={{ marginRight: '10px' }}>
+              按小时汇总
+              <input
+                type="checkbox"
+                checked={groupByHour}
+                onChange={handleGroupByHourChange}
+                style={{ width: 'auto', margin: '0' }}
+              />
+            </label>
+            <label style={{ marginRight: '10px' }}>
+              按天汇总
+              <input
+                type="checkbox"
+                checked={groupByDay}
+                onChange={handleGroupByDayChange}
+                style={{ width: 'auto', margin: '0' }}
+              />
+            </label>
+          </div>
+        </>
+      )}
       <div className="inspiration-list">
         <h3>游戏汇总</h3>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
+              <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>
+                {groupByHour ? '时间 (小时)' : groupByDay ? '时间 (天)' : '游戏名称'}
+              </th>
               <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>游戏名称</th>
               <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>记录总数</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>平均支付倍数</th>
+              <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('averageMultiplier')}>平均支付倍数</th>
             </tr>
           </thead>
           <tbody>
             {getGameSummary().map((summary) => (
-              <tr key={summary.gameName}>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{summary.gameName}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{summary.count}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{summary.averageMultiplier}</td>
-              </tr>
+              summary.games.map((game, index) => (
+                <tr key={`${summary.key}-${game.gameName}-${index}`}>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{summary.key}</td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{game.gameName}</td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{game.count}</td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{game.averageMultiplier}</td>
+                </tr>
+              ))
             ))}
           </tbody>
         </table>
@@ -519,6 +617,9 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
                   </p>
                   <p>
                     <strong>中奖金额:</strong> {record.prize_amount}
+                  </p>
+                  <p>
+                    <strong>创建时间:</strong> {new Date(record.created_at).toLocaleString()}
                   </p>
                   <div className="edit-buttons">
                     <button onClick={() => handleEditLog(record)}>编辑</button>
