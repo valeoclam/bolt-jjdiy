@@ -185,6 +185,22 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
     setShowKeyboard(false);
   };
 
+  const handleTabClick = () => {
+    if (activeInput === 'gameName') {
+      handleInputFocus('betAmount', betInputRef.current);
+    } else if (activeInput === 'betAmount') {
+      handleInputFocus('prizeAmount', prizeInputRef.current);
+    } else if (activeInput === 'prizeAmount') {
+      handleInputFocus('gameName', gameNameInputRef.current);
+    } else if (activeInput === 'editedGameName') {
+      handleInputFocus('editedBetAmount', betInputRef.current);
+    } else if (activeInput === 'editedBetAmount') {
+      handleInputFocus('editedPrizeAmount', prizeInputRef.current);
+    } else if (activeInput === 'editedPrizeAmount') {
+      handleInputFocus('editedGameName', gameNameInputRef.current);
+    }
+  };
+
   const handleInputFocus = (inputField, inputElement) => {
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
       inputElement.blur();
@@ -672,6 +688,7 @@ function PaymentMultiplierCalculator({ loggedInUser, onLogout }) {
           </div>
            <div className="keyboard-row">
             <button type="button" onClick={handleDecimalClick} className="keyboard-button">.</button>
+            <button type="button" onClick={handleTabClick} className="keyboard-button">Tab</button>
             <button type="button" onClick={handleHideKeyboard} className="keyboard-button">隐藏</button>
           </div>
         </div>

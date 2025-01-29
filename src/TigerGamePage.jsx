@@ -314,6 +314,20 @@ useEffect(() => {
     setShowKeyboard(false);
   };
 
+  const handleTabClick = () => {
+    if (activeInput === 'inputAmount') {
+      handleInputFocus('betAmount', betInputRef.current);
+    } else if (activeInput === 'betAmount') {
+      handleInputFocus('prizeAmount', prizeInputRef.current);
+    } else if (activeInput === 'prizeAmount') {
+      handleInputFocus('cashOutAmount', cashOutInputRef.current);
+    } else if (activeInput === 'cashOutAmount') {
+      handleInputFocus('attempts', attemptsInputRef.current);
+    } else if (activeInput === 'attempts') {
+      handleInputFocus('inputAmount', inputAmountInputRef.current);
+    }
+  };
+
   const handleInputFocus = (inputField, inputElement) => {
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
       inputElement.blur();
@@ -518,6 +532,7 @@ useEffect(() => {
           </div>
            <div className="keyboard-row">
             <button type="button" onClick={handleDecimalClick} className="keyboard-button">.</button>
+            <button type="button" onClick={handleTabClick} className="keyboard-button" style={{ fontSize: '16px' }}>Tab</button>
             <button type="button" onClick={handleHideKeyboard} className="keyboard-button" style={{ fontSize: '16px' }}>隐藏</button>
           </div>
         </div>
