@@ -180,7 +180,7 @@ useEffect(() => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       attempts: parseInt(attempts, 10) || 0,
-      encounteredTrailer: encounteredTrailer,
+      encountered_trailer: encounteredTrailer,
       bet_amount: parseFloat(betAmount),
       prize_amount: parseFloat(prizeAmount),
     };
@@ -241,6 +241,13 @@ useEffect(() => {
     setWinningPhotos((prevPhotos) =>
       prevPhotos.filter((_, index) => index !== indexToRemove),
     );
+  };
+
+  const handleRemoveMainPhoto = () => {
+    setMainPhoto(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleNumberClick = (number) => {
@@ -367,7 +374,33 @@ useEffect(() => {
               style={{ display: 'none' }}
             />
             <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px' }}>开始打老虎</button>
-            {mainPhoto && <img src={mainPhoto} alt="Main" style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
+            {mainPhoto && (
+              <div style={{ position: 'relative', display: 'inline-block', marginTop: '10px' }}>
+                <img src={mainPhoto} alt="Main" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
+                <button
+                  type="button"
+                  onClick={handleRemoveMainPhoto}
+                  style={{
+                    position: 'absolute',
+                    top: '5px',
+                    right: '5px',
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '20px',
+                    height: '20px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  x
+                </button>
+              </div>
+            )}
           </div>
         </div>
         <div className="form-group">
