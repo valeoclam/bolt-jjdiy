@@ -9,7 +9,7 @@ const supabaseUrl = 'https://fhcsffagxchzpxouuiuq.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY3NmZmFneGNoenB4b3V1aXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyMTQzMzAsImV4cCI6MjA1MTc5MDMzMH0.1DMl870gjGRq5LRlQMES9WpYWehiKiPIea2Yj1q4Pz8';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-function OfflineTigerGamePage() {
+function OfflineTigerGamePage({ onLogout }) {
   const [inputAmount, setInputAmount] = useState('');
   const [cashOutAmount, setCashOutAmount] = useState('');
   const [mainPhoto, setMainPhoto] = useState(null);
@@ -27,7 +27,7 @@ function OfflineTigerGamePage() {
   const [prizeAmount, setPrizeAmount] = useState('');
   const [activeInput, setActiveInput] = useState(null);
   const [showKeyboard, setShowKeyboard] = useState(false);
-  const  keyboardRef = useRef(null);
+  const keyboardRef = useRef(null);
   const inputRef = useRef(null);
   const [keyboardPosition, setKeyboardPosition] = useState({ top: 0, left: 0 });
   const keyboardOffset = 5;
@@ -44,6 +44,7 @@ function OfflineTigerGamePage() {
   const cashOutInputRef = useRef(null);
   const attemptsInputRef = useRef(null);
   const inputAmountInputRef = useRef(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     fetchLogs();
@@ -199,7 +200,7 @@ function OfflineTigerGamePage() {
       }
       if (winningFileInputRef.current) {
         winningFileInputRef.current.value = '';
-            }
+      }
       if (successTimeoutRef.current) {
         clearTimeout(successTimeoutRef.current);
       }
@@ -215,7 +216,7 @@ function OfflineTigerGamePage() {
   };
 
   const handleViewHistory = () => {
-    navigate('/tiger-game/history');
+    setShowHistory(!showHistory);
   };
 
   const handleRemoveWinningPhoto = (indexToRemove) => {
@@ -436,8 +437,6 @@ function OfflineTigerGamePage() {
   return (
     <div className="container" ref={inputRef}>
       <h2>打虎日记 (离线版)</h2>
-      <button type="button" onClick={onLogout} className="logout-button">退出</button>
-      <button type="button" onClick={handleViewHistory} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>查看打过的老虎们</button>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <div className="file-input-container" style={{ marginTop: '20px' }}>
@@ -684,12 +683,57 @@ function OfflineTigerGamePage() {
           </div>
         </div>
       )}
-      <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
+      {showHistory && (
+        <div className="inspiration-list">
+          <h3>历史记录</h3>
+          {logs.map((log) => (
+            <div key={log.id} className="inspiration-item">
+              <p>
+                <strong>添加时间:</strong> {new Date(log.created_at).toLocaleString()}
+              </p>
+              {log.updated_at && (
+                <p>
+                  <strong>修改时间:</strong> {new Date(log.updated_at).toLocaleString()}
+                </p>
+              )}
+              <p>
+                <strong>投入金额:</strong> {log.input_amount}
+              </p>
+              <p>
+                <strong>下注金额:</strong> {log.bet_amount}
+              </p>
+              <p>
+                <strong>中奖金额:</strong> {log.prize_amount}
+              </p>
+              <p>
+                <strong>兑换金额:</strong> {log.cash_out_amount}
+              </p>
+              <p>
+                <strong>盈亏金额:</strong> {(log.cash_out_amount - log.input_amount).toFixed(2)}
+              </p>
+              <p>
+                <strong>尝试次数:</strong> {log.attempts}
+              </p>
+              <p>
+                <strong>遇到预告片:</strong> {log.encountered_trailer ? '是' : '否'}
+              </p>
+              {log.main_photo && <img src={log.main_photo} alt="Main Log" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
+              <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                {log.winning_photos &&
+                  log.winning_photos.map((photo, index) => (
+                    <img key={index} src={photo} alt={`Winning Log ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
+                  ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <button type="button" onClick={handleViewHistory} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>
+        {showHistory ? '隐藏历史记录' : '显示历史记录'}
+      </button>
     </div>
   );
 }
 
 export default OfflineTigerGamePage;
-
-
 
