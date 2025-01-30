@@ -252,8 +252,8 @@ function InspirationPage({ loggedInUser, supabase, onLogout }) {
       const compressedFiles = await Promise.all(
         files.map(async (file) => {
           return await imageCompression(file, {
-            maxSizeMB: 1,
-            maxWidthOrHeight: 1920,
+            maxSizeMB: 0.05,
+            maxWidthOrHeight: 150,
             useWebWorker: true,
           });
         }),

@@ -126,13 +126,25 @@ function OfflineTigerGamePage({ onLogout }) {
       const compressedFiles = await Promise.all(
         files.map(async (file) => {
           return await imageCompression(file, {
-            maxSizeMB: 1,
-            maxWidthOrHeight: 1920,
+            maxSizeMB: 0.05,
+            maxWidthOrHeight: 150,
             useWebWorker: true,
-          });
-        }),
-      );
+            });
+  }),
+);
+// 在 Promise.all 完成后，遍历 compressedFiles 数组并输出日志
+compressedFiles.forEach((compressedFile, index) => {
+    const file = files[index];
+    const fileSizeInBytes = compressedFile.size;
+    const fileSizeInKB = (fileSizeInBytes / 1024).toFixed(2);
+    const fileSizeInMB = (fileSizeInBytes / (1024 * 1024)).toFixed(2);
 
+    console.log(`原始图片名称: ${file.name}`);
+    console.log(`压缩后图片大小: ${fileSizeInBytes} bytes`);
+    console.log(`压缩后图片大小: ${fileSizeInKB} KB`);
+    console.log(`压缩后图片大小: ${fileSizeInMB} MB`);
+});
+			
       const readers = compressedFiles.map((file) => {
         return new Promise((resolve) => {
           const reader = new FileReader();
