@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+
+    import React, { useState, useRef, useEffect } from 'react';
     import { useNavigate } from 'react-router-dom';
     import supabase from './supabaseClient';
 
@@ -41,6 +42,8 @@ import React, { useState, useRef, useEffect } from 'react';
       const [loginPassword, setLoginPassword] = useState('');
       const [userId, setUserId] = useState(localStorage.getItem('offlineCalculatorUserId') || null);
       const [loginError, setLoginError] = useState('');
+      const [showClearModal, setShowClearModal] = useState(false);
+      const [clearOption, setClearOption] = useState('synced');
 
       useEffect(() => {
         fetchRecords();
@@ -466,6 +469,33 @@ import React, { useState, useRef, useEffect } from 'react';
             }
           };
 
+        const handleClearData = () => {
+            setShowClearModal(true);
+        };
+
+        const handleConfirmClearData = () => {
+            setLoading(true);
+            try {
+                if (clearOption === 'synced') {
+                    const updatedLogs = records.filter(record => !record.isSynced);
+                    localStorage.setItem('offlinePaymentMultiplierLogs', JSON.stringify(updatedLogs));
+                    setRecords(updatedLogs);
+                } else {
+                    localStorage.removeItem('offlinePaymentMultiplierLogs');
+                    setRecords([]);
+                }
+                setShowClearModal(false);
+            } catch (error) {
+                console.error('清空本地支付倍数记录时发生错误:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const handleCancelClearData = () => {
+            setShowClearModal(false);
+        };
+
       return (
         <div className="container" ref={containerRef}>
           <h2>支付倍数计算器（离线版）</h2>
@@ -636,7 +666,7 @@ import React, { useState, useRef, useEffect } from 'react';
               zIndex: 1000,
               backgroundColor: '#f0f0f0',
               border: '1px solid #ddd',
-          		borderRadius: '8px',
+              borderRadius: '8px',
               padding: '5px',
               boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
               display: 'grid',
@@ -700,6 +730,47 @@ import React, { useState, useRef, useEffect } from 'react';
                     {loading ? '登录中...' : '登录'}
                   </button>
                   <button type="button" onClick={() => setShowLoginModal(false)} style={{ backgroundColor: '#dc3545' }}>
+                    取消
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          <button type="button" onClick={handleClearData} style={{ marginTop: '20px', backgroundColor: '#dc3545' }}>
+            清空数据
+          </button>
+          {showClearModal && (
+            <div className="modal">
+              <div className="modal-content">
+                <h2>清空数据</h2>
+                <p>请选择要清空的数据类型：</p>
+                <div className="form-group">
+                  <label>
+                    <input
+                      type="radio"
+                      value="synced"
+                      checked={clearOption === 'synced'}
+                      onChange={() => setClearOption('synced')}
+                    />
+                    仅清空已同步数据
+                  </label>
+                </div>
+                <div className="form-group">
+                  <label>
+                    <input
+                      type="radio"
+                      value="all"
+                      checked={clearOption === 'all'}
+                      onChange={() => setClearOption('all')}
+                    />
+                    清空所有数据
+                  </label>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                  <button type="button" onClick={handleConfirmClearData} disabled={loading} style={{ backgroundColor: '#28a745' }}>
+                    {loading ? '正在清空...' : '确认清空'}
+                  </button>
+                  <button type="button" onClick={handleCancelClearData} style={{ backgroundColor: '#dc3545' }}>
                     取消
                   </button>
                 </div>

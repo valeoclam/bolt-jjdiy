@@ -41,6 +41,8 @@ function OfflineTigerGamePage({ onLogout }) {
   const attemptsInputRef = useRef(null);
   const inputAmountInputRef = useRef(null);
   const [showHistory, setShowHistory] = useState(false);
+	const [showClearModal, setShowClearModal] = useState(false); // 添加这一行
+  const [clearOption, setClearOption] = useState('synced'); // 添加这一行
 
   useEffect(() => {
     fetchLogs();
@@ -428,7 +430,35 @@ function OfflineTigerGamePage({ onLogout }) {
         } finally {
           setLoading(false);
         }
-      };
+            };
+
+    const handleClearData = () => {
+        setShowClearModal(true);
+    };
+
+    const handleConfirmClearData = () => {
+        setLoading(true);
+        try {
+            if (clearOption === 'synced') {
+                const updatedLogs = logs.filter(log => !log.isSynced);
+                localStorage.setItem('offlineTigerGameLogs', JSON.stringify(updatedLogs));
+                setLogs(updatedLogs);
+            } else {
+                localStorage.removeItem('offlineTigerGameLogs');
+                setLogs([]);
+            }
+            setShowClearModal(false);
+        } catch (error) {
+            console.error('清空本地打老虎记录时发生错误:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCancelClearData = () => {
+        setShowClearModal(false);
+    };
+
 
   return (
     <div className="container" ref={inputRef}>
@@ -727,6 +757,47 @@ function OfflineTigerGamePage({ onLogout }) {
       <button type="button" onClick={handleViewHistory} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>
         {showHistory ? '隐藏历史记录' : '显示历史记录'}
       </button>
+      <button type="button" onClick={handleClearData} style={{ marginTop: '20px', backgroundColor: '#dc3545' }}>
+        清空数据
+      </button>
+      {showClearModal && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>清空数据</h2>
+            <p>请选择要清空的数据类型：</p>
+            <div className="form-group">
+              <label>
+                <input
+                  type="radio"
+                  value="synced"
+                  checked={clearOption === 'synced'}
+                  onChange={() => setClearOption('synced')}
+                />
+                仅清空已同步数据
+              </label>
+            </div>
+            <div className="form-group">
+              <label>
+                <input
+                  type="radio"
+                  value="all"
+                  checked={clearOption === 'all'}
+                  onChange={() => setClearOption('all')}
+                />
+                清空所有数据
+              </label>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+              <button type="button" onClick={handleConfirmClearData} disabled={loading} style={{ backgroundColor: '#28a745' }}>
+                {loading ? '正在清空...' : '确认清空'}
+              </button>
+              <button type="button" onClick={handleCancelClearData} style={{ backgroundColor: '#dc3545' }}>
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
