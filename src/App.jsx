@@ -82,7 +82,7 @@ function App() {
       )}
       {allowedModules.includes('tiger-game') && (
         <>
-          <Route path="/tiger-game" element={<Tracker loggedInUser={loggedInUser} onLogout={handleLogout} />} />
+          <Route path="/tiger-game" element={<TigerGamePage loggedInUser={loggedInUser} onLogout={handleLogout} />} />
           <Route path="/tiger-game/history" element={<TigerGameHistory loggedInUser={loggedInUser} onLogout={handleLogout} />} />
         </>
       )}

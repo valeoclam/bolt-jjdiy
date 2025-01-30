@@ -15,12 +15,12 @@ function OfflineTigerGamePage({ onLogout }) {
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [attempts, setAttempts] = useState('');
-  const [encounteredTrailer, setEncounteredTrailer] = useState(false);
+  const [encounteredTrailer, setEncounteredTrailer] = useState(true); // 默认选择“是”
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const winningFileInputRef = useRef(null);
   const [betAmount, setBetAmount] = useState('');
-  const [prizeAmount, setPrizeAmount] = useState('');
+  const [prizeAmount, setPrizeAmount] = useState(0); // 中奖金额默认值为0
   const [activeInput, setActiveInput] = useState(null);
   const [showKeyboard, setShowKeyboard] = useState(false);
   const keyboardRef = useRef(null);
@@ -28,22 +28,15 @@ function OfflineTigerGamePage({ onLogout }) {
   const [keyboardPosition, setKeyboardPosition] = useState({ top: 0, left: 0 });
   const keyboardOffset = 5;
   const successTimeoutRef = useRef(null);
-  const [syncing, setSyncing] = useState(false);
-  const [syncMessage, setSyncMessage] = useState('');
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [loginUsername, setLoginUsername] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [userId, setUserId] = useState(localStorage.getItem('offlineCalculatorUserId') || null);
-  const [loginError, setLoginError] = useState('');
   const betInputRef = useRef(null);
   const prizeInputRef = useRef(null);
   const cashOutInputRef = useRef(null);
   const attemptsInputRef = useRef(null);
   const inputAmountInputRef = useRef(null);
   const [showHistory, setShowHistory] = useState(false);
-	const [showClearModal, setShowClearModal] = useState(false); // 添加这一行
-  const [clearOption, setClearOption] = useState('synced'); // 添加这一行
-	const [activeInputRef, setActiveInputRef] = useState(null);
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [clearOption, setClearOption] = useState('synced');
+  const [activeInputRef, setActiveInputRef] = useState(null);
 
 
   useEffect(() => {
@@ -80,6 +73,7 @@ function OfflineTigerGamePage({ onLogout }) {
     }
   }, [inputAmount]);
 
+
   const fetchLogs = () => {
     setLoading(true);
     try {
@@ -103,8 +97,8 @@ function OfflineTigerGamePage({ onLogout }) {
 
     try {
       const compressedFile = await imageCompression(file, {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1920,
+        maxSizeMB: 0.05,
+        maxWidthOrHeight: 150,
         useWebWorker: true,
       });
 
@@ -131,22 +125,10 @@ function OfflineTigerGamePage({ onLogout }) {
             maxSizeMB: 0.05,
             maxWidthOrHeight: 150,
             useWebWorker: true,
-            });
-  }),
-);
-// 在 Promise.all 完成后，遍历 compressedFiles 数组并输出日志
-compressedFiles.forEach((compressedFile, index) => {
-    const file = files[index];
-    const fileSizeInBytes = compressedFile.size;
-    const fileSizeInKB = (fileSizeInBytes / 1024).toFixed(2);
-    const fileSizeInMB = (fileSizeInBytes / (1024 * 1024)).toFixed(2);
+          });
+        }),
+      );
 
-    console.log(`原始图片名称: ${file.name}`);
-    console.log(`压缩后图片大小: ${fileSizeInBytes} bytes`);
-    console.log(`压缩后图片大小: ${fileSizeInKB} KB`);
-    console.log(`压缩后图片大小: ${fileSizeInMB} MB`);
-});
-			
       const readers = compressedFiles.map((file) => {
         return new Promise((resolve) => {
           const reader = new FileReader();
@@ -204,9 +186,9 @@ compressedFiles.forEach((compressedFile, index) => {
       setMainPhoto(null);
       setWinningPhotos([]);
       setAttempts('');
-      setEncounteredTrailer(false);
+      setEncounteredTrailer(true); // Reset to default
       setBetAmount('');
-      setPrizeAmount('');
+      setPrizeAmount(0); // Reset to default
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -272,19 +254,19 @@ compressedFiles.forEach((compressedFile, index) => {
     }
   };
 
-    const handleClearClick = () => {
-        if (activeInput === 'inputAmount') {
-            setInputAmount('');
-        } else if (activeInput === 'betAmount') {
-            setBetAmount('');
-        } else if (activeInput === 'prizeAmount') {
-            setPrizeAmount('');
-        } else if (activeInput === 'cashOutAmount') {
-            setCashOutAmount('');
-        } else if (activeInput === 'attempts') {
-            setAttempts('');
-        }
-    };
+  const handleClearClick = () => {
+    if (activeInput === 'inputAmount') {
+      setInputAmount('');
+    } else if (activeInput === 'betAmount') {
+      setBetAmount('');
+    } else if (activeInput === 'prizeAmount') {
+      setPrizeAmount('');
+    } else if (activeInput === 'cashOutAmount') {
+      setCashOutAmount('');
+    } else if (activeInput === 'attempts') {
+      setAttempts('');
+    }
+  };
 
   const handleDecimalClick = () => {
     if (activeInput === 'inputAmount' && !inputAmount.includes('.')) {
@@ -303,7 +285,7 @@ compressedFiles.forEach((compressedFile, index) => {
     setShowKeyboard(true);
     if (inputElement) {
       const inputRect = inputElement.getBoundingClientRect();
-       const containerRect = document.querySelector('.container').getBoundingClientRect();
+      const containerRect = document.querySelector('.container').getBoundingClientRect();
       setKeyboardPosition({
         top: inputRect.bottom - containerRect.top + keyboardOffset,
         left: inputRect.left - containerRect.left,
@@ -319,12 +301,12 @@ compressedFiles.forEach((compressedFile, index) => {
     if (activeInput === 'inputAmount') {
       handleInputFocus('betAmount', betInputRef.current);
     } else if (activeInput === 'betAmount') {
+      handleInputFocus('attempts', attemptsInputRef.current);
+    } else if (activeInput === 'attempts') {
       handleInputFocus('prizeAmount', prizeInputRef.current);
     } else if (activeInput === 'prizeAmount') {
       handleInputFocus('cashOutAmount', cashOutInputRef.current);
     } else if (activeInput === 'cashOutAmount') {
-      handleInputFocus('attempts', attemptsInputRef.current);
-    } else if (activeInput === 'attempts') {
       handleInputFocus('inputAmount', inputAmountInputRef.current);
     }
   };
@@ -334,7 +316,7 @@ compressedFiles.forEach((compressedFile, index) => {
       inputElement.blur();
     }
     toggleKeyboard(inputField, inputElement);
-		setActiveInputRef(inputElement); 
+    setActiveInputRef(inputElement);
   };
 
   useEffect(() => {
@@ -351,133 +333,38 @@ compressedFiles.forEach((compressedFile, index) => {
     };
   }, [activeInputRef]);
 
-    const handleSync = async () => {
-        setSyncing(true);
-        setSyncMessage('正在同步数据...');
-        if (!userId) {
-          setShowLoginModal(true);
-          setSyncing(false);
-          return;
-        }
-        try {
-          const storedLogs = localStorage.getItem('offlineTigerGameLogs');
-          if (!storedLogs) {
-            setSyncMessage('没有需要同步的数据。');
-            setSyncing(false);
-            return;
-          }
+  const handleClearData = () => {
+    setShowClearModal(true);
+  };
 
-          const logsToSync = JSON.parse(storedLogs).filter(log => !log.isSynced);
-          if (logsToSync.length === 0) {
-            setSyncMessage('所有数据已同步。');
-            setSyncing(false);
-            return;
-          }
+  const handleConfirmClearData = () => {
+    setLoading(true);
+    try {
+      if (clearOption === 'synced') {
+        const updatedLogs = logs.filter(log => !log.isSynced);
+        localStorage.setItem('offlineTigerGameLogs', JSON.stringify(updatedLogs));
+        setLogs(updatedLogs);
+      } else {
+        localStorage.removeItem('offlineTigerGameLogs');
+        setLogs([]);
+      }
+      setShowClearModal(false);
+    } catch (error) {
+      console.error('清空本地打老虎记录时发生错误:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-          for (const log of logsToSync) {
-            const { data, error } = await supabase
-              .from('tiger_game_logs')
-              .insert([{
-                user_id: userId,
-                input_amount: log.input_amount,
-                cash_out_amount: log.cash_out_amount,
-                main_photo: log.main_photo,
-                winning_photos: log.winning_photos,
-                created_at: log.created_at,
-                updated_at: log.updated_at,
-                attempts: log.attempts,
-                encountered_trailer: log.encountered_trailer,
-                bet_amount: log.bet_amount,
-                prize_amount: log.prize_amount,
-              }]);
-
-            if (error) {
-              console.error('同步数据到 Supabase 时发生错误:', error);
-              setSyncMessage(`同步数据失败，请重试。错误信息: ${error.message}`);
-              setSyncing(false);
-              return;
-            } else {
-              console.log('数据同步成功:', data);
-              const updatedLogs = logs.map(record =>
-                record.id === log.id ? { ...record, isSynced: true } : record
-              );
-              localStorage.setItem('offlineTigerGameLogs', JSON.stringify(updatedLogs));
-              setLogs(updatedLogs);
-            }
-          }
-          setSyncMessage('数据同步成功！');
-        } catch (error) {
-          console.error('同步数据时发生意外错误:', error);
-          setSyncMessage(`同步数据失败，请重试。错误信息: ${error.message}`);
-        } finally {
-          setSyncing(false);
-        }
-      };
-
-      const handleLogin = async () => {
-        setLoading(true);
-        setLoginError('');
-        try {
-          const { data, error } = await supabase
-            .from('users')
-            .select('id')
-            .eq('username', loginUsername)
-            .eq('password', loginPassword)
-            .single();
-
-          if (error) {
-            console.error('登录时发生错误:', error);
-            setLoginError('登录失败，请重试。');
-          } else if (data) {
-            console.log('登录成功, user_id:', data.id);
-            setUserId(data.id);
-            localStorage.setItem('offlineCalculatorUserId', data.id);
-            setShowLoginModal(false);
-            setLoginUsername('');
-            setLoginPassword('');
-            handleSync();
-          } else {
-            setLoginError('用户名或密码无效。');
-          }
-        } catch (error) {
-          console.error('发生意外错误:', error);
-          setLoginError('发生意外错误，请重试。');
-        } finally {
-          setLoading(false);
-        }
-            };
-
-    const handleClearData = () => {
-        setShowClearModal(true);
-    };
-
-    const handleConfirmClearData = () => {
-        setLoading(true);
-        try {
-            if (clearOption === 'synced') {
-                const updatedLogs = logs.filter(log => !log.isSynced);
-                localStorage.setItem('offlineTigerGameLogs', JSON.stringify(updatedLogs));
-                setLogs(updatedLogs);
-            } else {
-                localStorage.removeItem('offlineTigerGameLogs');
-                setLogs([]);
-            }
-            setShowClearModal(false);
-        } catch (error) {
-            console.error('清空本地打老虎记录时发生错误:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleCancelClearData = () => {
-        setShowClearModal(false);
-    };
-
+  const handleCancelClearData = () => {
+    setShowClearModal(false);
+  };
 
   return (
     <div className="container" ref={inputRef}>
       <h2>打虎日记 (离线版)</h2>
+      <button type="button" onClick={onLogout} className="logout-button">退出</button>
+      <button type="button" onClick={handleViewHistory} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>查看历史记录</button>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <div className="file-input-container" style={{ marginTop: '20px' }}>
@@ -531,7 +418,7 @@ compressedFiles.forEach((compressedFile, index) => {
             required
           />
         </div>
-         <div className="form-group">
+        <div className="form-group">
           <label htmlFor="betAmount">下注金额:</label>
           <input
             type="text"
@@ -540,6 +427,18 @@ compressedFiles.forEach((compressedFile, index) => {
             onChange={(e) => setBetAmount(e.target.value)}
             onFocus={(e) => handleInputFocus('betAmount', e.target)}
             ref={betInputRef}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="attempts">尝试次数:</label>
+          <input
+            type="text"
+            id="attempts"
+            value={attempts}
+            onChange={(e) => setAttempts(e.target.value)}
+            onFocus={(e) => handleInputFocus('attempts', e.target)}
+            ref={attemptsInputRef}
             required
           />
         </div>
@@ -568,18 +467,6 @@ compressedFiles.forEach((compressedFile, index) => {
           />
         </div>
         <div className="form-group">
-          <label htmlFor="attempts">尝试次数:</label>
-          <input
-            type="text"
-            id="attempts"
-            value={attempts}
-            onChange={(e) => setAttempts(e.target.value)}
-            onFocus={(e) => handleInputFocus('attempts', e.target)}
-            ref={attemptsInputRef}
-            required
-          />
-        </div>
-        <div className="form-group">
           <label>
             遇到预告片:
             <input
@@ -599,46 +486,48 @@ compressedFiles.forEach((compressedFile, index) => {
           </label>
         </div>
         <div className="form-group">
-          <div className="file-input-container">
-            <input
-              type="file"
-              id="winningPhotos"
-              accept="image/*"
-              multiple
-              onChange={handleWinningPhotosChange}
-              ref={winningFileInputRef}
-              style={{ display: 'none' }}
-            />
-            <button type="button" onClick={() => winningFileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>老虎送钱了</button>
-            {Array.isArray(winningPhotos) &&
-              winningPhotos.map((photo, index) => (
-                <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
-                  <img src={photo} alt={`Winning ${index + 1}`} style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveWinningPhoto(index)}
-                    style={{
-                      position: 'absolute',
-                      top: '5px',
-                      right: '5px',
-                      background: 'rgba(0, 0, 0, 0.5)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: '20px',
-                      height: '20px',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    x
-                  </button>
-                </div>
-              ))}
-          </div>
+          {prizeAmount !== 0 && ( // 条件渲染
+            <div className="file-input-container">
+              <input
+                type="file"
+                id="winningPhotos"
+                accept="image/*"
+                multiple
+                onChange={handleWinningPhotosChange}
+                ref={winningFileInputRef}
+                style={{ display: 'none' }}
+              />
+              <button type="button" onClick={() => winningFileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>老虎送钱了</button>
+              {Array.isArray(winningPhotos) &&
+                winningPhotos.map((photo, index) => (
+                  <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
+                    <img src={photo} alt={`Winning ${index + 1}`} style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveWinningPhoto(index)}
+                      style={{
+                        position: 'absolute',
+                        top: '5px',
+                        right: '5px',
+                        background: 'rgba(0, 0, 0, 0.5)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '20px',
+                        height: '20px',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      x
+                    </button>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
         <button type="submit" disabled={loading}>
           {loading ? '正在保存...' : '添加记录'}
@@ -665,7 +554,7 @@ compressedFiles.forEach((compressedFile, index) => {
             <button type="button" onClick={() => handleNumberClick('1')} className="keyboard-button">1</button>
             <button type="button" onClick={() => handleNumberClick('2')} className="keyboard-button">2</button>
             <button type="button" onClick={() => handleNumberClick('3')} className="keyboard-button">3</button>
-             <button type="button" onClick={handleClearClick} className="keyboard-button clear-button">C</button>
+            <button type="button" onClick={handleClearClick} className="keyboard-button clear-button">C</button>
           </div>
           <div className="keyboard-row">
             <button type="button" onClick={() => handleNumberClick('4')} className="keyboard-button">4</button>
@@ -679,99 +568,13 @@ compressedFiles.forEach((compressedFile, index) => {
             <button type="button" onClick={() => handleNumberClick('9')} className="keyboard-button">9</button>
             <button type="button" onClick={() => handleNumberClick('0')} className="keyboard-button">0</button>
           </div>
-           <div className="keyboard-row">
+          <div className="keyboard-row">
             <button type="button" onClick={handleDecimalClick} className="keyboard-button">.</button>
-            <button type="button" onClick={handleTabClick} className="keyboard-button" style={{ fontSize: '16px' }}>Tab</button>
-            <button type="button" onClick={handleHideKeyboard} className="keyboard-button" style={{ fontSize: '16px' }}>隐藏</button>
+            <button type="button" onClick={handleTabClick} className="keyboard-button">Tab</button>
+            <button type="button" onClick={handleHideKeyboard} className="keyboard-button">隐藏</button>
           </div>
         </div>
       )}
-      <button type="button" onClick={handleSync} disabled={syncing} style={{ marginTop: '20px', backgroundColor: '#007bff' }}>
-        {syncing ? '同步中...' : '同步到云端'}
-      </button>
-      {syncMessage && <p style={{ marginTop: '10px', textAlign: 'center' }}>{syncMessage}</p>}
-      {showLoginModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h2>登录</h2>
-            <div className="form-group">
-              <label htmlFor="loginUsername">用户名:</label>
-              <input
-                type="text"
-                id="loginUsername"
-                value={loginUsername}
-                onChange={(e) => setLoginUsername(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="loginPassword">密码:</label>
-              <input
-                type="password"
-                id="loginPassword"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-              />
-            </div>
-            {loginError && <p className="error-message">{loginError}</p>}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-              <button type="button" onClick={handleLogin} disabled={loading} style={{ backgroundColor: '#28a745' }}>
-                {loading ? '登录中...' : '登录'}
-              </button>
-              <button type="button" onClick={() => setShowLoginModal(false)} style={{ backgroundColor: '#dc3545' }}>
-                取消
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {showHistory && (
-        <div className="inspiration-list">
-          <h3>历史记录</h3>
-          {logs.map((log) => (
-            <div key={log.id} className="inspiration-item">
-              <p>
-                <strong>添加时间:</strong> {new Date(log.created_at).toLocaleString()}
-              </p>
-              {log.updated_at && (
-                <p>
-                  <strong>修改时间:</strong> {new Date(log.updated_at).toLocaleString()}
-                </p>
-              )}
-              <p>
-                <strong>投入金额:</strong> {log.input_amount}
-              </p>
-              <p>
-                <strong>下注金额:</strong> {log.bet_amount}
-              </p>
-              <p>
-                <strong>中奖金额:</strong> {log.prize_amount}
-              </p>
-              <p>
-                <strong>兑换金额:</strong> {log.cash_out_amount}
-              </p>
-              <p>
-                <strong>盈亏金额:</strong> {(log.cash_out_amount - log.input_amount).toFixed(2)}
-              </p>
-              <p>
-                <strong>尝试次数:</strong> {log.attempts}
-              </p>
-              <p>
-                <strong>遇到预告片:</strong> {log.encountered_trailer ? '是' : '否'}
-              </p>
-              {log.main_photo && <img src={log.main_photo} alt="Main Log" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
-              <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                {log.winning_photos &&
-                  log.winning_photos.map((photo, index) => (
-                    <img key={index} src={photo} alt={`Winning Log ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
-                  ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      <button type="button" onClick={handleViewHistory} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>
-        {showHistory ? '隐藏历史记录' : '显示历史记录'}
-      </button>
       <button type="button" onClick={handleClearData} style={{ marginTop: '20px', backgroundColor: '#dc3545' }}>
         清空数据
       </button>
@@ -813,6 +616,7 @@ compressedFiles.forEach((compressedFile, index) => {
           </div>
         </div>
       )}
+      <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
     </div>
   );
 }

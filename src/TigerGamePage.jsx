@@ -5,7 +5,7 @@ import imageCompression from 'browser-image-compression';
 import { Link, useNavigate } from 'react-router-dom';
 import supabase from './supabaseClient';
 
-function Tracker({ loggedInUser, onLogout }) {
+function TigerGamePage({ loggedInUser, onLogout }) {
   const [inputAmount, setInputAmount] = useState('');
   const [cashOutAmount, setCashOutAmount] = useState('');
   const [mainPhoto, setMainPhoto] = useState(null);
@@ -15,12 +15,12 @@ function Tracker({ loggedInUser, onLogout }) {
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [attempts, setAttempts] = useState('');
-  const [encounteredTrailer, setEncounteredTrailer] = useState(false);
+  const [encounteredTrailer, setEncounteredTrailer] = useState(true);
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const winningFileInputRef = useRef(null);
   const [betAmount, setBetAmount] = useState('');
-  const [prizeAmount, setPrizeAmount] = useState('');
+  const [prizeAmount, setPrizeAmount] = useState(0);
   const [activeInput, setActiveInput] = useState(null);
   const [showKeyboard, setShowKeyboard] = useState(false);
   const keyboardRef = useRef(null);
@@ -105,8 +105,8 @@ useEffect(() => {
 
     try {
       const compressedFile = await imageCompression(file, {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1920,
+        maxSizeMB: 0.05,
+        maxWidthOrHeight: 150,
         useWebWorker: true,
       });
 
@@ -182,6 +182,8 @@ useEffect(() => {
       bet_amount: parseFloat(betAmount),
       prize_amount: parseFloat(prizeAmount),
     };
+
+		console.log("handleSubmit - prizeAmount:", prizeAmount);
 
     try {
       const { data, error } = await supabase
@@ -319,19 +321,19 @@ useEffect(() => {
     setShowKeyboard(false);
   };
 
-  const handleTabClick = () => {
-    if (activeInput === 'inputAmount') {
-      handleInputFocus('betAmount', betInputRef.current);
-    } else if (activeInput === 'betAmount') {
-      handleInputFocus('prizeAmount', prizeInputRef.current);
-    } else if (activeInput === 'prizeAmount') {
-      handleInputFocus('cashOutAmount', cashOutInputRef.current);
-    } else if (activeInput === 'cashOutAmount') {
-      handleInputFocus('attempts', attemptsInputRef.current);
-    } else if (activeInput === 'attempts') {
-      handleInputFocus('inputAmount', inputAmountInputRef.current);
-    }
-  };
+const handleTabClick = () => {
+  if (activeInput === 'inputAmount') {
+    handleInputFocus('betAmount', betInputRef.current);
+  } else if (activeInput === 'betAmount') {
+    handleInputFocus('attempts', attemptsInputRef.current); // 下注金额 -> 尝试次数
+  } else if (activeInput === 'attempts') {
+    handleInputFocus('prizeAmount', prizeInputRef.current); // 尝试次数 -> 中奖金额
+  } else if (activeInput === 'prizeAmount') {
+    handleInputFocus('cashOutAmount', cashOutInputRef.current);
+  } else if (activeInput === 'cashOutAmount') {
+    handleInputFocus('inputAmount', inputAmountInputRef.current);
+  }
+};
 
   const handleInputFocus = (inputField, inputElement) => {
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
@@ -401,7 +403,7 @@ useEffect(() => {
               </div>
             )}
           </div>
-        </div>
+         </div>
         <div className="form-group">
           <label htmlFor="inputAmount">投入金额:</label>
           <input
@@ -414,7 +416,7 @@ useEffect(() => {
             required
           />
         </div>
-         <div className="form-group">
+        <div className="form-group">
           <label htmlFor="betAmount">下注金额:</label>
           <input
             type="text"
@@ -423,6 +425,18 @@ useEffect(() => {
             onChange={(e) => setBetAmount(e.target.value)}
             onFocus={(e) => handleInputFocus('betAmount', e.target)}
             ref={betInputRef}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="attempts">尝试次数:</label>
+          <input
+            type="text"
+            id="attempts"
+            value={attempts}
+            onChange={(e) => setAttempts(e.target.value)}
+            onFocus={(e) => handleInputFocus('attempts', e.target)}
+            ref={attemptsInputRef}
             required
           />
         </div>
@@ -451,18 +465,6 @@ useEffect(() => {
           />
         </div>
         <div className="form-group">
-          <label htmlFor="attempts">尝试次数:</label>
-          <input
-            type="text"
-            id="attempts"
-            value={attempts}
-            onChange={(e) => setAttempts(e.target.value)}
-            onFocus={(e) => handleInputFocus('attempts', e.target)}
-            ref={attemptsInputRef}
-            required
-          />
-        </div>
-        <div className="form-group">
           <label>
             遇到预告片:
             <input
@@ -482,46 +484,48 @@ useEffect(() => {
           </label>
         </div>
         <div className="form-group">
-          <div className="file-input-container">
-            <input
-              type="file"
-              id="winningPhotos"
-              accept="image/*"
-              multiple
-              onChange={handleWinningPhotosChange}
-              ref={winningFileInputRef}
-              style={{ display: 'none' }}
-            />
-            <button type="button" onClick={() => winningFileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>老虎送钱了</button>
-            {Array.isArray(winningPhotos) &&
-              winningPhotos.map((photo, index) => (
-                <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
-                  <img src={photo} alt={`Winning ${index + 1}`} style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveWinningPhoto(index)}
-                    style={{
-                      position: 'absolute',
-                      top: '5px',
-                      right: '5px',
-                      background: 'rgba(0, 0, 0, 0.5)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: '20px',
-                      height: '20px',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    x
-                  </button>
-                </div>
-              ))}
-          </div>
+          {prizeAmount !== 0 && ( // 条件渲染
+            <div className="file-input-container">
+              <input
+                type="file"
+                id="winningPhotos"
+                accept="image/*"
+                multiple
+                onChange={handleWinningPhotosChange}
+                ref={winningFileInputRef}
+                style={{ display: 'none' }}
+              />
+              <button type="button" onClick={() => winningFileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>老虎送钱了</button>
+              {Array.isArray(winningPhotos) &&
+                winningPhotos.map((photo, index) => (
+                  <div key={index} style={{ position: 'relative', display: 'inline-block', marginRight: '5px', marginBottom: '5px' }}>
+                    <img src={photo} alt={`Winning ${index + 1}`} style={{ maxWidth: '100%', marginTop: '10px', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveWinningPhoto(index)}
+                      style={{
+                        position: 'absolute',
+                        top: '5px',
+                        right: '5px',
+                        background: 'rgba(0, 0, 0, 0.5)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '20px',
+                        height: '20px',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      x
+                    </button>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
         <button type="submit" disabled={loading}>
           {loading ? '正在保存...' : '添加记录'}
@@ -574,4 +578,4 @@ useEffect(() => {
   );
 }
 
-export default Tracker;
+export default TigerGamePage;
