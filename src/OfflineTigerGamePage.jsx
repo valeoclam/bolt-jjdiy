@@ -241,18 +241,19 @@ function OfflineTigerGamePage({ onLogout }) {
   };
 
   const handleBackspaceClick = () => {
-    if (activeInput === 'inputAmount') {
-      setInputAmount(prev => prev.slice(0, -1));
-    } else if (activeInput === 'betAmount') {
-      setBetAmount(prev => prev.slice(0, -1));
-    } else if (activeInput === 'prizeAmount') {
-      setPrizeAmount(prev => prev.slice(0, -1));
-    } else if (activeInput === 'cashOutAmount') {
-      setCashOutAmount(prev => prev.slice(0, -1));
-    } else if (activeInput === 'attempts') {
-      setAttempts(prev => prev.slice(0, -1));
-    }
-  };
+  if (activeInput === 'inputAmount' && typeof inputAmount === 'string') {
+    setInputAmount(prev => prev.slice(0, -1));
+  } else if (activeInput === 'betAmount' && typeof betAmount === 'string') {
+    setBetAmount(prev => prev.slice(0, -1));
+  } else if (activeInput === 'prizeAmount' && typeof prizeAmount === 'string') {
+    setPrizeAmount(prev => prev.slice(0, -1));
+  } else if (activeInput === 'cashOutAmount' && typeof cashOutAmount === 'string') {
+    setCashOutAmount(prev => prev.slice(0, -1));
+  } else if (activeInput === 'attempts' && typeof attempts === 'string') {
+    setAttempts(prev => prev.slice(0, -1));
+  }
+};
+
 
   const handleClearClick = () => {
     if (activeInput === 'inputAmount') {
