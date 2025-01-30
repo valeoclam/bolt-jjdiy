@@ -28,11 +28,13 @@ function Tracker({ loggedInUser, onLogout }) {
   const [keyboardPosition, setKeyboardPosition] = useState({ top: 0, left: 0 });
   const keyboardOffset = 5;
   const successTimeoutRef = useRef(null);
-	  const betInputRef = useRef(null);
+	const betInputRef = useRef(null);
   const prizeInputRef = useRef(null);
   const cashOutInputRef = useRef(null);
   const attemptsInputRef = useRef(null);
   const inputAmountInputRef = useRef(null);
+	const [activeInputRef, setActiveInputRef] = useState(null);
+
 
   useEffect(() => {
     if (betInputRef.current) {
@@ -336,12 +338,13 @@ useEffect(() => {
       inputElement.blur();
     }
     toggleKeyboard(inputField, inputElement);
+		setActiveInputRef(inputElement);
   };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (keyboardRef.current && !keyboardRef.current.contains(event.target) &&
-          inputRef.current && !inputRef.current.contains(event.target)) {
+          activeInputRef && !activeInputRef.contains(event.target)) {
         setShowKeyboard(false);
       }
     };
@@ -350,7 +353,7 @@ useEffect(() => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [activeInputRef]);
 
   return (
     <div className="container">

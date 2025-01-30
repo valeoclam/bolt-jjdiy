@@ -43,6 +43,8 @@ import React, { useState, useRef, useEffect } from 'react';
       const [loginError, setLoginError] = useState('');
       const [showClearModal, setShowClearModal] = useState(false);
       const [clearOption, setClearOption] = useState('synced');
+			const [activeInputRef, setActiveInputRef] = useState(null);
+
 
       useEffect(() => {
         fetchRecords();
@@ -190,6 +192,7 @@ import React, { useState, useRef, useEffect } from 'react';
           inputElement.blur();
         }
         toggleKeyboard(inputField, inputElement);
+				setActiveInputRef(inputElement);
       };
 
       const handleEditLog = (log) => {
@@ -367,8 +370,8 @@ import React, { useState, useRef, useEffect } from 'react';
       useEffect(() => {
         const handleClickOutside = (event) => {
           if (keyboardRef.current && !keyboardRef.current.contains(event.target) &&
-              inputRef.current && !inputRef.current.contains(event.target)) {
-            setShowKeyboard(false);
+              activeInputRef && !activeInputRef.contains(event.target)) {
+        setShowKeyboard(false);
           }
         };
 
@@ -376,7 +379,7 @@ import React, { useState, useRef, useEffect } from 'react';
         return () => {
           document.removeEventListener('mousedown', handleClickOutside);
         };
-      }, []);
+      }, [activeInputRef]);
 
         const handleSync = async () => {
             setSyncing(true);

@@ -43,6 +43,8 @@ function OfflineTigerGamePage({ onLogout }) {
   const [showHistory, setShowHistory] = useState(false);
 	const [showClearModal, setShowClearModal] = useState(false); // 添加这一行
   const [clearOption, setClearOption] = useState('synced'); // 添加这一行
+	const [activeInputRef, setActiveInputRef] = useState(null);
+
 
   useEffect(() => {
     fetchLogs();
@@ -332,12 +334,13 @@ compressedFiles.forEach((compressedFile, index) => {
       inputElement.blur();
     }
     toggleKeyboard(inputField, inputElement);
+		setActiveInputRef(inputElement); 
   };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (keyboardRef.current && !keyboardRef.current.contains(event.target) &&
-          inputRef.current && !inputRef.current.contains(event.target)) {
+          activeInputRef && !activeInputRef.contains(event.target)) {
         setShowKeyboard(false);
       }
     };
@@ -346,7 +349,7 @@ compressedFiles.forEach((compressedFile, index) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [activeInputRef]);
 
     const handleSync = async () => {
         setSyncing(true);
