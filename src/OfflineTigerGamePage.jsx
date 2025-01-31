@@ -531,21 +531,72 @@ function OfflineTigerGamePage({ onLogout }) {
 
 
   const handleConfirmClearData = () => {
-    setLoading(true);
-    const request = window.indexedDB.open(dbName, dbVersion);
+  setLoading(true);
+  const request = window.indexedDB.open(dbName, dbVersion);
 
-    request.onsuccess = (event) => {
-      const db = event.target.result;
-      const transaction = db.transaction(storeName, 'readwrite');
-      const store = transaction.objectStore(storeName);
+  request.onsuccess = (event) => {
+    const db = event.target.result;
+    const transaction = db.transaction(storeName, 'readwrite');
+    const store = transaction.objectStore(storeName);
+
+    if (clearOption === 'synced') {
+      const getAllRequest = store.getAll();
+      getAllRequest.onsuccess = (event) => {
+        const allLogs = event.target.result || [];
+        const syncedLogsToDelete = allLogs.filter(log => log.isSynced);
+
+        const deleteRequests = syncedLogsToDelete.map(log => store.delete(log.id));
+
+        Promise.all(deleteRequests.map(req => new Promise((resolve, reject) => {
+          req.onsuccess = resolve;
+          req.onerror = reject;
+        }))).then(() => {
+          console.log('已同步数据清空成功');
+          fetchLogs(db);
+          setLoading(false);
+          setShowClearModal(false);
+          try {
+            // 关闭数据库连接
+            db.close();
+            // 重新打开数据库连接
+            const newRequest = window.indexedDB.open(dbName, dbVersion);
+            newRequest.onsuccess = async (event) => {
+              const newDb = event.target.result;
+              const quota = await navigator.storage.estimate();
+              setIndexedDBQuota(quota);
+              newDb.close();
+            };
+            newRequest.onerror = (event) => {
+              console.error('重新打开 IndexedDB 失败:', event.target.error);
+              setErrorMessage('重新打开本地数据库失败，请重试。');
+              setIndexedDBQuota(null);
+            };
+          } catch (error) {
+            console.error('获取 IndexedDB 配额失败:', error);
+            setIndexedDBQuota(null);
+          }
+        }).catch(error => {
+          console.error('清空已同步数据时发生错误:', error);
+          setErrorMessage('清空已同步数据失败，请重试。');
+          setLoading(false);
+        });
+      };
+      getAllRequest.onerror = (event) => {
+        console.error('获取 IndexedDB 数据失败:', event.target.error);
+        setErrorMessage('获取本地数据失败，请重试。');
+        setLoading(false);
+      };
+    } else {
       const clearRequest = store.clear();
-
-      clearRequest.onsuccess = async () => { 
+      clearRequest.onsuccess = async () => {
         console.log('IndexedDB 数据清空成功');
         setLogs([]);
-        // 移除 setShowClearModal(false);
+        setTotalLogs(0);
+        setSyncedLogs(0);
+        setUnsyncedLogs(0);
         setLoading(false);
-				try {
+        setShowClearModal(false);
+        try {
           // 关闭数据库连接
           db.close();
           // 重新打开数据库连接
@@ -572,14 +623,16 @@ function OfflineTigerGamePage({ onLogout }) {
         setErrorMessage('清空本地数据失败，请重试。');
         setLoading(false);
       };
-    };
-
-    request.onerror = (event) => {
-      console.error('打开 IndexedDB 失败:', event.target.error);
-      setErrorMessage('打开本地数据库失败，请重试。');
-      setLoading(false);
-    };
+    }
   };
+
+  request.onerror = (event) => {
+    console.error('打开 IndexedDB 失败:', event.target.error);
+    setErrorMessage('打开本地数据库失败，请重试。');
+    setLoading(false);
+  };
+};
+
 
 	const handleCancelClearData = () => {
     setShowClearModal(false);
