@@ -554,7 +554,7 @@ function OfflineTigerGamePage({ onLogout }) {
           console.log('已同步数据清空成功');
           fetchLogs(db);
           setLoading(false);
-          setShowClearModal(false);
+          // setShowClearModal(false); // REMOVED: 移除这行代码
           try {
             // 关闭数据库连接
             db.close();
