@@ -6,7 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import supabase from './supabaseClient';
 
 function TigerGamePage({ loggedInUser, onLogout }) {
-  const [inputAmount, setInputAmount] = useState('');
+  const [inputAmount, setInputAmount] = useState('100');
   const [cashOutAmount, setCashOutAmount] = useState('');
   const [mainPhoto, setMainPhoto] = useState(null);
   const [winningPhotos, setWinningPhotos] = useState([]);

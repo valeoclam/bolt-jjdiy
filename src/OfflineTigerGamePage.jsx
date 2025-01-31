@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import supabase from './supabaseClient';
 
 function OfflineTigerGamePage({ onLogout }) {
-  const [inputAmount, setInputAmount] = useState('');
+  const [inputAmount, setInputAmount] = useState('100');
   const [cashOutAmount, setCashOutAmount] = useState('');
   const [mainPhoto, setMainPhoto] = useState(null);
   const [winningPhotos, setWinningPhotos] = useState([]);
@@ -37,6 +37,13 @@ function OfflineTigerGamePage({ onLogout }) {
   const [showClearModal, setShowClearModal] = useState(false);
   const [clearOption, setClearOption] = useState('synced');
   const [activeInputRef, setActiveInputRef] = useState(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [userId, setUserId] = useState(localStorage.getItem('offlineCalculatorUserId') || null);
+  const [loginError, setLoginError] = useState('');
 
 
   useEffect(() => {
@@ -163,6 +170,7 @@ function OfflineTigerGamePage({ onLogout }) {
     try {
       const newLog = {
         id: uuidv4(),
+        game_name: '打老虎',
         input_amount: parseFloat(inputAmount),
         cash_out_amount: parseFloat(cashOutAmount),
         main_photo: mainPhoto,
@@ -317,7 +325,7 @@ function OfflineTigerGamePage({ onLogout }) {
       inputElement.blur();
     }
     toggleKeyboard(inputField, inputElement);
-    setActiveInputRef(inputElement);
+		setActiveInputRef(inputElement);
   };
 
   useEffect(() => {
@@ -334,6 +342,102 @@ function OfflineTigerGamePage({ onLogout }) {
     };
   }, [activeInputRef]);
 
+  const handleSync = async () => {
+    setSyncing(true);
+    setSyncMessage('正在同步数据...');
+    if (!userId) {
+      setShowLoginModal(true);
+      setSyncing(false);
+      return;
+    }
+    try {
+      const storedLogs = localStorage.getItem('offlineTigerGameLogs');
+      if (!storedLogs) {
+        setSyncMessage('没有需要同步的数据。');
+        setSyncing(false);
+        return;
+      }
+
+      const logsToSync = JSON.parse(storedLogs).filter(log => !log.isSynced);
+      if (logsToSync.length === 0) {
+        setSyncMessage('所有数据已同步。');
+        setSyncing(false);
+        return;
+      }
+
+      for (const log of logsToSync) {
+        const { data, error } = await supabase
+          .from('tiger_game_logs')
+          .insert([{
+            user_id: userId,
+            game_name: log.game_name,
+            input_amount: log.input_amount,
+            cash_out_amount: log.cash_out_amount,
+            main_photo: log.main_photo,
+            winning_photos: log.winning_photos,
+            created_at: log.created_at,
+            attempts: log.attempts,
+            encountered_trailer: log.encountered_trailer,
+            bet_amount: log.bet_amount,
+            prize_amount: log.prize_amount,
+          }]);
+
+        if (error) {
+          console.error('同步数据到 Supabase 时发生错误:', error);
+          setSyncMessage(`同步数据失败，请重试。错误信息: ${error.message}`);
+          setSyncing(false);
+          return;
+        } else {
+          console.log('数据同步成功:', data);
+          const updatedLogs = logs.map(record =>
+            record.id === log.id ? { ...record, isSynced: true } : record
+          );
+          localStorage.setItem('offlineTigerGameLogs', JSON.stringify(updatedLogs));
+          setLogs(updatedLogs);
+        }
+      }
+      setSyncMessage('数据同步成功！');
+    } catch (error) {
+      console.error('同步数据时发生意外错误:', error);
+      setSyncMessage(`同步数据失败，请重试。错误信息: ${error.message}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    setLoading(true);
+    setLoginError('');
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', loginUsername)
+        .eq('password', loginPassword)
+        .single();
+
+      if (error) {
+        console.error('登录时发生错误:', error);
+        setLoginError('登录失败，请重试。');
+      } else if (data) {
+        console.log('登录成功, user_id:', data.id);
+        setUserId(data.id);
+        localStorage.setItem('offlineCalculatorUserId', data.id);
+        setShowLoginModal(false);
+        setLoginUsername('');
+        setLoginPassword('');
+        handleSync();
+      } else {
+        setLoginError('用户名或密码无效。');
+      }
+    } catch (error) {
+      console.error('发生意外错误:', error);
+      setLoginError('发生意外错误，请重试。');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleClearData = () => {
     setShowClearModal(true);
   };
@@ -342,7 +446,7 @@ function OfflineTigerGamePage({ onLogout }) {
     setLoading(true);
     try {
       if (clearOption === 'synced') {
-        const updatedLogs = logs.filter(log => !log.isSynced);
+        const updatedLogs = logs.filter(record => !record.isSynced);
         localStorage.setItem('offlineTigerGameLogs', JSON.stringify(updatedLogs));
         setLogs(updatedLogs);
       } else {
@@ -364,8 +468,17 @@ function OfflineTigerGamePage({ onLogout }) {
   return (
     <div className="container" ref={inputRef}>
       <h2>打虎日记 (离线版)</h2>
-      <button type="button" onClick={onLogout} className="logout-button">退出</button>
-      <button type="button" onClick={handleViewHistory} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>查看历史记录</button>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+        <label style={{ marginRight: '10px' }}>
+          显示历史记录
+          <input
+            type="checkbox"
+            checked={showHistory}
+            onChange={() => setShowHistory(!showHistory)}
+            style={{ width: 'auto', margin: '0' }}
+          />
+        </label>
+      </div>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <div className="file-input-container" style={{ marginTop: '20px' }}>
@@ -555,7 +668,7 @@ function OfflineTigerGamePage({ onLogout }) {
             <button type="button" onClick={() => handleNumberClick('1')} className="keyboard-button">1</button>
             <button type="button" onClick={() => handleNumberClick('2')} className="keyboard-button">2</button>
             <button type="button" onClick={() => handleNumberClick('3')} className="keyboard-button">3</button>
-            <button type="button" onClick={handleClearClick} className="keyboard-button clear-button">C</button>
+             <button type="button" onClick={handleClearClick} className="keyboard-button clear-button">C</button>
           </div>
           <div className="keyboard-row">
             <button type="button" onClick={() => handleNumberClick('4')} className="keyboard-button">4</button>
@@ -569,10 +682,48 @@ function OfflineTigerGamePage({ onLogout }) {
             <button type="button" onClick={() => handleNumberClick('9')} className="keyboard-button">9</button>
             <button type="button" onClick={() => handleNumberClick('0')} className="keyboard-button">0</button>
           </div>
-          <div className="keyboard-row">
+           <div className="keyboard-row">
             <button type="button" onClick={handleDecimalClick} className="keyboard-button">.</button>
-            <button type="button" onClick={handleTabClick} className="keyboard-button">Tab</button>
-            <button type="button" onClick={handleHideKeyboard} className="keyboard-button">隐藏</button>
+            <button type="button" onClick={handleTabClick} className="keyboard-button" style={{ fontSize: '16px' }}>Tab</button>
+            <button type="button" onClick={handleHideKeyboard} className="keyboard-button" style={{ fontSize: '16px' }}>隐藏</button>
+          </div>
+        </div>
+      )}
+      <button type="button" onClick={handleSync} disabled={syncing} style={{ marginTop: '20px', backgroundColor: '#007bff' }}>
+        {syncing ? '同步中...' : '同步到云端'}
+      </button>
+      {syncMessage && <p style={{ marginTop: '10px', textAlign: 'center' }}>{syncMessage}</p>}
+            {showLoginModal && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>登录</h2>
+            <div className="form-group">
+              <label htmlFor="loginUsername">用户名:</label>
+              <input
+                type="text"
+                id="loginUsername"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="loginPassword">密码:</label>
+              <input
+                type="password"
+                id="loginPassword"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+              />
+            </div>
+            {loginError && <p className="error-message">{loginError}</p>}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+              <button type="button" onClick={handleLogin} disabled={loading} style={{ backgroundColor: '#28a745' }}>
+                {loading ? '登录中...' : '登录'}
+              </button>
+              <button type="button" onClick={() => setShowLoginModal(false)} style={{ backgroundColor: '#dc3545' }}>
+                取消
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -617,8 +768,7 @@ function OfflineTigerGamePage({ onLogout }) {
           </div>
         </div>
       )}
-      <button type="button" onClick={handleBackToModules} style={{ marginTop: '10px', backgroundColor: '#6c757d' }}>返回神奇百宝箱</button>
-    </div>
+      </div>
   );
 }
 

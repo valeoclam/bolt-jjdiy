@@ -704,40 +704,40 @@ import React, { useState, useRef, useEffect } from 'react';
             {syncing ? '同步中...' : '同步到云端'}
           </button>
           {syncMessage && <p style={{ marginTop: '10px', textAlign: 'center' }}>{syncMessage}</p>}
-          {showLoginModal && (
-            <div className="modal">
-              <div className="modal-content">
-                <h2>登录</h2>
-                <div className="form-group">
-                  <label htmlFor="loginUsername">用户名:</label>
-                  <input
-                    type="text"
-                    id="loginUsername"
-                    value={loginUsername}
-                    onChange={(e) => setLoginUsername(e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="loginPassword">密码:</label>
-                  <input
-                    type="password"
-                    id="loginPassword"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                  />
-                </div>
-                {loginError && <p className="error-message">{loginError}</p>}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                  <button type="button" onClick={handleLogin} disabled={loading} style={{ backgroundColor: '#28a745' }}>
-                    {loading ? '登录中...' : '登录'}
-                  </button>
-                  <button type="button" onClick={() => setShowLoginModal(false)} style={{ backgroundColor: '#dc3545' }}>
-                    取消
-                  </button>
-                </div>
-              </div>
+                {showLoginModal && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>登录</h2>
+            <div className="form-group">
+              <label htmlFor="loginUsername">用户名:</label>
+              <input
+                type="text"
+                id="loginUsername"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+              />
             </div>
-          )}
+            <div className="form-group">
+              <label htmlFor="loginPassword">密码:</label>
+              <input
+                type="password"
+                id="loginPassword"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+              />
+            </div>
+            {loginError && <p className="error-message">{loginError}</p>}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+              <button type="button" onClick={handleLogin} disabled={loading} style={{ backgroundColor: '#28a745' }}>
+                {loading ? '登录中...' : '登录'}
+              </button>
+              <button type="button" onClick={() => setShowLoginModal(false)} style={{ backgroundColor: '#dc3545' }}>
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
           <button type="button" onClick={handleClearData} style={{ marginTop: '20px', backgroundColor: '#dc3545' }}>
             清空数据
           </button>
