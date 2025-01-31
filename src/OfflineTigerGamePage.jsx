@@ -342,7 +342,7 @@ function OfflineTigerGamePage({ onLogout }) {
     };
   }, [activeInputRef]);
 
-  const handleSync = async () => {
+    const handleSync = async () => {
     setSyncing(true);
     setSyncMessage('正在同步数据...');
     if (!userId) {
@@ -370,7 +370,6 @@ function OfflineTigerGamePage({ onLogout }) {
           .from('tiger_game_logs')
           .insert([{
             user_id: userId,
-            game_name: log.game_name,
             input_amount: log.input_amount,
             cash_out_amount: log.cash_out_amount,
             main_photo: log.main_photo,
