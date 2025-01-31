@@ -44,6 +44,9 @@ function OfflineTigerGamePage({ onLogout }) {
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [userId, setUserId] = useState(localStorage.getItem('offlineCalculatorUserId') || null);
+	const [totalLogs, setTotalLogs] = useState(0);
+  const [syncedLogs, setSyncedLogs] = useState(0);
+  const [unsyncedLogs, setUnsyncedLogs] = useState(0);
   const [loginError, setLoginError] = useState('');
   const dbName = 'tigerGameDB';
   const storeName = 'tigerGameLogs';
@@ -114,9 +117,13 @@ function OfflineTigerGamePage({ onLogout }) {
     const request = store.getAll();
 
     request.onsuccess = (event) => {
-      setLogs(event.target.result || []);
-      setLoading(false);
-    };
+    const allLogs = event.target.result || [];
+    setLogs(allLogs);
+    setTotalLogs(allLogs.length);
+    setSyncedLogs(allLogs.filter(log => log.isSynced).length);
+    setUnsyncedLogs(allLogs.filter(log => !log.isSynced).length);
+    setLoading(false);
+  };
 
     request.onerror = (event) => {
       console.error('获取 IndexedDB 数据失败:', event.target.error);
@@ -881,6 +888,15 @@ function OfflineTigerGamePage({ onLogout }) {
 			  {showHistory && (
         <div className="inspiration-list">
           <h3>历史记录</h3>
+					<p>
+    <strong>总记录数:</strong> {totalLogs}
+  </p>
+  <p>
+    <strong>已同步记录数:</strong> {syncedLogs}
+  </p>
+  <p>
+    <strong>未同步记录数:</strong> {unsyncedLogs}
+  </p>
           {logs.map((log) => (
             <div key={log.id} className="inspiration-item">
               <p>
