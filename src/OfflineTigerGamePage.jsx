@@ -15,12 +15,12 @@ function OfflineTigerGamePage({ onLogout }) {
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [attempts, setAttempts] = useState('');
-  const [encounteredTrailer, setEncounteredTrailer] = useState(true); // 默认选择“是”
+  const [encounteredTrailer, setEncounteredTrailer] = useState(true);
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const winningFileInputRef = useRef(null);
   const [betAmount, setBetAmount] = useState('');
-  const [prizeAmount, setPrizeAmount] = useState(0); // 中奖金额默认值为0
+  const [prizeAmount, setPrizeAmount] = useState(0);
   const [activeInput, setActiveInput] = useState(null);
   const [showKeyboard, setShowKeyboard] = useState(false);
   const keyboardRef = useRef(null);
@@ -36,6 +36,7 @@ function OfflineTigerGamePage({ onLogout }) {
   const [showHistory, setShowHistory] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
   const [clearOption, setClearOption] = useState('synced');
+	const [indexedDBQuota, setIndexedDBQuota] = useState(null);
   const [activeInputRef, setActiveInputRef] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
@@ -44,10 +45,12 @@ function OfflineTigerGamePage({ onLogout }) {
   const [loginPassword, setLoginPassword] = useState('');
   const [userId, setUserId] = useState(localStorage.getItem('offlineCalculatorUserId') || null);
   const [loginError, setLoginError] = useState('');
-
+  const dbName = 'tigerGameDB';
+  const storeName = 'tigerGameLogs';
+  const dbVersion = 1;
 
   useEffect(() => {
-    fetchLogs();
+    openDatabase();
   }, []);
 
   useEffect(() => {
@@ -80,21 +83,46 @@ function OfflineTigerGamePage({ onLogout }) {
     }
   }, [inputAmount]);
 
-
-  const fetchLogs = () => {
+  const openDatabase = () => {
     setLoading(true);
-    try {
-      const storedLogs = localStorage.getItem('offlineTigerGameLogs');
-      if (storedLogs) {
-        setLogs(JSON.parse(storedLogs));
-      } else {
-        setLogs([]);
-      }
-    } catch (error) {
-      console.error('获取本地打老虎记录时发生错误:', error);
-    } finally {
+    const request = window.indexedDB.open(dbName, dbVersion);
+
+    request.onerror = (event) => {
+      console.error('打开 IndexedDB 失败:', event.target.error);
+      setErrorMessage('打开本地数据库失败，请重试。');
       setLoading(false);
-    }
+    };
+
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      console.log('IndexedDB 打开成功:', db);
+      fetchLogs(db);
+    };
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(storeName)) {
+        db.createObjectStore(storeName, { keyPath: 'id' });
+        console.log('IndexedDB 对象存储创建成功:', storeName);
+      }
+    };
+  };
+
+  const fetchLogs = (db) => {
+    const transaction = db.transaction(storeName, 'readonly');
+    const store = transaction.objectStore(storeName);
+    const request = store.getAll();
+
+    request.onsuccess = (event) => {
+      setLogs(event.target.result || []);
+      setLoading(false);
+    };
+
+    request.onerror = (event) => {
+      console.error('获取 IndexedDB 数据失败:', event.target.error);
+      setErrorMessage('获取本地数据失败，请重试。');
+      setLoading(false);
+    };
   };
 
   const handleMainPhotoChange = async (e) => {
@@ -154,7 +182,7 @@ function OfflineTigerGamePage({ onLogout }) {
     }
   };
 
-  const handleSubmit = (e) => {
+    const handleSubmit = (e) => {
     e.preventDefault();
     setErrorMessage('');
     if (!mainPhoto) {
@@ -167,50 +195,71 @@ function OfflineTigerGamePage({ onLogout }) {
       return;
     }
 
-    try {
-      const newLog = {
-        id: uuidv4(),
-        game_name: '打老虎',
-        input_amount: parseFloat(inputAmount),
-        cash_out_amount: parseFloat(cashOutAmount),
-        main_photo: mainPhoto,
-        winning_photos: winningPhotos,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        attempts: parseInt(attempts, 10) || 0,
-        encountered_trailer: encounteredTrailer,
-        bet_amount: parseFloat(betAmount),
-        prize_amount: parseFloat(prizeAmount),
-        isSynced: false,
-      };
-      const storedLogs = localStorage.getItem('offlineTigerGameLogs');
-      let existingLogs = storedLogs ? JSON.parse(storedLogs) : [];
-      existingLogs = [newLog, ...existingLogs];
-      localStorage.setItem('offlineTigerGameLogs', JSON.stringify(existingLogs));
-      setLogs(existingLogs);
-      setSuccessMessage('打老虎记录添加成功!');
-      setInputAmount('');
-      setCashOutAmount('');
-      setMainPhoto(null);
-      setWinningPhotos([]);
-      setAttempts('');
-      setEncounteredTrailer(true); // Reset to default
-      setBetAmount('');
-      setPrizeAmount(0); // Reset to default
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      if (winningFileInputRef.current) {
-        winningFileInputRef.current.value = '';
-      }
-      if (successTimeoutRef.current) {
-        clearTimeout(successTimeoutRef.current);
-      }
-      successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (error) {
-      console.error('发生意外错误:', error);
-      setErrorMessage('发生意外错误，请重试: ' + error.message);
+    let finalEncounteredTrailer = encounteredTrailer;
+    if (parseFloat(prizeAmount) > 0) {
+      finalEncounteredTrailer = false;
     }
+
+    const newLog = {
+      id: uuidv4(),
+      input_amount: parseFloat(inputAmount),
+      cash_out_amount: parseFloat(cashOutAmount),
+      main_photo: mainPhoto,
+      winning_photos: winningPhotos,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      attempts: parseInt(attempts, 10) || 0,
+      encountered_trailer: finalEncounteredTrailer,
+      bet_amount: parseFloat(betAmount),
+      prize_amount: parseFloat(prizeAmount),
+      isSynced: false,
+    };
+
+    setLoading(true);
+    const request = window.indexedDB.open(dbName, dbVersion);
+
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      const transaction = db.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
+      const addRequest = store.add(newLog);
+
+      addRequest.onsuccess = () => {
+        console.log('IndexedDB 数据添加成功:', newLog);
+        setSuccessMessage('打老虎记录添加成功!');
+        setInputAmount('100');
+        setCashOutAmount('');
+        setMainPhoto(null);
+        setWinningPhotos([]);
+        setAttempts('');
+        setEncounteredTrailer(true);
+        setBetAmount('');
+        setPrizeAmount(0);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        if (winningFileInputRef.current) {
+          winningFileInputRef.current.value = '';
+        }
+        if (successTimeoutRef.current) {
+          clearTimeout(successTimeoutRef.current);
+        }
+        successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
+        fetchLogs(db);
+      };
+
+      addRequest.onerror = (event) => {
+        console.error('IndexedDB 数据添加失败:', event.target.error);
+        setErrorMessage('添加本地数据失败，请重试。');
+        setLoading(false);
+      };
+    };
+
+    request.onerror = (event) => {
+      console.error('打开 IndexedDB 失败:', event.target.error);
+      setErrorMessage('打开本地数据库失败，请重试。');
+      setLoading(false);
+    };
   };
 
   const handleBackToModules = () => {
@@ -342,7 +391,7 @@ function OfflineTigerGamePage({ onLogout }) {
     };
   }, [activeInputRef]);
 
-    const handleSync = async () => {
+  const handleSync = async () => {
     setSyncing(true);
     setSyncMessage('正在同步数据...');
     if (!userId) {
@@ -351,55 +400,80 @@ function OfflineTigerGamePage({ onLogout }) {
       return;
     }
     try {
-      const storedLogs = localStorage.getItem('offlineTigerGameLogs');
-      if (!storedLogs) {
-        setSyncMessage('没有需要同步的数据。');
-        setSyncing(false);
-        return;
-      }
+      const request = window.indexedDB.open(dbName, dbVersion);
 
-      const logsToSync = JSON.parse(storedLogs).filter(log => !log.isSynced);
-      if (logsToSync.length === 0) {
-        setSyncMessage('所有数据已同步。');
-        setSyncing(false);
-        return;
-      }
+      request.onsuccess = async (event) => {
+        const db = event.target.result;
+        const transaction = db.transaction(storeName, 'readonly');
+        const store = transaction.objectStore(storeName);
+        const getAllRequest = store.getAll();
 
-      for (const log of logsToSync) {
-        const { data, error } = await supabase
-          .from('tiger_game_logs')
-          .insert([{
-            user_id: userId,
-            input_amount: log.input_amount,
-            cash_out_amount: log.cash_out_amount,
-            main_photo: log.main_photo,
-            winning_photos: log.winning_photos,
-            created_at: log.created_at,
-            attempts: log.attempts,
-            encountered_trailer: log.encountered_trailer,
-            bet_amount: log.bet_amount,
-            prize_amount: log.prize_amount,
-          }]);
+        getAllRequest.onsuccess = async (event) => {
+          const logsToSync = (event.target.result || []).filter(log => !log.isSynced);
+          if (logsToSync.length === 0) {
+            setSyncMessage('所有数据已同步。');
+            setSyncing(false);
+            return;
+          }
 
-        if (error) {
-          console.error('同步数据到 Supabase 时发生错误:', error);
-          setSyncMessage(`同步数据失败，请重试。错误信息: ${error.message}`);
+          for (const log of logsToSync) {
+            const { data, error } = await supabase
+              .from('tiger_game_logs')
+              .insert([{
+                user_id: userId,
+                input_amount: log.input_amount,
+                cash_out_amount: log.cash_out_amount,
+                main_photo: log.main_photo,
+                winning_photos: log.winning_photos,
+                created_at: log.created_at,
+                attempts: log.attempts,
+                encountered_trailer: log.encountered_trailer,
+                bet_amount: log.bet_amount,
+                prize_amount: log.prize_amount,
+              }]);
+
+            if (error) {
+              console.error('同步数据到 Supabase 时发生错误:', error);
+              setSyncMessage(`同步数据失败，请重试。错误信息: ${error.message}`);
+              setSyncing(false);
+              return;
+            } else {
+              console.log('数据同步成功:', data);
+              const updatedLog = { ...log, isSynced: true };
+              const updateTransaction = db.transaction(storeName, 'readwrite');
+              const updateStore = updateTransaction.objectStore(storeName);
+              const updateRequest = updateStore.put(updatedLog);
+
+              updateRequest.onsuccess = () => {
+                console.log('IndexedDB 数据更新成功:', updatedLog);
+                fetchLogs(db);
+              };
+
+              updateRequest.onerror = (event) => {
+                console.error('IndexedDB 数据更新失败:', event.target.error);
+                setErrorMessage('更新本地数据失败，请重试。');
+              };
+            }
+          }
+          setSyncMessage('数据同步成功！');
           setSyncing(false);
-          return;
-        } else {
-          console.log('数据同步成功:', data);
-          const updatedLogs = logs.map(record =>
-            record.id === log.id ? { ...record, isSynced: true } : record
-          );
-          localStorage.setItem('offlineTigerGameLogs', JSON.stringify(updatedLogs));
-          setLogs(updatedLogs);
-        }
-      }
-      setSyncMessage('数据同步成功！');
+        };
+
+        getAllRequest.onerror = (event) => {
+          console.error('获取 IndexedDB 数据失败:', event.target.error);
+          setErrorMessage('获取本地数据失败，请重试。');
+          setSyncing(false);
+        };
+      };
+
+      request.onerror = (event) => {
+        console.error('打开 IndexedDB 失败:', event.target.error);
+        setErrorMessage('打开本地数据库失败，请重试。');
+        setSyncing(false);
+      };
     } catch (error) {
       console.error('同步数据时发生意外错误:', error);
       setSyncMessage(`同步数据失败，请重试。错误信息: ${error.message}`);
-    } finally {
       setSyncing(false);
     }
   };
@@ -437,48 +511,56 @@ function OfflineTigerGamePage({ onLogout }) {
     }
   };
 
-  const handleClearData = () => {
+  const handleClearData = async () => {
     setShowClearModal(true);
+    try {
+      const quota = await navigator.storage.estimate();
+      setIndexedDBQuota(quota);
+    } catch (error) {
+      console.error('获取 IndexedDB 配额失败:', error);
+      setIndexedDBQuota(null);
+    }
   };
 
   const handleConfirmClearData = () => {
     setLoading(true);
-    try {
-      if (clearOption === 'synced') {
-        const updatedLogs = logs.filter(record => !record.isSynced);
-        localStorage.setItem('offlineTigerGameLogs', JSON.stringify(updatedLogs));
-        setLogs(updatedLogs);
-      } else {
-        localStorage.removeItem('offlineTigerGameLogs');
+    const request = window.indexedDB.open(dbName, dbVersion);
+
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      const transaction = db.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
+      const clearRequest = store.clear();
+
+      clearRequest.onsuccess = () => {
+        console.log('IndexedDB 数据清空成功');
         setLogs([]);
-      }
-      setShowClearModal(false);
-    } catch (error) {
-      console.error('清空本地打老虎记录时发生错误:', error);
-    } finally {
+        setShowClearModal(false);
+        setLoading(false);
+      };
+
+      clearRequest.onerror = (event) => {
+        console.error('IndexedDB 数据清空失败:', event.target.error);
+        setErrorMessage('清空本地数据失败，请重试。');
+        setLoading(false);
+      };
+    };
+
+    request.onerror = (event) => {
+      console.error('打开 IndexedDB 失败:', event.target.error);
+      setErrorMessage('打开本地数据库失败，请重试。');
       setLoading(false);
-    }
+    };
   };
 
-  const handleCancelClearData = () => {
+	const handleCancelClearData = () => {
     setShowClearModal(false);
   };
 
   return (
-    <div className="container" ref={inputRef}>
+     <div className="container" ref={inputRef}>
       <h2>打虎日记 (离线版)</h2>
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-        <label style={{ marginRight: '10px' }}>
-          显示历史记录
-          <input
-            type="checkbox"
-            checked={showHistory}
-            onChange={() => setShowHistory(!showHistory)}
-            style={{ width: 'auto', margin: '0' }}
-          />
-        </label>
-      </div>
-      <form onSubmit={handleSubmit}>
+       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <div className="file-input-container" style={{ marginTop: '20px' }}>
             <input
@@ -692,7 +774,7 @@ function OfflineTigerGamePage({ onLogout }) {
         {syncing ? '同步中...' : '同步到云端'}
       </button>
       {syncMessage && <p style={{ marginTop: '10px', textAlign: 'center' }}>{syncMessage}</p>}
-            {showLoginModal && (
+      {showLoginModal && (
         <div className="modal">
           <div className="modal-content">
             <h2>登录</h2>
@@ -726,13 +808,21 @@ function OfflineTigerGamePage({ onLogout }) {
           </div>
         </div>
       )}
+			 <button type="button" onClick={handleViewHistory} style={{ marginTop: '20px', backgroundColor: '#28a745' }}>
+        {showHistory ? '隐藏历史记录' : '显示历史记录'}
+      </button>
       <button type="button" onClick={handleClearData} style={{ marginTop: '20px', backgroundColor: '#dc3545' }}>
-        清空数据
+         清空数据
       </button>
       {showClearModal && (
         <div className="modal">
           <div className="modal-content">
             <h2>清空数据</h2>
+            {indexedDBQuota && (
+              <p>
+                IndexedDB 可用空间: {(indexedDBQuota.usage / 1024).toFixed(2)} KB / {(indexedDBQuota.quota / 1024).toFixed(2)} KB
+              </p>
+            )}
             <p>请选择要清空的数据类型：</p>
             <div className="form-group">
               <label>
@@ -765,6 +855,51 @@ function OfflineTigerGamePage({ onLogout }) {
               </button>
             </div>
           </div>
+        </div>
+      )}
+			  {showHistory && (
+        <div className="inspiration-list">
+          <h3>历史记录</h3>
+          {logs.map((log) => (
+            <div key={log.id} className="inspiration-item">
+              <p>
+                <strong>添加时间:</strong> {new Date(log.created_at).toLocaleString()}
+              </p>
+              {log.updated_at && (
+                <p>
+                  <strong>修改时间:</strong> {new Date(log.updated_at).toLocaleString()}
+                </p>
+              )}
+              <p>
+                <strong>投入金额:</strong> {log.input_amount}
+              </p>
+              <p>
+                <strong>下注金额:</strong> {log.bet_amount}
+              </p>
+              <p>
+                <strong>中奖金额:</strong> {log.prize_amount}
+              </p>
+              <p>
+                <strong>兑换金额:</strong> {log.cash_out_amount}
+              </p>
+              <p>
+                <strong>盈亏金额:</strong> {(log.cash_out_amount - log.input_amount).toFixed(2)}
+              </p>
+              <p>
+                <strong>尝试次数:</strong> {log.attempts}
+              </p>
+              <p>
+                <strong>遇到预告片:</strong> {log.encountered_trailer ? '是' : '否'}
+              </p>
+              {log.main_photo && <img src={log.main_photo} alt="Main Log" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
+              <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                {log.winning_photos &&
+                  log.winning_photos.map((photo, index) => (
+                    <img key={index} src={photo} alt={`Winning Log ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
+                  ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
       </div>
