@@ -535,7 +535,7 @@ function OfflineTigerGamePage({ onLogout }) {
       clearRequest.onsuccess = () => {
         console.log('IndexedDB 数据清空成功');
         setLogs([]);
-        setShowClearModal(false);
+        // 移除 setShowClearModal(false);
         setLoading(false);
       };
 

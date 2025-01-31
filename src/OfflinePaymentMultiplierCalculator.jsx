@@ -43,6 +43,7 @@ import React, { useState, useRef, useEffect } from 'react';
       const [loginError, setLoginError] = useState('');
       const [showClearModal, setShowClearModal] = useState(false);
       const [clearOption, setClearOption] = useState('synced');
+			const [localStorageUsage, setLocalStorageUsage] = useState(null);
 			const [activeInputRef, setActiveInputRef] = useState(null);
 
 
@@ -473,7 +474,14 @@ import React, { useState, useRef, useEffect } from 'react';
 
         const handleClearData = () => {
             setShowClearModal(true);
-        };
+        try {
+      const usage = JSON.stringify(localStorage).length;
+      setLocalStorageUsage(usage);
+    } catch (error) {
+      console.error('获取 localStorage 使用情况失败:', error);
+      setLocalStorageUsage(null);
+    }
+  };
 
         const handleConfirmClearData = () => {
             setLoading(true);
@@ -486,7 +494,7 @@ import React, { useState, useRef, useEffect } from 'react';
                     localStorage.removeItem('offlinePaymentMultiplierLogs');
                     setRecords([]);
                 }
-                setShowClearModal(false);
+               // 移除 setShowClearModal(false);
             } catch (error) {
                 console.error('清空本地支付倍数记录时发生错误:', error);
             } finally {
@@ -740,40 +748,45 @@ import React, { useState, useRef, useEffect } from 'react';
       )}
           <button type="button" onClick={handleClearData} style={{ marginTop: '20px', backgroundColor: '#dc3545' }}>
             清空数据
-          </button>
-          {showClearModal && (
-            <div className="modal">
-              <div className="modal-content">
-                <h2>清空数据</h2>
-                <p>请选择要清空的数据类型：</p>
-                <div className="form-group">
-                  <label>
-                    <input
-                      type="radio"
-                      value="synced"
-                      checked={clearOption === 'synced'}
-                      onChange={() => setClearOption('synced')}
-                    />
-                    仅清空已同步数据
-                  </label>
-                </div>
-                <div className="form-group">
-                  <label>
-                    <input
-                      type="radio"
-                      value="all"
-                      checked={clearOption === 'all'}
-                      onChange={() => setClearOption('all')}
-                    />
-                    清空所有数据
-                  </label>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                  <button type="button" onClick={handleConfirmClearData} disabled={loading} style={{ backgroundColor: '#28a745' }}>
-                    {loading ? '正在清空...' : '确认清空'}
-                  </button>
-                  <button type="button" onClick={handleCancelClearData} style={{ backgroundColor: '#dc3545' }}>
-                    取消
+      </button>
+      {showClearModal && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>清空数据</h2>
+            {localStorageUsage !== null && (
+              <p>
+                localStorage 使用空间: {(localStorageUsage / 1024).toFixed(2)} KB
+              </p>
+            )}
+            <p>请选择要清空的数据类型：</p>
+            <div className="form-group">
+              <label>
+                <input
+                  type="radio"
+                  value="synced"
+                  checked={clearOption === 'synced'}
+                  onChange={() => setClearOption('synced')}
+                />
+                仅清空已同步数据
+              </label>
+            </div>
+            <div className="form-group">
+              <label>
+                <input
+                  type="radio"
+                  value="all"
+                  checked={clearOption === 'all'}
+                  onChange={() => setClearOption('all')}
+                />
+                清空所有数据
+              </label>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+              <button type="button" onClick={handleConfirmClearData} disabled={loading} style={{ backgroundColor: '#28a745' }}>
+                {loading ? '正在清空...' : '确认清空'}
+              </button>
+              <button type="button" onClick={handleCancelClearData} style={{ backgroundColor: '#dc3545' }}>
+                取消
                   </button>
                 </div>
               </div>

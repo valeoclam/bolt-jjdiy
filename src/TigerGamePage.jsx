@@ -168,6 +168,11 @@ useEffect(() => {
       return;
     }
 
+		let finalEncounteredTrailer = encounteredTrailer;
+    if (parseFloat(prizeAmount) > 0) {
+      finalEncounteredTrailer = false;
+    }
+
     const newLog = {
       id: uuidv4(),
       user_id: loggedInUser.id,
@@ -178,14 +183,12 @@ useEffect(() => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       attempts: parseInt(attempts, 10) || 0,
-      encountered_trailer: encounteredTrailer,
+			encountered_trailer: finalEncounteredTrailer,
       bet_amount: parseFloat(betAmount),
       prize_amount: parseFloat(prizeAmount),
     };
 
-		console.log("handleSubmit - prizeAmount:", prizeAmount);
-
-    try {
+		try {
       const { data, error } = await supabase
         .from('tiger_game_logs')
         .insert([newLog]);
@@ -203,14 +206,14 @@ useEffect(() => {
           setLogs((prevLogs) => [...prevLogs, {...newLog}]);
         }
         setSuccessMessage('打老虎记录添加成功!');
-        setInputAmount('');
+        setInputAmount('100');
         setCashOutAmount('');
         setMainPhoto(null);
         setWinningPhotos([]);
         setAttempts('');
-        setEncounteredTrailer(false);
+        setEncounteredTrailer(true);
         setBetAmount('');
-        setPrizeAmount('');
+        setPrizeAmount('0');
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
