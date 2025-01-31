@@ -494,11 +494,13 @@ import React, { useState, useRef, useEffect } from 'react';
                     localStorage.removeItem('offlinePaymentMultiplierLogs');
                     setRecords([]);
                 }
-               // 移除 setShowClearModal(false);
-            } catch (error) {
-                console.error('清空本地支付倍数记录时发生错误:', error);
-            } finally {
-                setLoading(false);
+               // 重新获取 localStorage 使用情况
+      const usage = JSON.stringify(localStorage).length;
+      setLocalStorageUsage(usage);
+    } catch (error) {
+      console.error('清空本地支付倍数记录时发生错误:', error);
+    } finally {
+      setLoading(false);
             }
         };
 

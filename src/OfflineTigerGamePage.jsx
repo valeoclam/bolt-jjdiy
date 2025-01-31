@@ -511,7 +511,7 @@ function OfflineTigerGamePage({ onLogout }) {
     }
   };
 
-  const handleClearData = async () => {
+    const handleClearData = async () => {
     setShowClearModal(true);
     try {
       const quota = await navigator.storage.estimate();
@@ -521,6 +521,7 @@ function OfflineTigerGamePage({ onLogout }) {
       setIndexedDBQuota(null);
     }
   };
+
 
   const handleConfirmClearData = () => {
     setLoading(true);
@@ -532,11 +533,31 @@ function OfflineTigerGamePage({ onLogout }) {
       const store = transaction.objectStore(storeName);
       const clearRequest = store.clear();
 
-      clearRequest.onsuccess = () => {
+      clearRequest.onsuccess = async () => { 
         console.log('IndexedDB 数据清空成功');
         setLogs([]);
         // 移除 setShowClearModal(false);
         setLoading(false);
+				try {
+          // 关闭数据库连接
+          db.close();
+          // 重新打开数据库连接
+          const newRequest = window.indexedDB.open(dbName, dbVersion);
+          newRequest.onsuccess = async (event) => {
+            const newDb = event.target.result;
+            const quota = await navigator.storage.estimate();
+            setIndexedDBQuota(quota);
+            newDb.close();
+          };
+          newRequest.onerror = (event) => {
+            console.error('重新打开 IndexedDB 失败:', event.target.error);
+            setErrorMessage('重新打开本地数据库失败，请重试。');
+            setIndexedDBQuota(null);
+          };
+        } catch (error) {
+          console.error('获取 IndexedDB 配额失败:', error);
+          setIndexedDBQuota(null);
+        }
       };
 
       clearRequest.onerror = (event) => {
