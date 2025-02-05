@@ -51,6 +51,22 @@ function OfflineTigerGamePage({ onLogout }) {
   const dbName = 'tigerGameDB';
   const storeName = 'tigerGameLogs';
   const dbVersion = 1;
+	const [gameName, setGameName] = useState('');
+	const [gameNames, setGameNames] = useState([]);
+	const gameNameInputRef = useRef(null);
+
+
+	const getUniqueGameNames = () => {
+  const gameNames = logs.map((log) => log.game_name);
+  return [...new Set(gameNames)];
+};
+
+useEffect(() => {
+  // 当 logs 发生变化时，更新 gameNames
+  setGameNames(getUniqueGameNames());
+}, [logs]);
+
+
 
   useEffect(() => {
     openDatabase();
@@ -105,7 +121,9 @@ function OfflineTigerGamePage({ onLogout }) {
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
       if (!db.objectStoreNames.contains(storeName)) {
-        db.createObjectStore(storeName, { keyPath: 'id' });
+				const objectStore = db.createObjectStore(storeName, { keyPath: 'id' });
+      // 添加索引
+        objectStore.createIndex('game_name', 'game_name', { unique: false });
         console.log('IndexedDB 对象存储创建成功:', storeName);
       }
     };
@@ -192,10 +210,10 @@ function OfflineTigerGamePage({ onLogout }) {
     const handleSubmit = (e) => {
     e.preventDefault();
     setErrorMessage('');
-    if (!mainPhoto) {
-      setErrorMessage('请先拍摄或上传照片');
-      return;
-    }
+   // if (!mainPhoto) { // 移除这部分代码
+  //   setErrorMessage('请先拍摄或上传照片');
+  //   return;
+  // }
 
     if (loading) {
       console.log('User data is still loading, please wait.');
@@ -209,6 +227,7 @@ function OfflineTigerGamePage({ onLogout }) {
 
     const newLog = {
       id: uuidv4(),
+			game_name: gameName, // 添加游戏名称
       input_amount: parseFloat(inputAmount),
       cash_out_amount: parseFloat(cashOutAmount),
       main_photo: mainPhoto,
@@ -428,6 +447,7 @@ function OfflineTigerGamePage({ onLogout }) {
               .from('tiger_game_logs')
               .insert([{
                 user_id: userId,
+								game_name: log.game_name, // 添加游戏名称
                 input_amount: log.input_amount,
                 cash_out_amount: log.cash_out_amount,
                 main_photo: log.main_photo,
@@ -595,7 +615,7 @@ function OfflineTigerGamePage({ onLogout }) {
         setSyncedLogs(0);
         setUnsyncedLogs(0);
         setLoading(false);
-        setShowClearModal(false);
+         // setShowClearModal(false); // 移除这行代码
         try {
           // 关闭数据库连接
           db.close();
@@ -682,6 +702,22 @@ function OfflineTigerGamePage({ onLogout }) {
             )}
           </div>
         </div>
+				<div className="form-group">
+  <label htmlFor="gameName">游戏名称:</label>
+  <input
+    type="text"
+    id="gameName"
+    value={gameName}
+    onChange={(e) => setGameName(e.target.value)}
+    ref={gameNameInputRef}
+    list="gameNames"
+  />
+  <datalist id="gameNames">
+    {getUniqueGameNames().map((name) => (
+      <option key={name} value={name} />
+    ))}
+  </datalist>
+</div>
         <div className="form-group">
           <label htmlFor="inputAmount">投入金额:</label>
           <input

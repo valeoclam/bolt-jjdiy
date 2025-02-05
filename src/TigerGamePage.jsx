@@ -34,6 +34,35 @@ function TigerGamePage({ loggedInUser, onLogout }) {
   const attemptsInputRef = useRef(null);
   const inputAmountInputRef = useRef(null);
 	const [activeInputRef, setActiveInputRef] = useState(null);
+	const [gameNames, setGameNames] = useState([]);
+	const [gameName, setGameName] = useState(''); // 添加 gameName 状态
+
+	const fetchGameNames = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('payment_multiplier_logs')
+      .select('game_name')
+      .eq('user_id', loggedInUser.id);
+
+    if (error) {
+      console.error('获取游戏名称列表时发生错误:', error);
+    } else {
+      // 提取唯一的游戏名称
+      const uniqueGameNames = [...new Set(data.map(item => item.game_name))];
+      setGameNames(uniqueGameNames);
+    }
+  } catch (error) {
+    console.error('发生意外错误:', error);
+  }
+};
+
+useEffect(() => {
+  if (loggedInUser) {
+    fetchGameNames();
+  }
+}, [loggedInUser]);
+
+
 
 
   useEffect(() => {
@@ -158,10 +187,10 @@ useEffect(() => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
-    if (!mainPhoto) {
-      setErrorMessage('请先拍摄或上传照片');
-      return;
-    }
+    // if (!mainPhoto) { // 移除这部分代码
+  //   setErrorMessage('请先拍摄或上传照片');
+  //   return;
+  // }
 
     if (loading) {
       console.log('User data is still loading, please wait.');
@@ -176,6 +205,7 @@ useEffect(() => {
     const newLog = {
       id: uuidv4(),
       user_id: loggedInUser.id,
+			game_name: gameName, // 添加游戏名称
       input_amount: parseFloat(inputAmount),
       cash_out_amount: parseFloat(cashOutAmount),
       main_photo: mainPhoto,
@@ -408,6 +438,21 @@ const handleTabClick = () => {
             )}
           </div>
          </div>
+				<div className="form-group">
+ 					 <label htmlFor="gameName">游戏名称:</label>
+  					<input
+  					 type="text"
+    					id="gameName"
+    						value={gameName}
+   						 onChange={(e) => setGameName(e.target.value)}
+   						 list="gameNamesList"
+  />
+  <datalist id="gameNamesList">
+    {gameNames.map((name) => (
+      <option key={name} value={name} />
+    ))}
+  </datalist>
+</div>
         <div className="form-group">
           <label htmlFor="inputAmount">投入金额:</label>
           <input
