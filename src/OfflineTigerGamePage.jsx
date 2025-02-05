@@ -138,6 +138,8 @@ useEffect(() => {
 
     request.onsuccess = (event) => {
     const allLogs = event.target.result || [];
+		// 添加排序代码
+		const sortedLogs = allLogs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     setLogs(allLogs);
     setTotalLogs(allLogs.length);
     setSyncedLogs(allLogs.filter(log => log.isSynced).length);
@@ -1002,6 +1004,9 @@ useEffect(() => {
   </p>
           {logs.map((log) => (
             <div key={log.id} className="inspiration-item">
+							<p>
+         				 <strong>游戏名称:</strong> {log.game_name}
+        			</p>
               <p>
                 <strong>添加时间:</strong> {new Date(log.created_at).toLocaleString()}
               </p>

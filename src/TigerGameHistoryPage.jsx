@@ -42,6 +42,7 @@ function TigerGameHistory({ loggedInUser, onLogout }) {
     const [disablePerPage, setDisablePerPage] = useState(true);
     const [paginatedLogs, setPaginatedLogs] = useState([]);
 		const [prizeAmountFilter, setPrizeAmountFilter] = useState(false);
+		
 
     useEffect(() => {
         setSortedLogs([...logs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
@@ -141,7 +142,7 @@ const fetchLogs = async (fetchOnlyCount = false) => {
 
         let query = supabase
             .from('tiger_game_logs')
-            .select('id, created_at, input_amount, cash_out_amount, attempts, encountered_trailer, bet_amount, prize_amount')
+            .select('id, created_at, input_amount, cash_out_amount, attempts, encountered_trailer, bet_amount, prize_amount,game_name')
             .eq('user_id', loggedInUser.id)
             .order('created_at', { ascending: false });
 
@@ -908,6 +909,9 @@ useEffect(() => {
                                 <strong>修改时间:</strong> {new Date(log.updated_at).toLocaleString()}
                             </p>
                         )}
+											<p>
+        <strong>游戏名称:</strong> {log.game_name}
+      </p>
                         <p>
                             <strong>投入金额:</strong> {log.input_amount}
                         </p>
