@@ -281,6 +281,7 @@ const calculateWinningLogsPercentage = () => {
         setEncounteredTrailer(log.encountered_trailer);
         setBetAmount(log.bet_amount);
         setPrizeAmount(log.prize_amount);
+	setEditedGameName(log.game_name); // 设置 editedGameName
         setLoadingPhotos(prev => ({ ...prev, [log.id]: true }));
         try {
             const { data, error } = await supabase
@@ -352,6 +353,7 @@ const calculateWinningLogsPercentage = () => {
             encountered_trailer: encounteredTrailer,
             bet_amount: parseFloat(betAmount),
             prize_amount: parseFloat(prizeAmount),
+	    game_name: editedGameName, // 添加 game_name
         };
         try {
             const { data, error } = await supabase
@@ -379,6 +381,7 @@ const calculateWinningLogsPercentage = () => {
                 setEncounteredTrailer(false);
                 setBetAmount('');
                 setPrizeAmount('');
+		setEditedGameName(''); // 清空 editedGameName
                 navigate('/tiger-game/history');
             }
         } catch (error) {
@@ -1007,120 +1010,125 @@ useEffect(() => {
                             </>
                         )}
                         <div className="edit-buttons">
-                            {editingLogId === log.id ? (
-                                <form onSubmit={handleUpdateLog} style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                                    <div className="form-group">
-                                        <label>投入金额:</label>
-                                        <input
-                                            type="number"
-                                            id="inputAmount"
-                                            value={inputAmount}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>下注金额:</label>
-                                        <input
-                                            type="number"
-                                            id="betAmount"
-                                            value={betAmount}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>中奖金额:</label>
-                                        <input
-                                            type="number"
-                                            id="prizeAmount"
-                                            value={prizeAmount}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>兑换金额:</label>
-                                        <input
-                                            type="number"
-                                            id="cashOutAmount"
-                                            value={cashOutAmount}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <div className="file-input-container">
-                                            <input
-                                                type="file"
-                                                id="winningPhotos"
-                                                accept="image/*"
-                                                multiple
-                                                onChange={handleWinningPhotosChange}
-                                                ref={winningFileInputRef}
-                                                style={{ display: 'none' }}
-                                            />
-                                            <button type="button" onClick={() => winningFileInputRef.current.click()} className="select-file-button" style={{ backgroundColor: '#28a745' }}>老虎送钱了</button>
-                                        </div>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>尝试次数:</label>
-                                        <input
-                                            type="number"
-                                            id="attempts"
-                                            value={attempts}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>
-                                            遇到预告片:
-                                            <input
-                                                type="radio"
-                                                name="encounteredTrailer"
-                                                checked={encounteredTrailer}
-                                                onChange={() => setEncounteredTrailer(true)}
-                                            />
-                                            是
-                                            <input
-                                                type="radio"
-                                                name="encounteredTrailer"
-                                                checked={!encounteredTrailer}
-                                                onChange={() => setEncounteredTrailer(false)}
-                                            />
-                                            否
-                                        </label>
-                                    </div>
-                                    <button type="submit" className="select-file-button" style={{ padding: '10px 15px' }}>更新</button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setEditingLogId(null);
-                                            navigate('/tiger-game/history');
-                                        }}
-                                        className="select-file-button" style={{ backgroundColor: '#dc3545', padding: '10px 15px' }}
-                                    >
-                                        取消
-                                    </button>
-                                </form>
-                            ) : (
-                                <>
-                                    <button
-                                        className="edit-button"
-                                        onClick={() => handleEditLog(log)}
-                                    >
-                                        编辑
-                                    </button>
-                                    <button
-                                        className="delete-button"
-                                        onClick={() => handleDeleteLog(log.id)}
-                                    >
-                                        {confirmDeleteId === log.id ? '确认删除' : '删除'}
-                                    </button>
-                                </>
-                            )}
-                        </div>
+  {editingLogId === log.id ? (
+    <>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '10px' }}>
+        <div className="form-group">
+          <label>游戏名称:</label>
+          <input
+            type="text"
+            value={editedGameName}
+            onChange={(e) => setEditedGameName(e.target.value)}
+            style={{ width: '100%' }}
+          />
+        </div>
+        <div className="form-group">
+          <label>投入金额:</label>
+          <input
+            type="number"
+            id="inputAmount"
+            value={inputAmount}
+            onChange={handleInputChange}
+            style={{ width: '100%' }}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label>下注金额:</label>
+          <input
+            type="number"
+            id="betAmount"
+            value={betAmount}
+            onChange={handleInputChange}
+            style={{ width: '100%' }}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label>中奖金额:</label>
+          <input
+            type="number"
+            id="prizeAmount"
+            value={prizeAmount}
+            onChange={handleInputChange}
+            style={{ width: '100%' }}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label>兑换金额:</label>
+          <input
+            type="number"
+            id="cashOutAmount"
+            value={cashOutAmount}
+            onChange={handleInputChange}
+            style={{ width: '100%' }}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label>尝试次数:</label>
+          <input
+            type="number"
+            id="attempts"
+            value={attempts}
+            onChange={handleInputChange}
+            style={{ width: '100%' }}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label>
+            遇到预告片:
+            <input
+              type="radio"
+              name="encounteredTrailer"
+              checked={encounteredTrailer}
+              onChange={() => setEncounteredTrailer(true)}
+            />
+            是
+            <input
+              type="radio"
+              name="encounteredTrailer"
+              checked={!encounteredTrailer}
+              onChange={() => setEncounteredTrailer(false)}
+            />
+            否
+          </label>
+        </div>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+        <button type="submit" className="select-file-button" style={{ padding: '10px 15px' }}>更新</button>
+        <button
+          type="button"
+          onClick={() => {
+            setEditingLogId(null);
+            navigate('/tiger-game/history');
+          }}
+          className="select-file-button" style={{ backgroundColor: '#dc3545', padding: '10px 15px' }}
+        >
+          取消
+        </button>
+      </div>
+    </>
+  ) : (
+    <>
+      <button
+        className="edit-button"
+        onClick={() => handleEditLog(log)}
+      >
+        编辑
+      </button>
+      <button
+        className="delete-button"
+        onClick={() => handleDeleteLog(log.id)}
+      >
+        {confirmDeleteId === log.id ? '确认删除' : '删除'}
+      </button>
+    </>
+  )}
+</div>
+
                     </div>
                 ))
             )}
