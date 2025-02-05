@@ -173,7 +173,7 @@ function InspirationHistoryPage({ loggedInUser, supabase, onLogout }) {
       const compressedFiles = await Promise.all(
         files.map(async (file) => {
           return await imageCompression(file, {
-            maxSizeMB: 0.05,
+            maxSizeMB: 0.5,
             maxWidthOrHeight: 150,
             useWebWorker: true,
           });
