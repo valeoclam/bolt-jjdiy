@@ -246,6 +246,7 @@ useEffect(() => {
         setEncounteredTrailer(true);
         setBetAmount('');
         setPrizeAmount('0');
+				setGameName(''); // 添加这行代码来清空游戏名称
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -548,7 +549,7 @@ const handleTabClick = () => {
           </label>
         </div>
         <div className="form-group">
-          {prizeAmount !== 0 && ( // 条件渲染
+          {parseFloat(prizeAmount) > 0 && ( // 条件渲染
             <div className="file-input-container">
               <input
                 type="file"
