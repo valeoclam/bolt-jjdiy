@@ -41,7 +41,9 @@ function TigerGameHistory({ loggedInUser, onLogout }) {
     const [loadingPhotos, setLoadingPhotos] = useState({});
     const [disablePerPage, setDisablePerPage] = useState(true);
     const [paginatedLogs, setPaginatedLogs] = useState([]);
-		const [prizeAmountFilter, setPrizeAmountFilter] = useState(false);
+    const [prizeAmountFilter, setPrizeAmountFilter] = useState(false);
+    const [editedGameName, setEditedGameName] = useState('');
+
 		
 
     useEffect(() => {
@@ -416,23 +418,25 @@ const calculateWinningLogsPercentage = () => {
     };
 
     const handleInputChange = (e) => {
-        if (e.target.value !== '') {
-            setModifyTime(new Date().toLocaleString());
-        }
-        if (e.target.type === 'number') {
-            if (e.target.id === 'inputAmount') {
-                setInputAmount(e.target.value);
-            } else if (e.target.id === 'cashOutAmount') {
-                setCashOutAmount(e.target.value);
-            } else if (e.target.id === 'attempts') {
-                setAttempts(e.target.value);
-            } else if (e.target.id === 'betAmount') {
-                setBetAmount(e.target.value);
-            } else if (e.target.id === 'prizeAmount') {
-                setPrizeAmount(e.target.value);
-            }
-        }
-    };
+  if (e.target.value !== '') {
+    setModifyTime(new Date().toLocaleString());
+  }
+  if (e.target.type === 'number') {
+    if (e.target.id === 'inputAmount') {
+      setInputAmount(e.target.value);
+    } else if (e.target.id === 'cashOutAmount') {
+      setCashOutAmount(e.target.value);
+    } else if (e.target.id === 'attempts') {
+      setAttempts(e.target.value);
+    } else if (e.target.id === 'betAmount') {
+      setBetAmount(e.target.value);
+    } else if (e.target.id === 'prizeAmount') {
+      setPrizeAmount(e.target.value);
+    }
+  } else if (e.target.id === 'editedGameName') { // 添加对 editedGameName 的处理
+    setEditedGameName(e.target.value);
+  }
+};
 
     const handleRemoveWinningPhoto = (indexToRemove) => {
         if (window.confirm('确定要删除此照片吗？此操作不可恢复。')) {
