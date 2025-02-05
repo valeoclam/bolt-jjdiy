@@ -36,6 +36,8 @@ function TigerGamePage({ loggedInUser, onLogout }) {
 	const [activeInputRef, setActiveInputRef] = useState(null);
 	const [gameNames, setGameNames] = useState([]);
 	const [gameName, setGameName] = useState(''); // 添加 gameName 状态
+	const [isKeyboardEnabled, setIsKeyboardEnabled] = useState(true);
+
 
 	const fetchGameNames = async () => {
   try {
@@ -370,11 +372,13 @@ const handleTabClick = () => {
 };
 
   const handleInputFocus = (inputField, inputElement) => {
+	if (isKeyboardEnabled) {
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
       inputElement.blur();
     }
     toggleKeyboard(inputField, inputElement);
 		setActiveInputRef(inputElement);
+		}
   };
 
   useEffect(() => {
@@ -454,6 +458,17 @@ const handleTabClick = () => {
   </datalist>
 </div>
         <div className="form-group">
+  <label>
+    启用数字键盘:
+    <input
+      type="checkbox"
+      checked={isKeyboardEnabled}
+      onChange={() => setIsKeyboardEnabled(!isKeyboardEnabled)}
+    />
+  </label>
+</div>
+
+				<div className="form-group">
           <label htmlFor="inputAmount">投入金额:</label>
           <input
             type="text"
