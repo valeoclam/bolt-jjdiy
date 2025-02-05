@@ -54,6 +54,8 @@ function OfflineTigerGamePage({ onLogout }) {
 	const [gameName, setGameName] = useState('');
 	const [gameNames, setGameNames] = useState([]);
 	const gameNameInputRef = useRef(null);
+	const [isKeyboardEnabled, setIsKeyboardEnabled] = useState(true);
+
 
 
 	const getUniqueGameNames = () => {
@@ -396,11 +398,13 @@ useEffect(() => {
   };
 
   const handleInputFocus = (inputField, inputElement) => {
+		if (isKeyboardEnabled) {
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
       inputElement.blur();
     }
     toggleKeyboard(inputField, inputElement);
 		setActiveInputRef(inputElement);
+		 }	
   };
 
   useEffect(() => {
@@ -702,6 +706,16 @@ useEffect(() => {
             )}
           </div>
         </div>
+				 <div className="form-group">
+    <label>
+      启用数字键盘:
+      <input
+        type="checkbox"
+        checked={isKeyboardEnabled}
+        onChange={() => setIsKeyboardEnabled(!isKeyboardEnabled)}
+      />
+    </label>
+  </div>
 				<div className="form-group">
   <label htmlFor="gameName">游戏名称:</label>
   <input
