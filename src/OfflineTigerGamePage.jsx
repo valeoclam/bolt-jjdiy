@@ -36,7 +36,7 @@ function OfflineTigerGamePage({ onLogout }) {
   const [showHistory, setShowHistory] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
   const [clearOption, setClearOption] = useState('synced');
-	const [indexedDBQuota, setIndexedDBQuota] = useState(null);
+  const [indexedDBQuota, setIndexedDBQuota] = useState(null);
   const [activeInputRef, setActiveInputRef] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
@@ -44,30 +44,30 @@ function OfflineTigerGamePage({ onLogout }) {
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [userId, setUserId] = useState(localStorage.getItem('offlineCalculatorUserId') || null);
-	const [totalLogs, setTotalLogs] = useState(0);
+  const [totalLogs, setTotalLogs] = useState(0);
   const [syncedLogs, setSyncedLogs] = useState(0);
   const [unsyncedLogs, setUnsyncedLogs] = useState(0);
   const [loginError, setLoginError] = useState('');
   const dbName = 'tigerGameDB';
   const storeName = 'tigerGameLogs';
   const dbVersion = 1;
-	const [gameName, setGameName] = useState('');
-	const [gameNames, setGameNames] = useState([]);
-	const gameNameInputRef = useRef(null);
-	const [isKeyboardEnabled, setIsKeyboardEnabled] = useState(true);
+  const [gameName, setGameName] = useState('');
+  const [gameNames, setGameNames] = useState([]);
+  const gameNameInputRef = useRef(null);
+  const [isKeyboardEnabled, setIsKeyboardEnabled] = useState(true);
 
 
 
-	const getUniqueGameNames = () => {
+  const getUniqueGameNames = () => {
   const gameNames = logs.map((log) => log.game_name);
   return [...new Set(gameNames)];
 };
 
-	const [todaySummary, setTodaySummary] = useState({
+  const [todaySummary, setTodaySummary] = useState({
     totalAttempts: 0,
     totalProfit: 0,
     averageBetAmount: 0,
-		 averagePrizeMultiplier: 0, // 添加平均支付倍数
+    averagePrizeMultiplier: 0, // 添加平均支付倍数
     profitMultiplier: 0,
   });
 
@@ -75,21 +75,23 @@ function OfflineTigerGamePage({ onLogout }) {
     calculateTodaySummary();
   }, [logs]);
 
-	const calculateTodaySummary = () => {
+    const calculateTodaySummary = () => {
     const today = new Date().toISOString().split('T')[0];
     const todayLogs = logs.filter(log => log.created_at.startsWith(today));
 
     let totalAttempts = 0;
     let totalProfit = 0;
     let totalBetAmount = 0;
-		let totalPrizeMultiplier = 0;
+    let totalPrizeMultiplier = 0;
+    let winningLogCount = 0;
 
-     todayLogs.forEach(log => {
+    todayLogs.forEach(log => {
       totalAttempts += log.attempts || 0;
       totalProfit += (log.cash_out_amount || 0) - (log.input_amount || 0);
       totalBetAmount += log.bet_amount || 0;
-      if (log.bet_amount > 0) {
+      if (log.bet_amount > 0 && log.prize_amount > 0) {
         totalPrizeMultiplier += (log.prize_amount || 0) / log.bet_amount;
+        winningLogCount++;
       }
     });
 
@@ -101,10 +103,11 @@ function OfflineTigerGamePage({ onLogout }) {
       totalAttempts,
       totalProfit,
       averageBetAmount,
-			averagePrizeMultiplier, // 设置平均支付倍数
+      averagePrizeMultiplier, // 设置平均支付倍数
       profitMultiplier,
     });
   };
+
 	
 useEffect(() => {
   // 当 logs 发生变化时，更新 gameNames
