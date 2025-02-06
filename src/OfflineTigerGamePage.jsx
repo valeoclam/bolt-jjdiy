@@ -60,6 +60,16 @@ function OfflineTigerGamePage({ onLogout }) {
 	const [filteredLogs, setFilteredLogs] = useState([]); // 添加 filteredLogs 状态
 	const [startDate, setStartDate] = useState(''); // 设置默认值
   const [endDate, setEndDate] = useState(''); // 设置默认值
+	const [editingLogId, setEditingLogId] = useState(null); // 新增：编辑状态
+  const [editedInputAmount, setEditedInputAmount] = useState(''); // 新增：编辑时的投入金额
+  const [editedCashOutAmount, setEditedCashOutAmount] = useState(''); // 新增：编辑时的兑换金额
+	const [editedGameName, setEditedGameName] = useState(''); // 新增
+  const [editedBetAmount, setEditedBetAmount] = useState(''); // 新增
+  const [editedPrizeAmount, setEditedPrizeAmount] = useState(''); // 新增
+  const [editedAttempts, setEditedAttempts] = useState(''); // 新增
+	const [editedEncounteredTrailer, setEditedEncounteredTrailer] = useState(false); // 新增
+	const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
 
 
 
@@ -76,6 +86,124 @@ function OfflineTigerGamePage({ onLogout }) {
 		averagePrizeMultiplier: 0, // 添加平均支付倍数
     profitMultiplier: 0,
   });
+
+	const handleDeleteLog = async (id) => {
+    if (confirmDeleteId === id) {
+      setLoading(true);
+      try {
+        // 1. 从 IndexedDB 删除
+        const request = window.indexedDB.open(dbName, dbVersion);
+
+        request.onsuccess = (event) => {
+          const db = event.target.result;
+          const transaction = db.transaction(storeName, 'readwrite');
+          const store = transaction.objectStore(storeName);
+          const deleteRequest = store.delete(id);
+
+          deleteRequest.onsuccess = () => {
+            console.log(`成功删除 ID 为 ${id} 的记录`);
+            // 2. 更新状态
+            setLogs(prevLogs => prevLogs.filter(log => log.id !== id));
+            setConfirmDeleteId(null); // 清除确认删除的 ID
+          };
+
+          deleteRequest.onerror = (event) => {
+            console.error('IndexedDB 数据删除失败:', event.target.error);
+            setErrorMessage('删除本地数据失败，请重试。');
+          };
+        };
+
+        request.onerror = (event) => {
+          console.error('打开 IndexedDB 失败:', event.target.error);
+          setErrorMessage('打开本地数据库失败，请重试。');
+        };
+      } catch (error) {
+        console.error("删除记录时发生错误:", error);
+        setErrorMessage("删除记录时发生错误，请重试。");
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setConfirmDeleteId(id); // 设置需要确认删除的 ID
+    }
+  };
+
+  // 新增：处理编辑历史记录
+  const handleEditLog = (log) => {
+    setEditingLogId(log.id);
+    setEditedGameName(log.game_name);
+    setEditedInputAmount(log.input_amount);
+    setEditedBetAmount(log.bet_amount);
+    setEditedPrizeAmount(log.prize_amount);
+    setEditedCashOutAmount(log.cash_out_amount);
+    setEditedAttempts(log.attempts);
+    setEditedEncounteredTrailer(log.encountered_trailer);
+  };
+
+  // 新增：处理取消编辑
+  const handleCancelEdit = () => {
+    setEditingLogId(null);
+  };
+
+  // 新增：处理保存编辑
+    const handleSaveEdit = async (log) => {
+    setLoading(true);
+    try {
+      // 1. 更新 IndexedDB
+      const request = window.indexedDB.open(dbName, dbVersion);
+
+      request.onsuccess = (event) => {
+        const db = event.target.result;
+        const transaction = db.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
+
+        const updatedLog = {
+          ...log,
+          game_name: editedGameName,
+          input_amount: parseFloat(editedInputAmount),
+          bet_amount: parseFloat(editedBetAmount),
+          prize_amount: parseFloat(editedPrizeAmount),
+          cash_out_amount: parseFloat(editedCashOutAmount),
+          attempts: parseInt(editedAttempts, 10),
+          encountered_trailer: editedEncounteredTrailer,
+        };
+
+        const putRequest = store.put(updatedLog);
+
+        putRequest.onsuccess = () => {
+          console.log(`成功更新 ID 为 ${log.id} 的记录`);
+          // 2. 更新状态
+          setLogs(prevLogs =>
+            prevLogs.map(item => (item.id === log.id ? updatedLog : item))
+          );
+          setEditingLogId(null);
+        };
+
+        putRequest.onerror = (event) => {
+          console.error('IndexedDB 数据更新失败:', event.target.error);
+          setErrorMessage('更新本地数据失败，请重试。');
+        };
+      };
+
+      request.onerror = (event) => {
+        console.error('打开 IndexedDB 失败:', event.target.error);
+        setErrorMessage('打开本地数据库失败，请重试。');
+      };
+    } catch (error) {
+      console.error("保存编辑时发生错误:", error);
+      setErrorMessage("保存编辑时发生错误，请重试。");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+ useEffect(() => {
+    // 在 logs 变化时更新总记录数等信息
+    setTotalLogs(logs.length);
+    setSyncedLogs(logs.filter(log => log.isSynced).length);
+    setUnsyncedLogs(logs.filter(log => !log.isSynced).length);
+  }, [logs]);
+
 
 	useEffect(() => {
     calculateTodaySummary();
@@ -1227,75 +1355,165 @@ function OfflineTigerGamePage({ onLogout }) {
         </div>
       )}
 			  {showHistory && (
-        <div className="inspiration-list">
-          <h3>历史记录</h3>
-					<p>
-    <strong>总记录数:</strong> {totalLogs}
-  </p>
-  <p>
-    <strong>已同步记录数:</strong> {syncedLogs}
-  </p>
-  <p>
-    <strong>未同步记录数:</strong> {unsyncedLogs}
-  </p>
-					<div>
-    <label>
-      只显示送钱老虎
+  <div className="inspiration-list">
+    <h3>历史记录</h3>
+    <p>
+      <strong>总记录数:</strong> {totalLogs}
+    </p>
+    <p>
+      <strong>已同步记录数:</strong> {syncedLogs}
+    </p>
+    <p>
+      <strong>未同步记录数:</strong> {unsyncedLogs}
+    </p>
+    <div>
+      <label>
+        只显示送钱老虎
+        <input
+          type="checkbox"
+          checked={prizeAmountFilter}
+          onChange={() => {
+            setPrizeAmountFilter(!prizeAmountFilter);
+          }}
+        />
+      </label>
+    </div>
+    {logs.map((log) => (
+      <div key={log.id} className="inspiration-item">
+        {editingLogId === log.id ? (
+          // 编辑模式
+          <>
+    <div className="form-group">
+      <label htmlFor="editedGameName">游戏名称:</label>
       <input
-        type="checkbox"
-        checked={prizeAmountFilter}
-        onChange={() => {
-          setPrizeAmountFilter(!prizeAmountFilter);
-        }}
+        type="text"
+        id="editedGameName"
+        value={editedGameName}
+        onChange={(e) => setEditedGameName(e.target.value)}
       />
-    </label>
-  </div>
-          {logs.map((log) => (
-            <div key={log.id} className="inspiration-item">
-							<p>
-         				 <strong>游戏名称:</strong> {log.game_name}
-        			</p>
-              <p>
-                <strong>添加时间:</strong> {new Date(log.created_at).toLocaleString()}
-              </p>
-              {log.updated_at && (
-                <p>
-                  <strong>修改时间:</strong> {new Date(log.updated_at).toLocaleString()}
-                </p>
-              )}
-              <p>
-                <strong>投入金额:</strong> {log.input_amount}
-              </p>
-              <p>
-                <strong>下注金额:</strong> {log.bet_amount}
-              </p>
-              <p>
-                <strong>中奖金额:</strong> {log.prize_amount}
-              </p>
-              <p>
-                <strong>兑换金额:</strong> {log.cash_out_amount}
-              </p>
-              <p>
-                <strong>盈亏金额:</strong> {(log.cash_out_amount - log.input_amount).toFixed(2)}
-              </p>
-              <p>
-                <strong>尝试次数:</strong> {log.attempts}
-              </p>
-              <p>
-                <strong>遇到预告片:</strong> {log.encountered_trailer ? '是' : '否'}
-              </p>
-              {log.main_photo && <img src={log.main_photo} alt="Main Log" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
-              <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                {log.winning_photos &&
-                  log.winning_photos.map((photo, index) => (
-                    <img key={index} src={photo} alt={`Winning Log ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
-                  ))}
-              </div>
+    </div>
+    <div className="form-group">
+      <label htmlFor="editedInputAmount">投入金额:</label>
+      <input
+        type="number"
+        id="editedInputAmount"
+        value={editedInputAmount}
+        onChange={(e) => setEditedInputAmount(e.target.value)}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="editedBetAmount">下注金额:</label>
+      <input
+        type="number"
+        id="editedBetAmount"
+        value={editedBetAmount}
+        onChange={(e) => setEditedBetAmount(e.target.value)}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="editedPrizeAmount">中奖金额:</label>
+      <input
+        type="number"
+        id="editedPrizeAmount"
+        value={editedPrizeAmount}
+        onChange={(e) => setEditedPrizeAmount(e.target.value)}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="editedCashOutAmount">兑换金额:</label>
+      <input
+        type="number"
+        id="editedCashOutAmount"
+        value={editedCashOutAmount}
+        onChange={(e) => setEditedCashOutAmount(e.target.value)}
+      />
+    </div>
+    <div className="form-group">
+      <label htmlFor="editedAttempts">尝试次数:</label>
+      <input
+        type="number"
+        id="editedAttempts"
+        value={editedAttempts}
+        onChange={(e) => setEditedAttempts(e.target.value)}
+      />
+    </div>
+    <div className="form-group">
+      <label>
+        遇到预告片:
+        <input
+          type="checkbox"
+          name="editedEncounteredTrailer"
+          checked={editedEncounteredTrailer}
+          onChange={() => setEditedEncounteredTrailer(!editedEncounteredTrailer)}
+        />
+      </label>
+    </div>
+    <div className="edit-buttons">
+      <button onClick={() => handleSaveEdit(log)} disabled={loading}>
+        {loading ? "保存中..." : "保存"}
+      </button>
+      <button onClick={handleCancelEdit} disabled={loading}>
+        取消
+      </button>
             </div>
-          ))}
-        </div>
-      )}
+          </>
+        ) : (
+          // 查看模式
+          <>
+            <p>
+              <strong>游戏名称:</strong> {log.game_name}
+            </p>
+            <p>
+              <strong>添加时间:</strong> {new Date(log.created_at).toLocaleString()}
+            </p>
+            {log.updated_at && (
+              <p>
+                <strong>修改时间:</strong> {new Date(log.updated_at).toLocaleString()}
+              </p>
+            )}
+            <p>
+              <strong>投入金额:</strong> {log.input_amount}
+            </p>
+            <p>
+              <strong>下注金额:</strong> {log.bet_amount}
+            </p>
+            <p>
+              <strong>中奖金额:</strong> {log.prize_amount}
+            </p>
+            <p>
+              <strong>兑换金额:</strong> {log.cash_out_amount}
+            </p>
+            <p>
+              <strong>盈亏金额:</strong> {(log.cash_out_amount - log.input_amount).toFixed(2)}
+            </p>
+            <p>
+              <strong>尝试次数:</strong> {log.attempts}
+            </p>
+            <p>
+              <strong>遇到预告片:</strong> {log.encountered_trailer ? '是' : '否'}
+            </p>
+            {log.main_photo && <img src={log.main_photo} alt="Main Log" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />}
+            <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+              {log.winning_photos &&
+                log.winning_photos.map((photo, index) => (
+                  <img key={index} src={photo} alt={`Winning Log ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', objectFit: 'contain', marginRight: '5px', marginBottom: '5px' }} />
+                ))}
+            </div>
+            <div className="edit-buttons">
+              <button onClick={() => handleEditLog(log)} disabled={loading}>
+                编辑
+              </button>
+              <button onClick={() => handleDeleteLog(log.id)} disabled={loading}>
+   						 {confirmDeleteId === log.id ? '确认删除' : '删除'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
+    ))}
+  </div>
+)}
+			 </div>
   );
 }
 
