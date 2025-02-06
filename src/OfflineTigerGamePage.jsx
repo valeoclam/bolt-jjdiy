@@ -57,6 +57,7 @@ function OfflineTigerGamePage({ onLogout }) {
 	const [isKeyboardEnabled, setIsKeyboardEnabled] = useState(true);
 	const [showTracking, setShowTracking] = useState(false);
 	const [prizeAmountFilter, setPrizeAmountFilter] = useState(false);
+	const [filteredLogs, setFilteredLogs] = useState([]); // 添加 filteredLogs 状态
 
 
 
@@ -245,13 +246,18 @@ function OfflineTigerGamePage({ onLogout }) {
       getAllRequest.onsuccess = (event) => {
         let allLogs = event.target.result || [];
 
-				 if (prizeAmountFilter) {
-          allLogs = allLogs.filter(log => log.prize_amount > 0);
+				 // 添加 prizeAmountFilter 条件
+        let filteredLogs = allLogs; // 定义 filteredLogs 变量
+        if (!prizeAmountFilter) { // 注意这里的条件取反
+          filteredLogs = allLogs.filter(log => log.prize_amount > 0);
         }
 				
-		// 添加排序代码
-        const sortedLogs = allLogs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+			const sortedLogs = filteredLogs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         setLogs(sortedLogs);
+        setFilteredLogs(sortedLogs); // 同时更新 filteredLogs 状态
+        setTotalLogs(allLogs.length); // 使用 allLogs 计算总记录数
+        setSyncedLogs(allLogs.filter(log => log.isSynced).length); // 使用 allLogs 计算已同步记录数
+        setUnsyncedLogs(allLogs.filter(log => !log.isSynced).length); // 使用 allLogs 计算未同步记录数
         setLoading(false);
       };
 
