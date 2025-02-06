@@ -94,7 +94,7 @@ function OfflineTigerGamePage({ onLogout }) {
     });
 
     const averageBetAmount = todayLogs.length > 0 ? totalBetAmount / todayLogs.length : 0;
-    const averagePrizeMultiplier = todayLogs.length > 0 && totalBetAmount > 0 ? totalPrizeMultiplier / todayLogs.length : 0; // 计算平均支付倍数
+    const averagePrizeMultiplier = winningLogCount > 0 ? totalPrizeMultiplier / winningLogCount : 0; // 修改平均支付倍数的计算方式
     const profitMultiplier = averageBetAmount > 0 ? totalProfit / averageBetAmount : 0;
 
     setTodaySummary({
