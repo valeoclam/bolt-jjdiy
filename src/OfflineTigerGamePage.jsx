@@ -117,11 +117,56 @@ function OfflineTigerGamePage({ onLogout }) {
       profitMultiplier,
     });
   };
+
+	 // 计算最大支付倍数
+  const calculateMaxPaymentMultiplier = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayLogs = logs.filter(log => log.created_at.startsWith(today));
+
+    let maxMultiplier = 0;
+    todayLogs.forEach(log => {
+      if (log.bet_amount > 0 && log.prize_amount > 0) {
+        const multiplier = log.prize_amount / log.bet_amount;
+        maxMultiplier = Math.max(maxMultiplier, multiplier);
+      }
+    });
+    return maxMultiplier.toFixed(2);
+  };
+
+  // 计算最大平均支付倍数
+  const calculateMaxAveragePaymentMultiplier = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayLogs = logs.filter(log => log.created_at.startsWith(today));
+
+    let totalBetAmount = 0;
+    let maxPrizeAmount = 0;
+    let validRecordCount = 0;
+
+    todayLogs.forEach(log => {
+      totalBetAmount += log.bet_amount;
+      if (log.prize_amount > maxPrizeAmount) {
+        maxPrizeAmount = log.prize_amount;
+      }
+      validRecordCount++;
+    });
+
+    const averageBetAmount = validRecordCount > 0 ? totalBetAmount / validRecordCount : 0;
+    const maxAverageMultiplier = averageBetAmount > 0 ? maxPrizeAmount / averageBetAmount : 0;
+    return maxAverageMultiplier.toFixed(2);
+  };
+
+	// 监听最大平均支付倍数的变化
+  useEffect(() => {
+    const maxAverageMultiplier = calculateMaxAveragePaymentMultiplier();
+    if (parseFloat(maxAverageMultiplier) > 50) {
+      window.alert(`最大平均支付倍数已超过 50！当前值为：${maxAverageMultiplier}`);
+    }
+  }, [logs]); // 当 logs 变化时，重新计算并监听
 	
-useEffect(() => {
+	useEffect(() => {
   // 当 logs 发生变化时，更新 gameNames
-  setGameNames(getUniqueGameNames());
-}, [logs]);
+ 		 setGameNames(getUniqueGameNames());
+	}, [logs]);
 
 
 
@@ -779,6 +824,14 @@ useEffect(() => {
       <tr>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>平均支付倍数</td>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.averagePrizeMultiplier.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>最大支付倍数</td>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{calculateMaxPaymentMultiplier()}</td>
+      </tr>
+      <tr>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>最大平均支付倍数</td>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{calculateMaxAveragePaymentMultiplier()}</td>
       </tr>
       <tr>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>盈亏倍数</td>
