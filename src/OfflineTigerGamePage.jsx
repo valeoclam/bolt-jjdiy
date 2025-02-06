@@ -755,7 +755,7 @@ useEffect(() => {
 		<table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
     <thead>
       <tr>
-        <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>指标</th>
+        <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>今日汇总</th>
         <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>数值</th>
       </tr>
     </thead>
