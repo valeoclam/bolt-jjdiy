@@ -58,8 +58,6 @@ function OfflineTigerGamePage({ onLogout }) {
 	const [showTracking, setShowTracking] = useState(false);
 	const [prizeAmountFilter, setPrizeAmountFilter] = useState(false);
 	const [filteredLogs, setFilteredLogs] = useState([]); // 添加 filteredLogs 状态
-	const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
 
 
 
@@ -248,18 +246,9 @@ function OfflineTigerGamePage({ onLogout }) {
       getAllRequest.onsuccess = (event) => {
         let allLogs = event.target.result || [];
 
-				// 筛选出符合时间范围的记录
-        let timeFilteredLogs = allLogs;
-        if (startDate) {
-          timeFilteredLogs = timeFilteredLogs.filter(log => new Date(log.created_at) >= new Date(startDate));
-        }
-        if (endDate) {
-          timeFilteredLogs = timeFilteredLogs.filter(log => new Date(log.created_at) <= new Date(endDate));
-        }
-
-				// 添加 prizeAmountFilter 条件
+				 // 添加 prizeAmountFilter 条件
         let filteredLogs = allLogs; // 定义 filteredLogs 变量
-        if (prizeAmountFilter) { 
+        if (prizeAmountFilter) { // 注意这里的条件取反
           filteredLogs = allLogs.filter(log => log.prize_amount > 0);
         }
 				
@@ -288,75 +277,7 @@ function OfflineTigerGamePage({ onLogout }) {
 
 		useEffect(() => {
     fetchLogs(); // 组件加载时获取数据
-  }, [prizeAmountFilter, startDate, endDate]);
-
-	// 修改 calculateTotalProfit 等函数，使用 timeFilteredLogs 作为数据源
-  const calculateTotalProfit = () => {
-    return allTodayLogs.reduce( // 使用 allTodayLogs
-      (total, log) => total + (log.cash_out_amount - log.input_amount),
-      0,
-    ).toFixed(2);
-  };
-
-  const calculateAverageAttempts = () => {
-    if (allTodayLogs.length === 0) return 0; // 使用 allTodayLogs
-    const totalAttempts = allTodayLogs.reduce((sum, log) => sum + log.attempts, 0); // 使用 allTodayLogs
-    return (totalAttempts / allTodayLogs.length).toFixed(2);
-  };
-
-  const calculateEncounteredTrailerPercentage = () => {
-    if (allTodayLogs.length === 0) return '0.00%'; // 使用 allTodayLogs
-
-    const encounteredTrailerCount = allTodayLogs.filter(log => log.encountered_trailer).length; // 使用 allTodayLogs
-    const percentage = (encounteredTrailerCount / allTodayLogs.length) * 100; // 使用 allTodayLogs
-    return percentage.toFixed(2) + '%';
-  };
-
-  const calculateAverageAttemptsForWins = () => {
-    const winningLogs = allTodayLogs.filter(log => (log.cash_out_amount - log.input_amount) > 0); // 使用 allTodayLogs
-    if (winningLogs.length === 0) return 0;
-    const totalAttempts = winningLogs.reduce((sum, log) => sum + log.attempts, 0);
-    return (totalAttempts / winningLogs.length).toFixed(2);
-  };
-
-  const calculateAverageAttemptsForLosses = () => {
-    const losingLogs = allTodayLogs.filter(log => (log.cash_out_amount - log.input_amount) < 0); // 使用 allTodayLogs
-    if (losingLogs.length === 0) return 0;
-    const totalAttempts = losingLogs.reduce((sum, log) => sum + log.attempts, 0);
-    return (totalAttempts / losingLogs.length).toFixed(2);
-  };
-
-  const calculateAverageAttemptsWithTrailer = () => {
-    const trailerLogs = allTodayLogs.filter(log => log.encountered_trailer); // 使用 allTodayLogs
-    if (trailerLogs.length === 0) return 0;
-    const totalAttempts = trailerLogs.reduce((sum, log) => sum + log.attempts, 0);
-    return (totalAttempts / trailerLogs.length).toFixed(2);
-  };
-
-  const calculateAverageBetAmount = () => {
-    if (allTodayLogs.length === 0) return 0;
-    const totalBetAmount = allTodayLogs.reduce((sum, log) => sum + log.bet_amount, 0);
-    return (totalBetAmount / allTodayLogs.length).toFixed(2);
-  };
-
-  const calculateAveragePrizeMultiplier = () => {
-    if (allTodayLogs.length === 0) return 0;
-    let validLogs = allTodayLogs.filter(log => log.bet_amount > 0);
-    if (validLogs.length === 0) return 0;
-    const totalMultiplier = validLogs.reduce((sum, log) => sum + (log.prize_amount / log.bet_amount), 0);
-    return (totalMultiplier / validLogs.length).toFixed(2);
-  };
-
-  const calculateWinningLogsCount = () => {
-    return allTodayLogs.filter(log => log.prize_amount > 0).length;
-  };
-
-  const calculateWinningLogsPercentage = () => {
-    if (allTodayLogs.length === 0) return '0.00%';
-    const winningLogsCount = allTodayLogs.filter(log => log.prize_amount > 0).length;
-    const percentage = (winningLogsCount / allTodayLogs.length) * 100;
-    return percentage.toFixed(2) + '%';
-  };
+  }, [prizeAmountFilter]);
 
   const handleMainPhotoChange = async (e) => {
     setErrorMessage('');
@@ -899,53 +820,8 @@ function OfflineTigerGamePage({ onLogout }) {
               onChange={handleMainPhotoChange}
               ref={fileInputRef}
               style={{ display: 'none' }}
-             />
-          
-          {mainPhoto && (
-            <div style={{ position: 'relative', display: 'inline-block', marginTop: '10px' }}>
-              <img src={mainPhoto} alt="Main" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
-              <button
-                type="button"
-                onClick={handleRemoveMainPhoto}
-                style={{
-                  position: 'absolute',
-                  top: '5px',
-                  right: '5px',
-                  background: 'rgba(0, 0, 0, 0.5)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                x
-              </button>
-            </div>
-          )}
-		   		{showTracking && (
-            <>
-              <div>
-                <label>开始时间:</label>
-                <input
-                  type="datetime-local"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <label>结束时间:</label>
-                <input
-                  type="datetime-local"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
-              </div>
+            />
+						{showTracking && (
 		<table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
     <thead>
       <tr>
@@ -988,10 +864,8 @@ function OfflineTigerGamePage({ onLogout }) {
       </tr>
     </tbody>
   </table>
-	    </>
-          )}
-						
-          <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px' }}>开始打老虎</button>
+			   )}
+            <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px' }}>开始打老虎</button>
             {mainPhoto && (
               <div style={{ position: 'relative', display: 'inline-block', marginTop: '10px' }}>
                 <img src={mainPhoto} alt="Main" style={{ maxWidth: '100%', maxHeight: '300px', display: 'block', objectFit: 'contain' }} />
