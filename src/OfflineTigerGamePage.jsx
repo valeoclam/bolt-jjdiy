@@ -63,6 +63,42 @@ function OfflineTigerGamePage({ onLogout }) {
   return [...new Set(gameNames)];
 };
 
+	const [todaySummary, setTodaySummary] = useState({
+    totalAttempts: 0,
+    totalProfit: 0,
+    averageBetAmount: 0,
+    profitMultiplier: 0,
+  });
+
+	useEffect(() => {
+    calculateTodaySummary();
+  }, [logs]);
+
+	const calculateTodaySummary = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayLogs = logs.filter(log => log.created_at.startsWith(today));
+
+    let totalAttempts = 0;
+    let totalProfit = 0;
+    let totalBetAmount = 0;
+
+    todayLogs.forEach(log => {
+      totalAttempts += log.attempts;
+      totalProfit += (log.cash_out_amount - log.input_amount);
+      totalBetAmount += log.bet_amount;
+    });
+
+    const averageBetAmount = todayLogs.length > 0 ? totalBetAmount / todayLogs.length : 0;
+    const profitMultiplier = averageBetAmount > 0 ? totalProfit / averageBetAmount : 0;
+
+    setTodaySummary({
+      totalAttempts,
+      totalProfit,
+      averageBetAmount,
+      profitMultiplier,
+    });
+  };
+	
 useEffect(() => {
   // 当 logs 发生变化时，更新 gameNames
   setGameNames(getUniqueGameNames());
@@ -678,6 +714,32 @@ useEffect(() => {
               ref={fileInputRef}
               style={{ display: 'none' }}
             />
+						<table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+    <thead>
+      <tr>
+        <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>指标</th>
+        <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>数值</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>总尝试次数</td>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.totalAttempts}</td>
+      </tr>
+      <tr>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>盈亏总额</td>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.totalProfit.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>平均下注金额</td>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.averageBetAmount.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>盈亏倍数</td>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.profitMultiplier.toFixed(2)}</td>
+      </tr>
+    </tbody>
+  </table>
             <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px' }}>开始打老虎</button>
             {mainPhoto && (
               <div style={{ position: 'relative', display: 'inline-block', marginTop: '10px' }}>
