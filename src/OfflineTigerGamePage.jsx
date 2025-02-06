@@ -85,40 +85,47 @@ function OfflineTigerGamePage({ onLogout }) {
     }
   }, [logs, showTracking]);
 
-	const calculateTodaySummary = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const todayLogs = logs.filter(log => log.created_at.startsWith(today));
+const calculateTodaySummary = () => {
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()); // 当天的起始时间
+    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1); // 当天的结束时间
 
-    let totalRecords = todayLogs.length; // 计算总记录数
-		let totalAttempts = 0;
+    const todayLogs = logs.filter(log => {
+        const logDate = new Date(log.created_at);
+        return logDate >= todayStart && logDate < todayEnd;
+    });
+
+    let totalRecords = todayLogs.length;
+    let totalAttempts = 0;
     let totalProfit = 0;
     let totalBetAmount = 0;
     let totalPrizeMultiplier = 0;
     let winningLogCount = 0;
 
     todayLogs.forEach(log => {
-      totalAttempts += log.attempts || 0;
-      totalProfit += (log.cash_out_amount || 0) - (log.input_amount || 0);
-      totalBetAmount += log.bet_amount || 0;
-      if (log.bet_amount > 0 && log.prize_amount > 0) {
-        totalPrizeMultiplier += (log.prize_amount || 0) / log.bet_amount;
-        winningLogCount++;
-      }
+        totalAttempts += log.attempts || 0;
+        totalProfit += (log.cash_out_amount || 0) - (log.input_amount || 0);
+        totalBetAmount += log.bet_amount || 0;
+        if (log.bet_amount > 0 && log.prize_amount > 0) {
+            totalPrizeMultiplier += (log.prize_amount || 0) / log.bet_amount;
+            winningLogCount++;
+        }
     });
 
     const averageBetAmount = todayLogs.length > 0 ? totalBetAmount / todayLogs.length : 0;
-    const averagePrizeMultiplier = winningLogCount > 0 ? totalPrizeMultiplier / winningLogCount : 0; // 修改平均支付倍数的计算方式
+    const averagePrizeMultiplier = winningLogCount > 0 ? totalPrizeMultiplier / winningLogCount : 0;
     const profitMultiplier = averageBetAmount > 0 ? totalProfit / averageBetAmount : 0;
 
     setTodaySummary({
-      totalRecords: totalRecords, // 设置总记录数
-			totalAttempts,
-      totalProfit,
-      averageBetAmount,
-      averagePrizeMultiplier, // 设置平均支付倍数
-      profitMultiplier,
+        totalRecords: totalRecords,
+        totalAttempts,
+        totalProfit,
+        averageBetAmount,
+        averagePrizeMultiplier,
+        profitMultiplier,
     });
-  };
+};
+
 
 	 // 计算最大支付倍数
   const calculateMaxPaymentMultiplier = () => {
