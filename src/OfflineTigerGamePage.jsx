@@ -129,40 +129,52 @@ const calculateTodaySummary = () => {
 
 	 // 计算最大支付倍数
   const calculateMaxPaymentMultiplier = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const todayLogs = logs.filter(log => log.created_at.startsWith(today));
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    const todayLogs = logs.filter(log => {
+        const logDate = new Date(log.created_at);
+        return logDate >= todayStart && logDate < todayEnd;
+    });
 
     let maxMultiplier = 0;
     todayLogs.forEach(log => {
-      if (log.bet_amount > 0 && log.prize_amount > 0) {
-        const multiplier = log.prize_amount / log.bet_amount;
-        maxMultiplier = Math.max(maxMultiplier, multiplier);
-      }
+        if (log.bet_amount > 0 && log.prize_amount > 0) {
+            const multiplier = log.prize_amount / log.bet_amount;
+            maxMultiplier = Math.max(maxMultiplier, multiplier);
+        }
     });
     return maxMultiplier.toFixed(2);
-  };
+};
+
 
   // 计算最大平均支付倍数
   const calculateMaxAveragePaymentMultiplier = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const todayLogs = logs.filter(log => log.created_at.startsWith(today));
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    const todayLogs = logs.filter(log => {
+        const logDate = new Date(log.created_at);
+        return logDate >= todayStart && logDate < todayEnd;
+    });
 
     let totalBetAmount = 0;
     let maxPrizeAmount = 0;
     let validRecordCount = 0;
 
     todayLogs.forEach(log => {
-      totalBetAmount += log.bet_amount;
-      if (log.prize_amount > maxPrizeAmount) {
-        maxPrizeAmount = log.prize_amount;
-      }
-      validRecordCount++;
+        totalBetAmount += log.bet_amount;
+        if (log.prize_amount > maxPrizeAmount) {
+            maxPrizeAmount = log.prize_amount;
+        }
+        validRecordCount++;
     });
 
     const averageBetAmount = validRecordCount > 0 ? totalBetAmount / validRecordCount : 0;
     const maxAverageMultiplier = averageBetAmount > 0 ? maxPrizeAmount / averageBetAmount : 0;
     return maxAverageMultiplier.toFixed(2);
-  };
+};
+
 
 	// 监听最大平均支付倍数的变化
   useEffect(() => {
