@@ -248,7 +248,7 @@ function OfflineTigerGamePage({ onLogout }) {
 
 				 // 添加 prizeAmountFilter 条件
         let filteredLogs = allLogs; // 定义 filteredLogs 变量
-        if (!prizeAmountFilter) { // 注意这里的条件取反
+        if (prizeAmountFilter) { // 注意这里的条件取反
           filteredLogs = allLogs.filter(log => log.prize_amount > 0);
         }
 				
@@ -274,6 +274,10 @@ function OfflineTigerGamePage({ onLogout }) {
       setLoading(false);
     };
   };
+
+		useEffect(() => {
+    fetchLogs(); // 组件加载时获取数据
+  }, [prizeAmountFilter]);
 
   const handleMainPhotoChange = async (e) => {
     setErrorMessage('');
@@ -1186,7 +1190,6 @@ function OfflineTigerGamePage({ onLogout }) {
         checked={prizeAmountFilter}
         onChange={() => {
           setPrizeAmountFilter(!prizeAmountFilter);
-          fetchLogs();
         }}
       />
     </label>
