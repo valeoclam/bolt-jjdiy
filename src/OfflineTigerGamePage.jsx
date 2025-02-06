@@ -67,6 +67,7 @@ function OfflineTigerGamePage({ onLogout }) {
     totalAttempts: 0,
     totalProfit: 0,
     averageBetAmount: 0,
+		 averagePrizeMultiplier: 0, // 添加平均支付倍数
     profitMultiplier: 0,
   });
 
@@ -81,20 +82,26 @@ function OfflineTigerGamePage({ onLogout }) {
     let totalAttempts = 0;
     let totalProfit = 0;
     let totalBetAmount = 0;
+		let totalPrizeMultiplier = 0;
 
-    todayLogs.forEach(log => {
-      totalAttempts += log.attempts;
-      totalProfit += (log.cash_out_amount - log.input_amount);
-      totalBetAmount += log.bet_amount;
+     todayLogs.forEach(log => {
+      totalAttempts += log.attempts || 0;
+      totalProfit += (log.cash_out_amount || 0) - (log.input_amount || 0);
+      totalBetAmount += log.bet_amount || 0;
+      if (log.bet_amount > 0) {
+        totalPrizeMultiplier += (log.prize_amount || 0) / log.bet_amount;
+      }
     });
 
     const averageBetAmount = todayLogs.length > 0 ? totalBetAmount / todayLogs.length : 0;
+    const averagePrizeMultiplier = todayLogs.length > 0 && totalBetAmount > 0 ? totalPrizeMultiplier / todayLogs.length : 0; // 计算平均支付倍数
     const profitMultiplier = averageBetAmount > 0 ? totalProfit / averageBetAmount : 0;
 
     setTodaySummary({
       totalAttempts,
       totalProfit,
       averageBetAmount,
+			averagePrizeMultiplier, // 设置平均支付倍数
       profitMultiplier,
     });
   };
@@ -733,6 +740,10 @@ useEffect(() => {
       <tr>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>平均下注金额</td>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.averageBetAmount.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>平均支付倍数</td>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.averagePrizeMultiplier.toFixed(2)}</td>
       </tr>
       <tr>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>盈亏倍数</td>
