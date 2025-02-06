@@ -58,6 +58,8 @@ function OfflineTigerGamePage({ onLogout }) {
 	const [showTracking, setShowTracking] = useState(false);
 	const [prizeAmountFilter, setPrizeAmountFilter] = useState(false);
 	const [filteredLogs, setFilteredLogs] = useState([]); // 添加 filteredLogs 状态
+	const [startDate, setStartDate] = useState(''); // 设置默认值
+  const [endDate, setEndDate] = useState(''); // 设置默认值
 
 
 
@@ -77,103 +79,119 @@ function OfflineTigerGamePage({ onLogout }) {
 
 	useEffect(() => {
     calculateTodaySummary();
-  }, [logs]);
+  }, [logs, startDate, endDate]);
 
 	useEffect(() => {
     if (showTracking) {
       calculateTodaySummary();
     }
-  }, [logs, showTracking]);
+  }, [logs, showTracking, startDate, endDate]);
 
-const calculateTodaySummary = () => {
-    const today = new Date();
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()); // 当天的起始时间
-    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1); // 当天的结束时间
 
-    const todayLogs = logs.filter(log => {
-        const logDate = new Date(log.created_at);
-        return logDate >= todayStart && logDate < todayEnd;
-    });
+	const calculateTodaySummary = () => {
+    const startDateObj = startDate ? new Date(startDate) : null;
+    const endDateObj = endDate ? new Date(endDate) : null;
 
-    let totalRecords = todayLogs.length;
-    let totalAttempts = 0;
+    let filteredLogs;
+    if (showTracking) {
+      filteredLogs = logs.filter(log => {
+          const logDate = new Date(log.created_at);
+          if (startDateObj && logDate < startDateObj) return false;
+          if (endDateObj && logDate > endDateObj) return false;
+          return true;
+      });
+    } else {
+      filteredLogs = []; // 如果 showTracking 为 false，则 filteredLogs 为空数组
+    }
+
+    let totalRecords = filteredLogs.length;
+		let totalAttempts = 0;
     let totalProfit = 0;
     let totalBetAmount = 0;
     let totalPrizeMultiplier = 0;
     let winningLogCount = 0;
 
-    todayLogs.forEach(log => {
-        totalAttempts += log.attempts || 0;
-        totalProfit += (log.cash_out_amount || 0) - (log.input_amount || 0);
-        totalBetAmount += log.bet_amount || 0;
-        if (log.bet_amount > 0 && log.prize_amount > 0) {
-            totalPrizeMultiplier += (log.prize_amount || 0) / log.bet_amount;
-            winningLogCount++;
-        }
+    filteredLogs.forEach(log => {
+      totalAttempts += log.attempts || 0;
+      totalProfit += (log.cash_out_amount || 0) - (log.input_amount || 0);
+      totalBetAmount += log.bet_amount || 0;
+      if (log.bet_amount > 0 && log.prize_amount > 0) {
+        totalPrizeMultiplier += (log.prize_amount || 0) / log.bet_amount;
+        winningLogCount++;
+      }
     });
 
-    const averageBetAmount = todayLogs.length > 0 ? totalBetAmount / todayLogs.length : 0;
+    const averageBetAmount = filteredLogs.length > 0 ? totalBetAmount / filteredLogs.length : 0;
     const averagePrizeMultiplier = winningLogCount > 0 ? totalPrizeMultiplier / winningLogCount : 0;
     const profitMultiplier = averageBetAmount > 0 ? totalProfit / averageBetAmount : 0;
 
     setTodaySummary({
-        totalRecords: totalRecords,
-        totalAttempts,
-        totalProfit,
-        averageBetAmount,
-        averagePrizeMultiplier,
-        profitMultiplier,
+      totalRecords: totalRecords,
+			totalAttempts,
+      totalProfit,
+      averageBetAmount,
+      averagePrizeMultiplier,
+      profitMultiplier,
     });
-};
+  };
+
 
 
 	 // 计算最大支付倍数
   const calculateMaxPaymentMultiplier = () => {
-    const today = new Date();
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-    const todayLogs = logs.filter(log => {
+    // const today = new Date().toISOString().split('T')[0];
+    // const todayLogs = logs.filter(log => log.created_at.startsWith(today));
+    const startDateObj = startDate ? new Date(startDate) : null;
+    const endDateObj = endDate ? new Date(endDate) : null;
+
+    const filteredLogs = logs.filter(log => {
         const logDate = new Date(log.created_at);
-        return logDate >= todayStart && logDate < todayEnd;
+        if (startDateObj && logDate < startDateObj) return false;
+        if (endDateObj && logDate > endDateObj) return false;
+        return true;
     });
 
     let maxMultiplier = 0;
-    todayLogs.forEach(log => {
-        if (log.bet_amount > 0 && log.prize_amount > 0) {
-            const multiplier = log.prize_amount / log.bet_amount;
-            maxMultiplier = Math.max(maxMultiplier, multiplier);
-        }
+    filteredLogs.forEach(log => {
+      if (log.bet_amount > 0 && log.prize_amount > 0) {
+        const multiplier = log.prize_amount / log.bet_amount;
+        maxMultiplier = Math.max(maxMultiplier, multiplier);
+      }
     });
     return maxMultiplier.toFixed(2);
-};
+  };
 
 
   // 计算最大平均支付倍数
   const calculateMaxAveragePaymentMultiplier = () => {
-    const today = new Date();
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-    const todayLogs = logs.filter(log => {
+    // const today = new Date().toISOString().split('T')[0];
+    // const todayLogs = logs.filter(log => log.created_at.startsWith(today));
+    const startDateObj = startDate ? new Date(startDate) : null;
+    const endDateObj = endDate ? new Date(endDate) : null;
+
+    const filteredLogs = logs.filter(log => {
         const logDate = new Date(log.created_at);
-        return logDate >= todayStart && logDate < todayEnd;
+        if (startDateObj && logDate < startDateObj) return false;
+        if (endDateObj && logDate > endDateObj) return false;
+        return true;
     });
 
     let totalBetAmount = 0;
     let maxPrizeAmount = 0;
     let validRecordCount = 0;
 
-    todayLogs.forEach(log => {
-        totalBetAmount += log.bet_amount;
-        if (log.prize_amount > maxPrizeAmount) {
-            maxPrizeAmount = log.prize_amount;
-        }
-        validRecordCount++;
+    filteredLogs.forEach(log => {
+      totalBetAmount += log.bet_amount;
+      if (log.prize_amount > maxPrizeAmount) {
+        maxPrizeAmount = log.prize_amount;
+      }
+      validRecordCount++;
     });
 
     const averageBetAmount = validRecordCount > 0 ? totalBetAmount / validRecordCount : 0;
     const maxAverageMultiplier = averageBetAmount > 0 ? maxPrizeAmount / averageBetAmount : 0;
     return maxAverageMultiplier.toFixed(2);
-};
+  };
 
 
 	// 监听最大平均支付倍数的变化
@@ -182,7 +200,7 @@ const calculateTodaySummary = () => {
     if (parseFloat(maxAverageMultiplier) > 50) {
       window.alert(`最大平均支付倍数已超过 50！当前值为：${maxAverageMultiplier}`);
     }
-  }, [logs]); // 当 logs 变化时，重新计算并监听
+  }, [logs, startDate, endDate]); // 当 logs 变化时，重新计算并监听
 	
 	useEffect(() => {
   // 当 logs 发生变化时，更新 gameNames
@@ -841,6 +859,23 @@ const calculateTodaySummary = () => {
               style={{ display: 'none' }}
             />
 						{showTracking && (
+			 <>
+    <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '10px' }}>
+      <label>开始时间:</label>
+      <input
+        type="datetime-local"
+        value={startDate}
+        onChange={(e) => setStartDate(e.target.value)}
+      />
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '10px' }}>
+      <label>结束时间:</label>
+      <input
+        type="datetime-local"
+        value={endDate}
+        onChange={(e) => setEndDate(e.target.value)}
+      />
+    </div>
 		<table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
     <thead>
       <tr>
@@ -883,6 +918,7 @@ const calculateTodaySummary = () => {
       </tr>
     </tbody>
   </table>
+			 </>
 			   )}
             <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px' }}>开始打老虎</button>
             {mainPhoto && (
@@ -1102,6 +1138,7 @@ const calculateTodaySummary = () => {
           </div>
         </div>
       )}
+			 
       <button type="button" onClick={handleSync} disabled={syncing} style={{ marginTop: '20px', backgroundColor: '#007bff' }}>
         {syncing ? '同步中...' : '同步到云端'}
       </button>
