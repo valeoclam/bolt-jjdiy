@@ -56,6 +56,7 @@ function OfflineTigerGamePage({ onLogout }) {
 	const gameNameInputRef = useRef(null);
 	const [isKeyboardEnabled, setIsKeyboardEnabled] = useState(true);
 	const [showTracking, setShowTracking] = useState(false);
+	const [prizeAmountFilter, setPrizeAmountFilter] = useState(false);
 
 
 
@@ -231,25 +232,39 @@ function OfflineTigerGamePage({ onLogout }) {
     };
   };
 
-  const fetchLogs = (db) => {
-    const transaction = db.transaction(storeName, 'readonly');
-    const store = transaction.objectStore(storeName);
-    const request = store.getAll();
+  const fetchLogs = () => {
+    setLoading(true);
+    const request = window.indexedDB.open(dbName, dbVersion);
 
     request.onsuccess = (event) => {
-    const allLogs = event.target.result || [];
+      const db = event.target.result;
+      const transaction = db.transaction(storeName, 'readonly');
+      const store = transaction.objectStore(storeName);
+      const getAllRequest = store.getAll();
+
+      getAllRequest.onsuccess = (event) => {
+        let allLogs = event.target.result || [];
+
+				 if (prizeAmountFilter) {
+          allLogs = allLogs.filter(log => log.prize_amount > 0);
+        }
+				
 		// 添加排序代码
-		const sortedLogs = allLogs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    setLogs(allLogs);
-    setTotalLogs(allLogs.length);
-    setSyncedLogs(allLogs.filter(log => log.isSynced).length);
-    setUnsyncedLogs(allLogs.filter(log => !log.isSynced).length);
-    setLoading(false);
-  };
+        const sortedLogs = allLogs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        setLogs(sortedLogs);
+        setLoading(false);
+      };
+
+      getAllRequest.onerror = (event) => {
+        console.error('获取 IndexedDB 数据失败:', event.target.error);
+        setErrorMessage('获取本地数据失败，请重试。');
+        setLoading(false);
+      };
+    };
 
     request.onerror = (event) => {
-      console.error('获取 IndexedDB 数据失败:', event.target.error);
-      setErrorMessage('获取本地数据失败，请重试。');
+      console.error('打开 IndexedDB 失败:', event.target.error);
+      setErrorMessage('打开本地数据库失败，请重试。');
       setLoading(false);
     };
   };
@@ -1157,6 +1172,19 @@ function OfflineTigerGamePage({ onLogout }) {
   <p>
     <strong>未同步记录数:</strong> {unsyncedLogs}
   </p>
+					<div>
+    <label>
+      只显示送钱老虎
+      <input
+        type="checkbox"
+        checked={prizeAmountFilter}
+        onChange={() => {
+          setPrizeAmountFilter(!prizeAmountFilter);
+          fetchLogs();
+        }}
+      />
+    </label>
+  </div>
           {logs.map((log) => (
             <div key={log.id} className="inspiration-item">
 							<p>
