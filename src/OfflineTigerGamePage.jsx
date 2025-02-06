@@ -36,7 +36,7 @@ function OfflineTigerGamePage({ onLogout }) {
   const [showHistory, setShowHistory] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
   const [clearOption, setClearOption] = useState('synced');
-  const [indexedDBQuota, setIndexedDBQuota] = useState(null);
+	const [indexedDBQuota, setIndexedDBQuota] = useState(null);
   const [activeInputRef, setActiveInputRef] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
@@ -44,30 +44,32 @@ function OfflineTigerGamePage({ onLogout }) {
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [userId, setUserId] = useState(localStorage.getItem('offlineCalculatorUserId') || null);
-  const [totalLogs, setTotalLogs] = useState(0);
+	const [totalLogs, setTotalLogs] = useState(0);
   const [syncedLogs, setSyncedLogs] = useState(0);
   const [unsyncedLogs, setUnsyncedLogs] = useState(0);
   const [loginError, setLoginError] = useState('');
   const dbName = 'tigerGameDB';
   const storeName = 'tigerGameLogs';
   const dbVersion = 1;
-  const [gameName, setGameName] = useState('');
-  const [gameNames, setGameNames] = useState([]);
-  const gameNameInputRef = useRef(null);
-  const [isKeyboardEnabled, setIsKeyboardEnabled] = useState(true);
+	const [gameName, setGameName] = useState('');
+	const [gameNames, setGameNames] = useState([]);
+	const gameNameInputRef = useRef(null);
+	const [isKeyboardEnabled, setIsKeyboardEnabled] = useState(true);
+	const [showTracking, setShowTracking] = useState(false);
 
 
 
-  const getUniqueGameNames = () => {
+	const getUniqueGameNames = () => {
   const gameNames = logs.map((log) => log.game_name);
   return [...new Set(gameNames)];
 };
 
-  const [todaySummary, setTodaySummary] = useState({
-    totalAttempts: 0,
+	const [todaySummary, setTodaySummary] = useState({
+		totalRecords: 0, // 添加总记录数   
+		totalAttempts: 0,
     totalProfit: 0,
     averageBetAmount: 0,
-    averagePrizeMultiplier: 0, // 添加平均支付倍数
+		averagePrizeMultiplier: 0, // 添加平均支付倍数
     profitMultiplier: 0,
   });
 
@@ -75,11 +77,18 @@ function OfflineTigerGamePage({ onLogout }) {
     calculateTodaySummary();
   }, [logs]);
 
-    const calculateTodaySummary = () => {
+	useEffect(() => {
+    if (showTracking) {
+      calculateTodaySummary();
+    }
+  }, [logs, showTracking]);
+
+	const calculateTodaySummary = () => {
     const today = new Date().toISOString().split('T')[0];
     const todayLogs = logs.filter(log => log.created_at.startsWith(today));
 
-    let totalAttempts = 0;
+    let totalRecords = todayLogs.length; // 计算总记录数
+		let totalAttempts = 0;
     let totalProfit = 0;
     let totalBetAmount = 0;
     let totalPrizeMultiplier = 0;
@@ -100,14 +109,14 @@ function OfflineTigerGamePage({ onLogout }) {
     const profitMultiplier = averageBetAmount > 0 ? totalProfit / averageBetAmount : 0;
 
     setTodaySummary({
-      totalAttempts,
+      totalRecords: totalRecords, // 设置总记录数
+			totalAttempts,
       totalProfit,
       averageBetAmount,
       averagePrizeMultiplier, // 设置平均支付倍数
       profitMultiplier,
     });
   };
-
 	
 useEffect(() => {
   // 当 logs 发生变化时，更新 gameNames
@@ -716,6 +725,24 @@ useEffect(() => {
        <form onSubmit={handleSubmit}>
         <div className="form-group">
           <div className="file-input-container" style={{ marginTop: '20px' }}>
+	      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+        <label style={{ marginRight: '10px' }}>
+          启用数字键盘:
+          <input
+            type="checkbox"
+            checked={isKeyboardEnabled}
+            onChange={() => setIsKeyboardEnabled(!isKeyboardEnabled)}
+          />
+        </label>
+        <label>
+          启动追踪:
+          <input
+            type="checkbox"
+            checked={showTracking}
+            onChange={() => setShowTracking(!showTracking)}
+          />
+        </label>
+      </div>
             <input
               type="file"
               id="mainPhoto"
@@ -724,7 +751,8 @@ useEffect(() => {
               ref={fileInputRef}
               style={{ display: 'none' }}
             />
-						<table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+						{showTracking && (
+		<table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
     <thead>
       <tr>
         <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>指标</th>
@@ -732,6 +760,10 @@ useEffect(() => {
       </tr>
     </thead>
     <tbody>
+      <tr>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>总记录数</td>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.totalRecords}</td>
+      </tr>
       <tr>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>总尝试次数</td>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.totalAttempts}</td>
@@ -754,6 +786,7 @@ useEffect(() => {
       </tr>
     </tbody>
   </table>
+			   )}
             <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px' }}>开始打老虎</button>
             {mainPhoto && (
               <div style={{ position: 'relative', display: 'inline-block', marginTop: '10px' }}>
@@ -785,14 +818,7 @@ useEffect(() => {
           </div>
         </div>
 				 <div className="form-group">
-    <label>
-      启用数字键盘:
-      <input
-        type="checkbox"
-        checked={isKeyboardEnabled}
-        onChange={() => setIsKeyboardEnabled(!isKeyboardEnabled)}
-      />
-    </label>
+    
   </div>
 				<div className="form-group">
   <label htmlFor="gameName">游戏名称:</label>
