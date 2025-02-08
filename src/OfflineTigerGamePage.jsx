@@ -1147,27 +1147,28 @@ function calculateSharpeRatio(returns, riskFreeRate) {
           />
         </label>
 					<label style={{ marginLeft: '10px' }}>
-  个性化指标:
-  <input
-    type="checkbox"
-    checked={showSharpeKelly}
-    onChange={() => {
-			setShowSharpeKelly(!showSharpeKelly)
-			updateMetrics()
-				}}
-  />
-</label>
-      </div>
-            <input
-              type="file"
-              id="mainPhoto"
-              accept="image/*"
-              onChange={handleMainPhotoChange}
-              ref={fileInputRef}
-              style={{ display: 'none' }}
-            />
-						{showTracking && (
-			 <>
+  				个性化指标:
+ 					<input
+   				type="checkbox"
+    			checked={showSharpeKelly}
+    			onChange={() => {
+						setShowSharpeKelly(!showSharpeKelly)
+						updateMetrics()
+					}}
+              />
+            </label>
+          </div>
+          <input
+            type="file"
+            id="mainPhoto"
+            accept="image/*"
+            onChange={handleMainPhotoChange}
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+          />
+						
+	{showTracking && (
+  <>
     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '10px' }}>
       <label>开始时间:</label>
       <input
@@ -1274,42 +1275,8 @@ function calculateSharpeRatio(returns, riskFreeRate) {
     </tbody>
   </table>
 	 )}
-  </>
-)}
-						{showSharpeKelly && (
-  <div style={{ marginTop: '10px' }}>
-  <p style={{ color: kellyCriterion < 0 ? 'red' : 'inherit' }}>
-    凯利值: {kellyCriterion.toFixed(2)}
-    <span
-      style={{
-        fontSize: '12px',
-        marginLeft: '5px',
-        cursor: 'pointer',
-        color: '#007bff',
-      }}
-    title="接近0时，请考虑停止游戏！" 
-    >
-      &#x2753;
-    </span>
-  </p>
-  <p>
-    夏普比率: {sharpeRatio.toFixed(2)}
-    <span
-      style={{
-        fontSize: '12px',
-        marginLeft: '5px',
-        cursor: 'pointer',
-        color: '#007bff',
-       }}
-    title="接近0时，请考虑停止游戏！"
-     >
-      &#x2753;
-    </span>
-  </p>
-</div>
-)}
-						
-	{trackByGameName && (
+
+		{trackByGameName && (
   <div className="inspiration-list">
     <h3>按游戏名称追踪</h3>
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -1348,6 +1315,43 @@ function calculateSharpeRatio(returns, riskFreeRate) {
     </table>
   </div>
 )}
+		 </>
+)}
+	
+						{showSharpeKelly && (
+  <div style={{ marginTop: '10px' }}>
+  <p style={{ color: kellyCriterion < 0 ? 'red' : 'inherit' }}>
+    凯利值: {kellyCriterion.toFixed(2)}
+    <span
+      style={{
+        fontSize: '12px',
+        marginLeft: '5px',
+        cursor: 'pointer',
+        color: '#007bff',
+      }}
+    title="接近0时，请考虑停止游戏！" 
+    >
+      &#x2753;
+    </span>
+  </p>
+  <p>
+    夏普比率: {sharpeRatio.toFixed(2)}
+    <span
+      style={{
+        fontSize: '12px',
+        marginLeft: '5px',
+        cursor: 'pointer',
+        color: '#007bff',
+       }}
+    title="接近0时，请考虑停止游戏！"
+     >
+      &#x2753;
+    </span>
+  </p>
+</div>
+)}
+						
+	
 
 
             <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px' }}>开始打老虎</button>
