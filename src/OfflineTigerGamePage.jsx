@@ -518,12 +518,14 @@ function calculateSharpeRatio(returns, riskFreeRate) {
         totalBetAmount: 0,
         totalPrizeAmount: 0,
         maxMultiplier: 0,
+				totalAttempts: 0, // 新增：总尝试次数
       };
     }
 
     summary[gameName].totalRecords++;
     summary[gameName].totalProfit += (log.cash_out_amount || 0) - (log.input_amount || 0);
     summary[gameName].totalBetAmount += log.bet_amount || 0;
+		summary[gameName].totalAttempts += log.attempts || 0; // 新增：累加尝试次数
 
     if ((log.cash_out_amount || 0) - (log.input_amount || 0) > 0) {
       summary[gameName].winningEndLogsCount++;
@@ -537,9 +539,10 @@ function calculateSharpeRatio(returns, riskFreeRate) {
   });
 
   // 转换为数组并计算平均值和百分比
-  const summaryArray = Object.entries(summary).map(([gameName, data]) => {
+  	const summaryArray = Object.entries(summary).map(([gameName, data]) => {
     const averageBetAmount = data.totalRecords > 0 ? data.totalBetAmount / data.totalRecords : 0;
     const shortTermReturnRate = data.totalBetAmount > 0 ? (data.totalPrizeAmount / data.totalBetAmount) * 100 : 0;
+		const averageAttempts = data.totalRecords > 0 ? data.totalAttempts / data.totalRecords : 0; // 新增：平均尝试次数
 
     return {
       gameName,
@@ -550,6 +553,7 @@ function calculateSharpeRatio(returns, riskFreeRate) {
       averagePrizeMultiplier: data.totalBetAmount > 0 ? (data.totalPrizeAmount / data.totalBetAmount).toFixed(2) : 0,
       maxMultiplier: data.maxMultiplier.toFixed(2),
       shortTermReturnRate: shortTermReturnRate.toFixed(2),
+			averageAttempts: averageAttempts.toFixed(2), // 新增：平均尝试次数
     };
   });
 
@@ -1285,6 +1289,7 @@ function calculateSharpeRatio(returns, riskFreeRate) {
           <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('gameName')}>游戏名称</th>
           <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('totalRecords')}>总记录数</th>
           <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('winningEndLogsCount')}>赢钱结束记录总数</th>
+					<th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('averageAttempts')}>平均尝试次数</th>
           <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('averageBetAmount')}>平均下注金额</th>
           <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('averagePrizeMultiplier')}>平均支付倍数</th>
           <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('maxMultiplier')}>最大支付倍数</th>
@@ -1304,6 +1309,7 @@ function calculateSharpeRatio(returns, riskFreeRate) {
             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.gameName}</td>
             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.totalRecords}</td>
             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.winningEndLogsCount}</td>
+						<td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.averageAttempts}</td>
             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.averageBetAmount}</td>
             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.averagePrizeMultiplier}</td>
             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.maxMultiplier}</td>
