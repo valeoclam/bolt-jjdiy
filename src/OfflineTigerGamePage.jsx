@@ -69,7 +69,20 @@ function OfflineTigerGamePage({ onLogout }) {
   const [editedAttempts, setEditedAttempts] = useState(''); // 新增
 	const [editedEncounteredTrailer, setEditedEncounteredTrailer] = useState(false); // 新增
 	const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+	const [showSharpeKelly, setShowSharpeKelly] = useState(false);
+	const [kellyCriterion, setKellyCriterion] = useState(0);
+	const [sharpeRatio, setSharpeRatio] = useState(0);
 
+
+function calculateKellyCriterion(winRate, odds) {
+  return (winRate * odds - (1 - winRate)) / odds;
+}
+
+function calculateSharpeRatio(returns, riskFreeRate) {
+  const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+  const stdDev = Math.sqrt(returns.map(x => Math.pow(x - avgReturn, 2)).reduce((a, b) => a + b, 0) / (returns.length - 1));
+  return (avgReturn - riskFreeRate) / stdDev;
+}
 
 
 
@@ -77,6 +90,49 @@ function OfflineTigerGamePage({ onLogout }) {
   const gameNames = logs.map((log) => log.game_name);
   return [...new Set(gameNames)];
 };
+
+	const updateMetrics = () => {
+  if (showSharpeKelly) {
+    // 1. 筛选数据
+    const filteredData = logs.filter(log => {
+      const logTime = new Date(log.created_at).getTime();
+      const startTime = startDate ? new Date(startDate).getTime() : 0;
+      const endTime = endDate ? new Date(endDate).getTime() : Infinity;
+      return logTime >= startTime && logTime <= endTime;
+    });
+
+    // 2. 计算胜率和赔率 (使用筛选后的数据)
+    const totalGames = filteredData.length;
+    const winningGames = filteredData.filter(log => log.prize_amount > 0).length;
+    const winRate = totalGames > 0 ? winningGames / totalGames : 0;
+
+    let totalBetAmount = 0;
+    let totalPrizeAmount = 0;
+    filteredData.forEach(log => {
+      totalBetAmount += log.bet_amount;
+      totalPrizeAmount += log.prize_amount;
+    });
+    const odds = totalBetAmount > 0 ? totalPrizeAmount / totalBetAmount : 0;
+
+    // 3. 计算收益率 (使用筛选后的数据)
+    const returns = filteredData.map(log => (log.prize_amount - log.bet_amount) / log.bet_amount);
+    const riskFreeRate = 0.02; // 假设无风险利率为 2%
+
+    // 4. 计算凯利值和夏普比率
+    const newKellyCriterion = calculateKellyCriterion(winRate, odds);
+    const newSharpeRatio = calculateSharpeRatio(returns, riskFreeRate);
+
+    setKellyCriterion(newKellyCriterion);
+    setSharpeRatio(newSharpeRatio);
+  } else {
+    setKellyCriterion(0);
+    setSharpeRatio(0);
+  }
+};
+
+	useEffect(() => {
+  updateMetrics();
+}, [startDate, endDate, showSharpeKelly, logs]);
 
 	const [todaySummary, setTodaySummary] = useState({
 		totalRecords: 0, // 添加总记录数   
@@ -977,6 +1033,17 @@ function OfflineTigerGamePage({ onLogout }) {
             onChange={() => setShowTracking(!showTracking)}
           />
         </label>
+					<label style={{ marginLeft: '10px' }}>
+  夏普凯利:
+  <input
+    type="checkbox"
+    checked={showSharpeKelly}
+    onChange={() => {
+			setShowSharpeKelly(!showSharpeKelly)
+			updateMetrics()
+				}}
+  />
+</label>
       </div>
             <input
               type="file"
@@ -1048,6 +1115,13 @@ function OfflineTigerGamePage({ onLogout }) {
   </table>
 			 </>
 			   )}
+						{showSharpeKelly && (
+  <div style={{ marginTop: '10px' }}>
+    <p style={{ color: kellyCriterion < 0 ? 'red' : 'inherit' }}>凯利值: {kellyCriterion.toFixed(2)}</p>
+    <p>夏普比率: {sharpeRatio.toFixed(2)}</p>
+  </div>
+)}
+
             <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px' }}>开始打老虎</button>
             {mainPhoto && (
               <div style={{ position: 'relative', display: 'inline-block', marginTop: '10px' }}>
