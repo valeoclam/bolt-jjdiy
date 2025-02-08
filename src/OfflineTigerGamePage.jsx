@@ -294,6 +294,8 @@ function calculateSharpeRatio(returns, riskFreeRate) {
     let totalBetAmount = 0;
     let totalPrizeMultiplier = 0;
     let winningLogCount = 0;
+		let totalPrizeAmount = 0;
+		let winningEndLogsCount = 0;
 
     filteredLogs.forEach(log => {
       totalAttempts += log.attempts || 0;
@@ -304,10 +306,14 @@ function calculateSharpeRatio(returns, riskFreeRate) {
         winningLogCount++;
       }
     });
-
+		
+		const epsilon = 0.0001; // 设置一个很小的误差范围
+		winningEndLogsCount = filteredLogs.filter(log => (parseFloat(log.cash_out_amount) - parseFloat(log.input_amount)) > 0).length;
     const averageBetAmount = filteredLogs.length > 0 ? totalBetAmount / filteredLogs.length : 0;
     const averagePrizeMultiplier = winningLogCount > 0 ? totalPrizeMultiplier / winningLogCount : 0;
     const profitMultiplier = averageBetAmount > 0 ? totalProfit / averageBetAmount : 0;
+		const shortTermReturnRate = totalBetAmount > 0 ? (totalPrizeAmount / totalBetAmount) * 100 : 0; // 新增：短期收益率
+		const winningLogsCount = filteredLogs.filter(log => log.prize_amount > 0).length; // 新增：送钱老虎记录数
 
     setTodaySummary({
       totalRecords: totalRecords,
@@ -316,6 +322,9 @@ function calculateSharpeRatio(returns, riskFreeRate) {
       averageBetAmount,
       averagePrizeMultiplier,
       profitMultiplier,
+			shortTermReturnRate, // 新增：短期收益率
+			winningLogsCount, // 新增：送钱老虎记录数
+			winningEndLogsCount,
     });
   };
 
@@ -1034,7 +1043,7 @@ function calculateSharpeRatio(returns, riskFreeRate) {
           />
         </label>
 					<label style={{ marginLeft: '10px' }}>
-  夏普凯利:
+  个性化指标:
   <input
     type="checkbox"
     checked={showSharpeKelly}
@@ -1074,7 +1083,7 @@ function calculateSharpeRatio(returns, riskFreeRate) {
 		<table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
     <thead>
       <tr>
-        <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>今日汇总</th>
+        <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>自定义指标</th>
         <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>数值</th>
       </tr>
     </thead>
@@ -1087,6 +1096,10 @@ function calculateSharpeRatio(returns, riskFreeRate) {
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>总尝试次数</td>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.totalAttempts}</td>
       </tr>
+			<tr>
+      <td style={{ border: '1px solid #ddd', padding: '8px' }}>赢钱结束记录总数</td> {/* 新增：送钱老虎记录数 */}
+      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.winningLogsCount}</td> {/* 新增：送钱老虎记录数 */}
+    	</tr>
       <tr>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>盈亏总额</td>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.totalProfit.toFixed(2)}</td>
@@ -1111,6 +1124,10 @@ function calculateSharpeRatio(returns, riskFreeRate) {
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>盈亏倍数</td>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.profitMultiplier.toFixed(2)}</td>
       </tr>
+			<tr>
+      <td style={{ border: '1px solid #ddd', padding: '8px' }}>短期收益率</td> {/* 新增：短期收益率 */}
+      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.shortTermReturnRate.toFixed(2)}%</td> {/* 新增：短期收益率 */}
+    	</tr>
     </tbody>
   </table>
 			 </>
