@@ -76,6 +76,12 @@ function OfflineTigerGamePage({ onLogout }) {
 	const [gameNameSummary, setGameNameSummary] = useState([]);
 	const [sortColumn, setSortColumn] = useState('gameName');
 	const [sortDirection, setSortDirection] = useState('asc');
+	const [summaryType, setSummaryType] = useState('total'); // 默认显示自定义指标的表格
+	const [showSummaryTable, setShowSummaryTable] = useState(true);
+
+
+
+
 
 
 
@@ -460,6 +466,16 @@ function calculateSharpeRatio(returns, riskFreeRate) {
       inputAmountInputRef.current.value = String(inputAmount);
     }
   }, [inputAmount]);
+
+	  useEffect(() => {
+    if (summaryType === 'gameName') {
+      const gameNameSummary = calculateGameNameSummary();
+      setGameNameSummary(gameNameSummary);
+    } else {
+      setGameNameSummary([]);
+    }
+  }, [summaryType, filteredLogs]);
+
 
   const openDatabase = () => {
     setLoading(true);
@@ -1168,17 +1184,28 @@ function calculateSharpeRatio(returns, riskFreeRate) {
         onChange={(e) => setEndDate(e.target.value)}
       />
     </div>
-		<div className="form-group">
+<div className="form-group" style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+  <label style={{ marginRight: '10px' }}>
+    显示汇总表格
+    <input
+      type="checkbox"
+      checked={showSummaryTable}
+      onChange={() => setShowSummaryTable(!showSummaryTable)}
+      style={{ width: 'auto', margin: '0' }}
+    />
+  </label>
   <label>
     按游戏名称追踪
     <input
       type="checkbox"
       checked={trackByGameName}
       onChange={() => setTrackByGameName(!trackByGameName)}
+      style={{ width: 'auto', margin: '0' }}
     />
   </label>
 </div>
 
+{showSummaryTable && (
 		<table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
     <thead>
       <tr>
@@ -1228,20 +1255,61 @@ function calculateSharpeRatio(returns, riskFreeRate) {
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.profitMultiplier.toFixed(2)}</td>
       </tr>
 			<tr>
-      <td style={{ border: '1px solid #ddd', padding: '8px' }}>短期收益率</td> {/* 新增：短期收益率 */}
+      <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>
+  短期收益率
+  <span
+    style={{
+      fontSize: '12px',
+      marginLeft: '5px',
+      cursor: 'pointer',
+      color: '#007bff',
+    }}
+    title="短期收益率 = (总中奖金额 / 总下注金额) * 100%"
+  >
+    &#x2753;
+  </span>
+</td>
       <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.shortTermReturnRate.toFixed(2)}%</td> {/* 新增：短期收益率 */}
     	</tr>
     </tbody>
   </table>
+	  )}
 			 </>
 			   )}
 						{showSharpeKelly && (
   <div style={{ marginTop: '10px' }}>
-    <p style={{ color: kellyCriterion < 0 ? 'red' : 'inherit' }}>凯利值: {kellyCriterion.toFixed(2)}</p>
-    <p>夏普比率: {sharpeRatio.toFixed(2)}</p>
-  </div>
+  <p style={{ color: kellyCriterion < 0 ? 'red' : 'inherit' }}>
+    凯利值: {kellyCriterion.toFixed(2)}
+    <span
+      style={{
+        fontSize: '12px',
+        marginLeft: '5px',
+        cursor: 'pointer',
+        color: '#007bff',
+      }}
+    title="接近0时，请考虑停止游戏！" 
+    >
+      &#x2753;
+    </span>
+  </p>
+  <p>
+    夏普比率: {sharpeRatio.toFixed(2)}
+    <span
+      style={{
+        fontSize: '12px',
+        marginLeft: '5px',
+        cursor: 'pointer',
+        color: '#007bff',
+       }}
+    title="接近0时，请考虑停止游戏！"
+     >
+      &#x2753;
+    </span>
+  </p>
+</div>
 )}
-						{trackByGameName && (
+						
+	{trackByGameName && (
   <div className="inspiration-list">
     <h3>按游戏名称追踪</h3>
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
