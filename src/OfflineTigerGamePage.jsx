@@ -296,16 +296,26 @@ function calculateSharpeRatio(returns, riskFreeRate) {
     let winningLogCount = 0;
 		let totalPrizeAmount = 0;
 		let winningEndLogsCount = 0;
+		let maxMultiplier = 0;
+		let maxMultiplierGame = '';
 
-    filteredLogs.forEach(log => {
+     filteredLogs.forEach(log => {
       totalAttempts += log.attempts || 0;
       totalProfit += (log.cash_out_amount || 0) - (log.input_amount || 0);
       totalBetAmount += log.bet_amount || 0;
+
       if (log.bet_amount > 0 && log.prize_amount > 0) {
-        totalPrizeMultiplier += (log.prize_amount || 0) / log.bet_amount;
+        const multiplier = log.prize_amount / log.bet_amount;
+        totalPrizeMultiplier += multiplier;
         winningLogCount++;
+
+        if (multiplier > maxMultiplier) {
+          maxMultiplier = multiplier;
+          maxMultiplierGame = log.game_name;
+        }
       }
     });
+
 		
 		const epsilon = 0.0001; // 设置一个很小的误差范围
 		winningEndLogsCount = filteredLogs.filter(log => (parseFloat(log.cash_out_amount) - parseFloat(log.input_amount)) > 0).length;
@@ -316,17 +326,18 @@ function calculateSharpeRatio(returns, riskFreeRate) {
 		const winningLogsCount = filteredLogs.filter(log => log.prize_amount > 0).length; // 新增：送钱老虎记录数
 
     setTodaySummary({
-      totalRecords: totalRecords,
-			totalAttempts,
-      totalProfit,
-      averageBetAmount,
-      averagePrizeMultiplier,
-      profitMultiplier,
-			shortTermReturnRate, // 新增：短期收益率
-			winningLogsCount, // 新增：送钱老虎记录数
-			winningEndLogsCount,
-    });
-  };
+    totalRecords: totalRecords,
+    totalAttempts,
+    totalProfit,
+    averageBetAmount,
+    averagePrizeMultiplier,
+    profitMultiplier,
+    shortTermReturnRate, // 新增：短期收益率
+    winningLogsCount, // 新增：送钱老虎记录数
+    winningEndLogsCount,
+    maxMultiplierGame: maxMultiplierGame, // 添加 maxMultiplierGame
+  });
+};
 
 
 
@@ -1116,6 +1127,10 @@ function calculateSharpeRatio(returns, riskFreeRate) {
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>最大支付倍数</td>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>{calculateMaxPaymentMultiplier()}</td>
       </tr>
+			<tr>
+ 				 <td style={{ border: '1px solid #ddd', padding: '8px' }}>最大方的游戏</td>
+  			 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.maxMultiplierGame}</td>
+			</tr>
       <tr>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>最大平均支付倍数</td>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>{calculateMaxAveragePaymentMultiplier()}</td>
