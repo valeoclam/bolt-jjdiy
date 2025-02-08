@@ -1227,10 +1227,6 @@ function calculateSharpeRatio(returns, riskFreeRate) {
       <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.winningLogsCount}</td> {/* 新增：送钱老虎记录数 */}
     	</tr>
       <tr>
-        <td style={{ border: '1px solid #ddd', padding: '8px' }}>盈亏总额</td>
-        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.totalProfit.toFixed(2)}</td>
-      </tr>
-      <tr>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>平均下注金额</td>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.averageBetAmount.toFixed(2)}</td>
       </tr>
@@ -1265,17 +1261,21 @@ function calculateSharpeRatio(returns, riskFreeRate) {
       color: '#007bff',
     }}
     title="短期收益率 = (总中奖金额 / 总下注金额) * 100%"
-  >
+   >
     &#x2753;
   </span>
 </td>
       <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.shortTermReturnRate.toFixed(2)}%</td> {/* 新增：短期收益率 */}
     	</tr>
+       <tr>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>盈亏总额</td>
+        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.totalProfit.toFixed(2)}</td>
+      </tr>
     </tbody>
   </table>
-	  )}
-			 </>
-			   )}
+	 )}
+  </>
+)}
 						{showSharpeKelly && (
   <div style={{ marginTop: '10px' }}>
   <p style={{ color: kellyCriterion < 0 ? 'red' : 'inherit' }}>
@@ -1318,11 +1318,11 @@ function calculateSharpeRatio(returns, riskFreeRate) {
           <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('gameName')}>游戏名称</th>
           <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('totalRecords')}>总记录数</th>
           <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('winningEndLogsCount')}>赢钱结束记录总数</th>
-          <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('totalProfit')}>盈亏总额</th>
           <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('averageBetAmount')}>平均下注金额</th>
           <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('averagePrizeMultiplier')}>平均支付倍数</th>
           <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('maxMultiplier')}>最大支付倍数</th>
           <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('shortTermReturnRate')}>短期收益率</th>
+					<th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('totalProfit')}>盈亏总额</th>
         </tr>
       </thead>
       <tbody>
@@ -1337,11 +1337,11 @@ function calculateSharpeRatio(returns, riskFreeRate) {
             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.gameName}</td>
             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.totalRecords}</td>
             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.winningEndLogsCount}</td>
-            <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.totalProfit.toFixed(2)}</td>
             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.averageBetAmount}</td>
             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.averagePrizeMultiplier}</td>
             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.maxMultiplier}</td>
             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.shortTermReturnRate}%</td>
+						<td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.totalProfit.toFixed(2)}</td>
           </tr>
         ))}
       </tbody>
