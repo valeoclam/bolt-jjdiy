@@ -72,6 +72,11 @@ function OfflineTigerGamePage({ onLogout }) {
 	const [showSharpeKelly, setShowSharpeKelly] = useState(false);
 	const [kellyCriterion, setKellyCriterion] = useState(0);
 	const [sharpeRatio, setSharpeRatio] = useState(0);
+	const [trackByGameName, setTrackByGameName] = useState(false);
+	const [gameNameSummary, setGameNameSummary] = useState([]);
+	const [sortColumn, setSortColumn] = useState('gameName');
+	const [sortDirection, setSortDirection] = useState('asc');
+
 
 
 function calculateKellyCriterion(winRate, odds) {
@@ -339,6 +344,15 @@ function calculateSharpeRatio(returns, riskFreeRate) {
   });
 };
 
+	useEffect(() => {
+    if (trackByGameName) {
+      const gameNameSummary = calculateGameNameSummary();
+      setGameNameSummary(gameNameSummary);
+    } else {
+      setGameNameSummary([]);
+    }
+  }, [trackByGameName, filteredLogs]);
+
 
 
 	 // 计算最大支付倍数
@@ -473,6 +487,59 @@ function calculateSharpeRatio(returns, riskFreeRate) {
       }
     };
   };
+
+	const calculateGameNameSummary = () => {
+  const summary = {};
+
+  filteredLogs.forEach(log => {
+    const gameName = log.game_name || '未知游戏'; // 处理游戏名称为空的情况
+
+    if (!summary[gameName]) {
+      summary[gameName] = {
+        totalRecords: 0,
+        winningEndLogsCount: 0,
+        totalProfit: 0,
+        totalBetAmount: 0,
+        totalPrizeAmount: 0,
+        maxMultiplier: 0,
+      };
+    }
+
+    summary[gameName].totalRecords++;
+    summary[gameName].totalProfit += (log.cash_out_amount || 0) - (log.input_amount || 0);
+    summary[gameName].totalBetAmount += log.bet_amount || 0;
+
+    if ((log.cash_out_amount || 0) - (log.input_amount || 0) > 0) {
+      summary[gameName].winningEndLogsCount++;
+    }
+
+    if (log.bet_amount > 0 && log.prize_amount > 0) {
+      const multiplier = log.prize_amount / log.bet_amount;
+      summary[gameName].totalPrizeAmount += log.prize_amount;
+      summary[gameName].maxMultiplier = Math.max(summary[gameName].maxMultiplier, multiplier);
+    }
+  });
+
+  // 转换为数组并计算平均值和百分比
+  const summaryArray = Object.entries(summary).map(([gameName, data]) => {
+    const averageBetAmount = data.totalRecords > 0 ? data.totalBetAmount / data.totalRecords : 0;
+    const shortTermReturnRate = data.totalBetAmount > 0 ? (data.totalPrizeAmount / data.totalBetAmount) * 100 : 0;
+
+    return {
+      gameName,
+      totalRecords: data.totalRecords,
+      winningEndLogsCount: data.winningEndLogsCount,
+      totalProfit: data.totalProfit,
+      averageBetAmount: averageBetAmount.toFixed(2),
+      averagePrizeMultiplier: data.totalBetAmount > 0 ? (data.totalPrizeAmount / data.totalBetAmount).toFixed(2) : 0,
+      maxMultiplier: data.maxMultiplier.toFixed(2),
+      shortTermReturnRate: shortTermReturnRate.toFixed(2),
+    };
+  });
+
+  return summaryArray;
+};
+
 
   const fetchLogs = () => {
     setLoading(true);
@@ -1030,6 +1097,16 @@ function calculateSharpeRatio(returns, riskFreeRate) {
     setShowClearModal(false);
   };
 
+	const handleSort = (column) => {
+  if (sortColumn === column) {
+    setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+  } else {
+    setSortColumn(column);
+    setSortDirection('asc');
+  }
+};
+
+
   return (
      <div className="container" ref={inputRef}>
       <h2>打虎日记 (离线版)</h2>
@@ -1091,6 +1168,17 @@ function calculateSharpeRatio(returns, riskFreeRate) {
         onChange={(e) => setEndDate(e.target.value)}
       />
     </div>
+		<div className="form-group">
+  <label>
+    按游戏名称追踪
+    <input
+      type="checkbox"
+      checked={trackByGameName}
+      onChange={() => setTrackByGameName(!trackByGameName)}
+    />
+  </label>
+</div>
+
 		<table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
     <thead>
       <tr>
@@ -1153,6 +1241,46 @@ function calculateSharpeRatio(returns, riskFreeRate) {
     <p>夏普比率: {sharpeRatio.toFixed(2)}</p>
   </div>
 )}
+						{trackByGameName && (
+  <div className="inspiration-list">
+    <h3>按游戏名称追踪</h3>
+    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <thead>
+        <tr>
+          <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('gameName')}>游戏名称</th>
+          <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('totalRecords')}>总记录数</th>
+          <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('winningEndLogsCount')}>赢钱结束记录总数</th>
+          <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('totalProfit')}>盈亏总额</th>
+          <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('averageBetAmount')}>平均下注金额</th>
+          <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('averagePrizeMultiplier')}>平均支付倍数</th>
+          <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('maxMultiplier')}>最大支付倍数</th>
+          <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', cursor: 'pointer' }} onClick={() => handleSort('shortTermReturnRate')}>短期收益率</th>
+        </tr>
+      </thead>
+      <tbody>
+        {gameNameSummary.sort((a, b) => {
+            const sortOrder = sortDirection === 'asc' ? 1 : -1;
+            if (sortColumn === 'gameName') {
+                return sortOrder * a.gameName.localeCompare(b.gameName, 'zh-CN');
+            }
+            return sortOrder * (a[sortColumn] - b[sortColumn]);
+        }).map((item) => (
+          <tr key={item.gameName}>
+            <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.gameName}</td>
+            <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.totalRecords}</td>
+            <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.winningEndLogsCount}</td>
+            <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.totalProfit.toFixed(2)}</td>
+            <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.averageBetAmount}</td>
+            <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.averagePrizeMultiplier}</td>
+            <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.maxMultiplier}</td>
+            <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.shortTermReturnRate}%</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
+
 
             <button type="button" onClick={() => fileInputRef.current.click()} className="select-file-button" style={{ marginTop: '0px' }}>开始打老虎</button>
             {mainPhoto && (
