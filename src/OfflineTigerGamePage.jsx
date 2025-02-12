@@ -1394,7 +1394,7 @@ function calculateSharpeRatio(returns, riskFreeRate) {
     
   </div>
 				<div className="form-group">
-  <label htmlFor="gameName">游戏名称:</label>
+  <label htmlFor="gameName" onClick={(e) => e.preventDefault()}>游戏名称:</label>
   <input
     type="text"
     id="gameName"
@@ -1410,7 +1410,7 @@ function calculateSharpeRatio(returns, riskFreeRate) {
   </datalist>
 </div>
         <div className="form-group">
-          <label htmlFor="inputAmount">投入金额:</label>
+          <label htmlFor="inputAmount" onClick={(e) => e.preventDefault()}>投入金额:</label>
           <input
             type="text"
             id="inputAmount"
@@ -1422,7 +1422,7 @@ function calculateSharpeRatio(returns, riskFreeRate) {
           />
         </div>
         <div className="form-group">
-          <label htmlFor="betAmount">下注金额:</label>
+          <label htmlFor="betAmount" onClick={(e) => e.preventDefault()}>下注金额:</label>
           <input
             type="text"
             id="betAmount"
@@ -1430,11 +1430,19 @@ function calculateSharpeRatio(returns, riskFreeRate) {
             onChange={(e) => setBetAmount(e.target.value)}
             onFocus={(e) => handleInputFocus('betAmount', e.target)}
             ref={betInputRef}
-            required
+						list="betAmountOptions" // 关联 datalist
+            required						
           />
+  				<datalist id="betAmountOptions">
+      			<option value="">选择金额</option>
+      			<option value="0.75">0.75</option>
+      			<option value="0.88">0.88</option>
+      			<option value="1.5">1.5</option>
+      			<option value="1.76">1.76</option>
+    			</datalist>
         </div>
         <div className="form-group">
-          <label htmlFor="attempts">尝试次数:</label>
+          <label htmlFor="attempts" onClick={(e) => e.preventDefault()}>尝试次数:</label>
           <input
             type="text"
             id="attempts"
@@ -1446,7 +1454,7 @@ function calculateSharpeRatio(returns, riskFreeRate) {
           />
         </div>
         <div className="form-group">
-          <label htmlFor="prizeAmount">中奖金额:</label>
+          <label htmlFor="prizeAmount" onClick={(e) => e.preventDefault()}>中奖金额:</label>
           <input
             type="text"
             id="prizeAmount"
@@ -1458,7 +1466,7 @@ function calculateSharpeRatio(returns, riskFreeRate) {
           />
         </div>
         <div className="form-group">
-          <label htmlFor="cashOutAmount">兑换金额:</label>
+          <label htmlFor="cashOutAmount" onClick={(e) => e.preventDefault()}>兑换金额:</label>
           <input
             type="text"
             id="cashOutAmount"
