@@ -78,6 +78,10 @@ function OfflineTigerGamePage({ onLogout }) {
 	const [sortDirection, setSortDirection] = useState('asc');
 	const [summaryType, setSummaryType] = useState('total'); // 默认显示自定义指标的表格
 	const [showSummaryTable, setShowSummaryTable] = useState(true);
+	const [isSupabaseData, setIsSupabaseData] = useState(false); // 新增状态
+	const [isLoggedIn, setIsLoggedIn] = useState(false); // 新增状态
+
+
 
 
 
@@ -981,11 +985,7 @@ function calculateSharpeRatio(returns, riskFreeRate) {
       } else if (data) {
         console.log('登录成功, user_id:', data.id);
         setUserId(data.id);
-        localStorage.setItem('offlineCalculatorUserId', data.id);
-        setShowLoginModal(false);
-        setLoginUsername('');
-        setLoginPassword('');
-        handleSync();
+				setIsLoggedIn(true); // 登录成功后设置状态
       } else {
         setLoginError('用户名或密码无效。');
       }
@@ -996,6 +996,7 @@ function calculateSharpeRatio(returns, riskFreeRate) {
       setLoading(false);
     }
   };
+
 
     const handleClearData = async () => {
     setShowClearModal(true);
@@ -1008,6 +1009,43 @@ function calculateSharpeRatio(returns, riskFreeRate) {
     }
   };
 
+		const fetchSupabaseLogs = async () => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('tiger_game_logs')
+        .select('*')
+        .eq('user_id', userId) // 使用用户的 ID
+        .order('created_at', { ascending: false });
+
+      if (startDate) {
+        query = query.gte('created_at', `${startDate}:00.000Z`);
+      }
+      if (endDate) {
+        query = query.lt('created_at', `${endDate}:00.000Z`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('获取 Supabase 打老虎记录时发生错误:', error);
+        setErrorMessage('获取 Supabase 打老虎记录失败。');
+      } else {
+        setLogs(data);
+      }
+    } catch (error) {
+      console.error('发生意外错误:', error);
+      setErrorMessage('发生意外错误。');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userId && isSupabaseData) {
+      fetchSupabaseLogs();
+    }
+  }, [userId, startDate, endDate, isSupabaseData]);
 
   const handleConfirmClearData = () => {
   setLoading(true);
@@ -1173,6 +1211,41 @@ function calculateSharpeRatio(returns, riskFreeRate) {
 						
 	{showTracking && (
   <>
+		 <div>
+        <label>
+          数据源：
+          <select
+            value={isSupabaseData ? 'supabase' : 'local'}
+            onChange={(e) => setIsSupabaseData(e.target.value === 'supabase')}
+          >
+            <option value="local">本地 IndexedDB</option>
+            <option value="supabase">Supabase</option>
+          </select>
+        </label>
+      </div>
+
+		{isSupabaseData && !isLoggedIn && ( // 添加条件渲染
+        <div>
+          <h3>登录 Supabase</h3>
+          <input
+            type="text"
+            placeholder="用户名"
+            value={loginUsername}
+            onChange={(e) => setLoginUsername(e.target.value)}
+          />
+          <input
+            type="password"
+            placeholder="密码"
+            value={loginPassword}
+            onChange={(e) => setLoginPassword(e.target.value)}
+          />
+          <button onClick={handleLogin} disabled={loading}>
+            {loading ? '登录中...' : '登录'}
+          </button>
+          {loginError && <p className="error-message">{loginError}</p>}
+        </div>
+      )}
+		
     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '10px' }}>
       <label>开始时间:</label>
       <input
