@@ -80,6 +80,8 @@ function OfflineTigerGamePage({ onLogout }) {
 	const [showSummaryTable, setShowSummaryTable] = useState(true);
 	const [isSupabaseData, setIsSupabaseData] = useState(false); // 新增状态
 	const [isLoggedIn, setIsLoggedIn] = useState(false); // 新增状态
+	const [supabaseLogs, setSupabaseLogs] = useState([]); 
+
 
 
 
@@ -275,6 +277,11 @@ function calculateSharpeRatio(returns, riskFreeRate) {
     setUnsyncedLogs(logs.filter(log => !log.isSynced).length);
   }, [logs]);
 
+	useEffect(() => {
+  console.log('userId:', userId); // 添加这行代码
+}, [userId]);
+
+
 
 	useEffect(() => {
     calculateTodaySummary();
@@ -291,17 +298,19 @@ function calculateSharpeRatio(returns, riskFreeRate) {
     const startDateObj = startDate ? new Date(startDate) : null;
     const endDateObj = endDate ? new Date(endDate) : null;
 
+		const logsToUse = isSupabaseData ? supabaseLogs : logs;
+
     let filteredLogs;
-    if (showTracking) {
-      filteredLogs = logs.filter(log => {
-          const logDate = new Date(log.created_at);
-          if (startDateObj && logDate < startDateObj) return false;
-          if (endDateObj && logDate > endDateObj) return false;
-          return true;
-      });
-    } else {
-      filteredLogs = []; // 如果 showTracking 为 false，则 filteredLogs 为空数组
-    }
+  if (showTracking) {
+    filteredLogs = logsToUse.filter(log => {
+      const logDate = new Date(log.created_at);
+      if (startDateObj && logDate < startDateObj) return false;
+      if (endDateObj && logDate > endDateObj) return false;
+      return true;
+    });
+  } else {
+    filteredLogs = []; // 如果 showTracking 为 false，则 filteredLogs 为空数组
+  }
 
     let totalRecords = filteredLogs.length;
 		let totalAttempts = 0;
@@ -358,10 +367,17 @@ function calculateSharpeRatio(returns, riskFreeRate) {
     if (trackByGameName) {
       const gameNameSummary = calculateGameNameSummary();
       setGameNameSummary(gameNameSummary);
+			console.log('gameNameSummary:', gameNameSummary);
     } else {
       setGameNameSummary([]);
     }
-  }, [trackByGameName, filteredLogs]);
+  }, [trackByGameName, logs, supabaseLogs, isSupabaseData]);
+
+	 useEffect(() => {
+    calculateTodaySummary();
+    const gameNameSummary = calculateGameNameSummary();
+    setGameNameSummary(gameNameSummary);
+  }, [isSupabaseData, logs, supabaseLogs, startDate, endDate]);
 
 
 
@@ -511,7 +527,9 @@ function calculateSharpeRatio(returns, riskFreeRate) {
 	const calculateGameNameSummary = () => {
   const summary = {};
 
-  filteredLogs.forEach(log => {
+	const logsToUse = isSupabaseData ? supabaseLogs : logs;
+
+  logsToUse.forEach(log => {
     const gameName = log.game_name || '未知游戏'; // 处理游戏名称为空的情况
 
     if (!summary[gameName]) {
@@ -1031,7 +1049,8 @@ function calculateSharpeRatio(returns, riskFreeRate) {
         console.error('获取 Supabase 打老虎记录时发生错误:', error);
         setErrorMessage('获取 Supabase 打老虎记录失败。');
       } else {
-        setLogs(data);
+        setSupabaseLogs(data);
+      	console.log('fetchSupabaseLogs - data:', data);
       }
     } catch (error) {
       console.error('发生意外错误:', error);
@@ -1046,6 +1065,10 @@ function calculateSharpeRatio(returns, riskFreeRate) {
       fetchSupabaseLogs();
     }
   }, [userId, startDate, endDate, isSupabaseData]);
+
+	useEffect(() => {
+  console.log('supabaseLogs:', supabaseLogs); // 添加这行代码
+}, [supabaseLogs]);
 
   const handleConfirmClearData = () => {
   setLoading(true);
