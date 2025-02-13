@@ -1301,8 +1301,8 @@ function calculateSharpeRatio(returns, riskFreeRate) {
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.totalAttempts}</td>
       </tr>
 			<tr>
-      <td style={{ border: '1px solid #ddd', padding: '8px' }}>赢钱结束记录总数</td> {/* 新增：送钱老虎记录数 */}
-      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.winningLogsCount}</td> {/* 新增：送钱老虎记录数 */}
+      <td style={{ border: '1px solid #ddd', padding: '8px' }}>赢钱结束记录总数</td>
+      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.winningLogsCount}</td> 
     	</tr>
       <tr>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>平均下注金额</td>
@@ -1343,7 +1343,7 @@ function calculateSharpeRatio(returns, riskFreeRate) {
     &#x2753;
   </span>
 </td>
-      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.shortTermReturnRate.toFixed(2)}%</td> {/* 新增：短期收益率 */}
+      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{todaySummary.shortTermReturnRate.toFixed(2)}%</td> 
     	</tr>
        <tr>
         <td style={{ border: '1px solid #ddd', padding: '8px' }}>盈亏总额</td>
